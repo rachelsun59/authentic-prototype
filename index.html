@@ -245,7 +245,118 @@
       padding: var(--sp-2) var(--sp-5);
       height: 48px;
       border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      transition: height 200ms ease, padding 200ms ease, border-color 200ms ease, opacity 160ms ease;
     }
+    /* When the detail view has scrolled past the threshold, collapse the
+       topbar so the sticky stat-strip + tabs replace it at the very top of
+       the viewport. */
+    .surface.is-detail-scrolled .topbar {
+      height: 0; padding-top: 0; padding-bottom: 0;
+      border-bottom-color: transparent;
+      opacity: 0;
+      pointer-events: none;
+    }
+    /* The sticky stat-strip's own top padding shrinks at the same time so
+       it sits flush against the top edge once the topbar is gone.  Also
+       zero the .detail-main scroll-container padding-top so there's no gap
+       between the surface and the sticky band. */
+    .surface.is-detail-scrolled .detail-sticky { padding-top: 0; margin-bottom: var(--sp-2); }
+    .surface.is-detail-scrolled .detail-main   { padding-top: 0; }
+    .surface.is-detail-scrolled .stat-strip    { margin-top: 0; }
+    /* Also remove the small outer breathing room around the surface so the
+       sticky band reaches the very top of the viewport. */
+    .surface.is-detail-scrolled              { border-top-left-radius: 0; border-top-right-radius: 0; }
+    .app-body.is-detail-scrolled             { padding-top: 0; }
+
+    /* Sticky-only adjustments — Figma 78:25208.  Compact metric values,
+       show the Status actions inline on the right, hide the tabs. */
+    .stat-strip .sticky-actions {
+      display: none;
+      align-items: center; gap: var(--sp-2);
+      padding-left: var(--sp-4);
+      border-left: 1px solid var(--border-soft);
+    }
+    .stat-strip .sticky-actions .status-label { color: var(--fg-muted); font-size: 13px; }
+    .stat-strip .sticky-actions .comment-btn {
+      width: 32px; height: 28px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: var(--r-md); color: var(--fg); position: relative;
+    }
+    .stat-strip .sticky-actions .comment-btn .count {
+      position: absolute; top: -6px; right: -6px;
+      min-width: 16px; height: 16px; padding: 0 4px;
+      background: var(--tertiary); color: var(--fg-inverted);
+      border-radius: var(--r-full);
+      font-size: 9px; line-height: 11px; font-weight: 500;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .stat-strip .sticky-actions .btn-primary { height: 32px; padding: 0 12px; font-size: 13px; }
+    .surface.is-detail-scrolled .stat-strip {
+      display: grid;
+      grid-template-columns: 2.4fr 1fr auto;
+      gap: var(--sp-3);
+      align-items: center;
+      padding: var(--sp-2) 4px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    /* Drop the triggers' divider line in scrolled state (no longer below the metrics) */
+    .surface.is-detail-scrolled .stat-triggers { border-top: 0; padding-top: 0; }
+
+    /* When the available width gets tight, the scrolled sticky header
+       rewraps so the referral triggers move below the metrics rather than
+       getting squeezed.  Grid areas keep the Status actions anchored to
+       the right.  This fires for two conditions:
+         1) viewport ≤ 1280px (narrow window)
+         2) activity drawer open (always eats 400px on the right) */
+    @media (max-width: 1280px) {
+      .surface.is-detail-scrolled .stat-strip {
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+          "metrics  actions"
+          "triggers triggers";
+        row-gap: var(--sp-2);
+      }
+      .surface.is-detail-scrolled .stat-metrics    { grid-area: metrics; }
+      .surface.is-detail-scrolled .sticky-actions  { grid-area: actions; }
+      .surface.is-detail-scrolled .stat-triggers   {
+        grid-area: triggers;
+        border-top: 1px solid var(--border-soft);
+        padding-top: var(--sp-2);
+      }
+    }
+    /* When the drawer is open, apply the wrap layout regardless of viewport */
+    .surface.is-detail-scrolled .detail-shell.with-drawer .stat-strip {
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "metrics  actions"
+        "triggers triggers";
+      row-gap: var(--sp-2);
+    }
+    .surface.is-detail-scrolled .detail-shell.with-drawer .stat-metrics    { grid-area: metrics; }
+    .surface.is-detail-scrolled .detail-shell.with-drawer .sticky-actions  { grid-area: actions; }
+    .surface.is-detail-scrolled .detail-shell.with-drawer .stat-triggers   {
+      grid-area: triggers;
+      border-top: 1px solid var(--border-soft);
+      padding-top: var(--sp-2);
+    }
+    /* Strip the left/right padding from .detail-main when scrolled so the
+       sticky band reaches the surface edges with no horizontal inset. */
+    .surface.is-detail-scrolled .detail-main { padding-left: 0; padding-right: 0; }
+    /* Restore the side padding on non-sticky content below the band so the
+       indication tables and form cards don't hug the edges. */
+    .surface.is-detail-scrolled .detail-main > :not(.detail-sticky) {
+      padding-left: var(--sp-5); padding-right: var(--sp-5);
+    }
+    .surface.is-detail-scrolled .stat-strip .sticky-actions { display: inline-flex; }
+    .surface.is-detail-scrolled .stat-cell .value { font-size: 18px; line-height: 22px; }
+    .surface.is-detail-scrolled .stat-cell .label { font-size: 10px; }
+    .surface.is-detail-scrolled .stat-cell { padding-left: var(--sp-2); gap: 2px; }
+    .surface.is-detail-scrolled .stat-triggers { gap: 2px var(--sp-3); }
+    .surface.is-detail-scrolled .stat-triggers .trig-row { font-size: 11px; padding: 2px 0; }
+    /* Hide tabs in the sticky band when scrolled (they scroll with content) */
+    .surface.is-detail-scrolled .detail-sticky .tabs { display: none; }
     .search-input {
       flex: 1; min-width: 0;
       display: flex; align-items: center; gap: var(--sp-2);
@@ -637,6 +748,35 @@
       overflow: hidden;
     }
     .doc-list .doc-head { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-soft); font-size: 13px; font-weight: 500; }
+    /* Slot — group of files for one required document */
+    .doc-slot {
+      padding: var(--sp-3) var(--sp-4);
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .doc-slot:last-child { border-bottom: 0; }
+    .doc-slot-head {
+      display: grid; grid-template-columns: 24px 1fr auto;
+      gap: var(--sp-3); align-items: center;
+    }
+    .doc-slot-head .label { font-size: 14px; color: var(--fg); }
+    .doc-slot-files {
+      display: flex; flex-direction: column; gap: 4px;
+      margin-top: var(--sp-2);
+      padding-left: calc(24px + var(--sp-3));
+    }
+    .doc-file-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 8px;
+      background: var(--bg);
+      border-radius: var(--r-sm);
+    }
+    .doc-file-row .file { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: 12px; }
+    .doc-file-row .file .badge { width: 22px; height: 22px; }
+    .doc-file-row .trash {
+      background: transparent; border: 0; padding: 4px; border-radius: var(--r-sm);
+      color: var(--fg-muted); cursor: pointer;
+    }
+    .doc-file-row .trash:hover { color: var(--err); background: var(--bg-accent); }
     .doc-row {
       display: grid; grid-template-columns: 24px 1fr auto 32px; gap: var(--sp-3);
       align-items: center;
@@ -683,6 +823,81 @@
     .ns-field select:invalid, .ns-field input:placeholder-shown { color: var(--fg-muted); }
 
     /* Success state */
+    /* Step 2 — notes textarea with bottom-right char counter */
+    .ns-textarea {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      background: var(--surface);
+      margin-bottom: var(--sp-2);
+    }
+    .ns-textarea textarea {
+      width: 100%; box-sizing: border-box;
+      border: 0; outline: none; background: transparent;
+      padding: 10px 12px 24px;
+      resize: vertical; min-height: 96px;
+      font-family: inherit; font-size: 14px; line-height: 18px; color: var(--fg);
+    }
+    .ns-textarea textarea::placeholder { color: var(--fg-muted); }
+    .ns-textarea .ns-counter {
+      position: absolute; right: 12px; bottom: 6px;
+      font-size: 11px; color: var(--fg-muted);
+    }
+    /* Underwriter Decision modal — Approve / Decline pill row + reasons */
+    .uw-mode-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: var(--sp-2);
+    }
+    .uw-pill {
+      padding: 10px 12px; height: 44px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      font-size: 14px; font-weight: 500;
+      color: var(--fg); text-align: left;
+      cursor: pointer;
+      transition: border-color var(--transition-base), background var(--transition-base);
+    }
+    .uw-pill:hover { background: var(--bg); }
+    .uw-pill.is-on { border-color: var(--tertiary); }
+    .uw-pill.is-decline.is-on { border-color: var(--tertiary); }
+    .uw-reasons {
+      display: flex; flex-direction: column; gap: var(--sp-2);
+      margin-top: var(--sp-3);
+    }
+    .uw-reason {
+      display: flex; align-items: center; gap: var(--sp-3);
+      padding: 10px 12px; min-height: 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      cursor: pointer;
+      font-size: 14px; color: var(--fg);
+      text-align: left;
+    }
+    .uw-reason:hover { background: var(--bg); }
+    .uw-reason.is-selected { border-color: var(--tertiary); background: var(--surface); }
+    .uw-reason .radio {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 1.5px solid var(--border);
+      position: relative; flex: 0 0 16px;
+    }
+    .uw-reason .radio.is-on {
+      border-color: var(--tertiary);
+      background: var(--tertiary);
+      box-shadow: inset 0 0 0 3px var(--surface);
+    }
+    /* Per-row "Upload File" / "Re-upload" link in step 1 doc list */
+    .upload-link {
+      color: var(--info);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      padding: 4px 6px;
+      border-radius: var(--r-sm);
+    }
+    .upload-link:hover { background: var(--bg-accent); text-decoration: underline; }
+
     .ns-success {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       padding: var(--sp-6) var(--sp-5) calc(var(--sp-6) * 2);
@@ -949,8 +1164,8 @@
 
     /* Static drawer pinned to viewport height; only its body scrolls. */
     .activity-drawer {
-      flex: 0 0 460px;
-      width: 460px;
+      flex: 0 0 400px;
+      width: 400px;
       height: 100%;
       align-self: stretch;
       border-left: 1px solid var(--border);
@@ -1022,7 +1237,6 @@
     .ad-attach-head {
       display: flex; align-items: center; justify-content: space-between;
       padding: var(--sp-2) var(--sp-3);
-      border-bottom: 1px solid var(--border);
       font-size: var(--fs-sm);
     }
     .ad-attach-head .muted { color: var(--fg-muted); font-weight: 400; }
@@ -1168,12 +1382,55 @@
       display: inline-flex; align-items: center; justify-content: center;
     }
 
-    /* 5 stat cells — small label + big colored number */
+    /* Sticky detail header — wraps the stat strip + tabs so they stay pinned
+       to the top of the .detail-main scroll container as the user scrolls
+       through long indication sections.  Background masks the content
+       passing underneath.  Figma 78:25178. */
+    .detail-sticky {
+      position: sticky; top: 0; z-index: 5;
+      background: var(--surface);
+      padding-top: var(--sp-3);
+      margin-bottom: var(--sp-3);
+    }
+
+    /* Stat strip — default (unscrolled) is two stacked rows per Figma
+       104:20504: 4 large metric cells full-width on top, 4 referral triggers
+       in a 2-col × 2-row grid below.  The scrolled state below switches to
+       a compact single-row layout with sticky actions on the right. */
     .stat-strip {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      display: flex; flex-direction: column;
       gap: var(--sp-3);
-      margin: var(--sp-5) 0;
+      margin: var(--sp-4) 0 var(--sp-3);
+    }
+    .stat-strip .stat-metrics {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: var(--sp-3);
+    }
+    .stat-strip .stat-triggers {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0 var(--sp-5);
+      border-top: 1px solid var(--border-soft);
+      padding-top: var(--sp-2);
+    }
+    .stat-strip .stat-triggers .trig-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--sp-2);
+      padding: 6px 0;
+      font-size: 13px;
+      min-width: 195px;
+    }
+    .stat-strip .stat-triggers .trig-row .lbl {
+      color: var(--fg); display: inline-flex; align-items: center; gap: 4px;
+    }
+    .stat-strip .stat-triggers .trig-row .lbl .info-ico {
+      color: var(--fg-muted); font-size: 13px; cursor: help;
+    }
+    .stat-strip .stat-triggers .trig-row .pill-ok {
+      color: var(--ok); font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+    }
+    @media (max-width: 1100px) {
+      .stat-strip { grid-template-columns: 1fr; }
+      .stat-strip .stat-triggers { grid-template-columns: 1fr; }
     }
     .stat-cell {
       display: flex; flex-direction: column; gap: 4px;
@@ -1329,6 +1586,21 @@
        Stacked sections sit 16px apart per the Figma rhythm. */
     .form-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
     .form-section + .form-section { margin-top: var(--sp-4); }
+
+    /* BDE indication tab — wraps the accordion sections so paired rows can
+       sit side-by-side per Figma 73:21263.  Outer container handles vertical
+       gap between rows; .section-row puts two cards next to each other. */
+    .bde-sections {
+      display: flex; flex-direction: column; gap: var(--sp-4);
+    }
+    .bde-sections .form-section + .form-section { margin-top: 0; }
+    .section-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-4);
+      align-items: start;
+    }
+    @media (max-width: 900px) { .section-row { grid-template-columns: 1fr; } }
     .form-section .head {
       display: flex; align-items: center; justify-content: space-between;
       width: 100%;
@@ -1365,7 +1637,7 @@
     .form-row .num-val { color: var(--ok); font-weight: 500; text-align: right; }
     .form-row {
       display: grid;
-      grid-template-columns: 1fr 320px;
+      grid-template-columns: 1fr 200px;
       gap: var(--sp-3);
       align-items: center;
       padding: var(--sp-3) var(--sp-4);
@@ -1891,14 +2163,16 @@
       sidebarCollapsed: false,
       // Mobile-only: when true, the sidebar slides in as a full-height overlay
       mobileNavOpen: false,
+      // Underwriter Decision modal — opened from the "Make Decision" button
+      uwDecision: { open: false, mode: 'approve', declineReason: '', notes: '' },
       // "New Submission" modal flow — Figma 38:20599 / 38:21469 / 38:25386 /
       // 78:28931 / 47:15513.  step: 1 (checklist) → 2 (details) → 'done'.
       // docs maps slot → { name, size, type } or null until uploaded.
       newSub: {
         open: false,
         step: 1,
-        docs: { lossRuns: null, sov: null },
-        fields: { tenant: '', businessName: '', appId: '', effDate: '', needBy: '', targetPremium: '', product: '' },
+        docs: { lossRuns: [], sov: [], expiringPremium: [], additional: [] },
+        fields: { tenant: '', businessName: '', effDate: '', needBy: '', targetPremium: '', notes: '' },
       },
     };
 
@@ -2317,12 +2591,14 @@
        Authentic submission spec).  Create is blocked until every required
        check passes; clicking "Re-upload" on a doc swaps in a new file that
        satisfies the previously-failed check. */
-    // Required documents the system parses + validates.  Target Premium is
-    // NOT a required upload — the underwriter enters it manually in step 2.
+    // Required documents the system parses + validates.  Users upload one
+    // file per row via the row's own "Upload File" button — there is no
+    // shared drop zone.  "Additional Documents" is optional; if the parser
+    // detects a Target Premium inside the upload, its label switches to
+    // "Target Premium Detected".  Figma 38:20599 / 38:25386.
     const NS_DOC_DEFS = [
       {
-        key:'lossRuns', label:'5 Years of Loss Runs',
-        fileName:'5y loss runs.csv', ext:'CSV', size:'3mb',
+        key:'lossRuns', label:'5 Years of Loss Runs', isRequired:true,
         checks: [
           { key:'dateLoss',    label:'Date of loss',           required:true },
           { key:'paidLoss',    label:'Paid loss',              required:true },
@@ -2331,8 +2607,7 @@
         ],
       },
       {
-        key:'sov', label:'Statement of Values (SOV)',
-        fileName:'SOV.csv', ext:'CSV', size:'3mb',
+        key:'sov', label:'SOV', isRequired:true,
         checks: [
           { key:'address',     label:'Address',                required:true },
           { key:'totalSales',  label:'Total Sales',            required:true },
@@ -2340,24 +2615,48 @@
           { key:'area',        label:'Area (optional)',        required:false },
         ],
       },
+      {
+        key:'expiringPremium', label:'Expiring Premium', isRequired:true,
+        checks: [
+          { key:'premiumAmount', label:'Annual premium amount', required:true },
+        ],
+      },
+      {
+        key:'additional', label:'Additional Documents', isRequired:false,
+        // No required checks — but parser may detect a target premium and
+        // surface that finding via the dynamic row label.
+        checks: [],
+      },
     ];
     function nsDocByKey(key) { return NS_DOC_DEFS.find(d => d.key === key); }
-    function nsAllDocsUploaded() { return NS_DOC_DEFS.every(d => State.newSub.docs[d.key] !== null); }
-    function nsMissingDocs() { return NS_DOC_DEFS.filter(d => State.newSub.docs[d.key] === null); }
+    function nsSlotFiles(key) { return State.newSub.docs[key] || []; }
+    // Only required docs gate the Create button — Additional Documents is optional
+    function nsRequiredDefs() { return NS_DOC_DEFS.filter(d => d.isRequired); }
+    function nsAllDocsUploaded() { return nsRequiredDefs().every(d => nsSlotFiles(d.key).length > 0); }
+    function nsMissingDocs() { return nsRequiredDefs().filter(d => nsSlotFiles(d.key).length === 0); }
+    // A slot passes if at least one file in the slot satisfies every required
+    // check, OR (for optional slots like Additional Documents) the slot has
+    // no required checks at all.
     function nsDocPassed(key) {
-      const f = State.newSub.docs[key];
-      if (!f) return false;
       const def = nsDocByKey(key);
-      return def.checks.filter(c => c.required).every(c => f.checks[c.key]);
+      const files = nsSlotFiles(key);
+      if (files.length === 0) return false;
+      const required = def.checks.filter(c => c.required);
+      if (required.length === 0) return true;
+      return files.some(f => required.every(c => f.checks[c.key]));
     }
     function nsAllValid() {
       return nsAllDocsUploaded() && NS_DOC_DEFS.every(d => nsDocPassed(d.key));
     }
     function nsFailedChecks() {
+      // Aggregate fails across all files in a slot — a check is satisfied if
+      // ANY uploaded file in the slot passes it.
       return NS_DOC_DEFS.flatMap(d => {
-        const f = State.newSub.docs[d.key];
-        if (!f) return [];
-        return d.checks.filter(c => c.required && !f.checks[c.key]).map(c => ({ docLabel: d.label, check: c.label }));
+        const files = nsSlotFiles(d.key);
+        if (files.length === 0) return [];
+        return d.checks
+          .filter(c => c.required && !files.some(f => f.checks[c.key]))
+          .map(c => ({ docLabel: d.label, check: c.label }));
       });
     }
 
@@ -2445,7 +2744,20 @@
           area:       has(/area|sq\.?\s*ft|sqft|square|building.*size/),
         };
       }
+      if (slot === 'expiringPremium') {
+        return {
+          premiumAmount: has(/premium|annual|policy.*amount|target/) && (has(/\$/) || /[0-9]{3,}/.test(blob)),
+        };
+      }
+      // Additional Documents has no required checks
       return {};
+    }
+    // Detect whether an arbitrary uploaded file contains target premium info
+    function nsDetectTargetPremium(parsed) {
+      const headers = (parsed.headers || []).map(h => String(h).toLowerCase()).join('|');
+      const text    = (parsed.text || '').toLowerCase();
+      const blob    = headers + ' ' + text;
+      return /target.*premium|premium.*amount|annual.*premium|acord|policy.*premium/.test(blob);
     }
 
     // High-level: take a File, parse it, route + validate, write into state.
@@ -2455,16 +2767,21 @@
         const slot   = explicitSlot || nsRouteToSlot(file, parsed);
         const checks = nsValidateAgainstChecks(slot, parsed);
         const ext    = (file.name.split('.').pop() || '').toUpperCase();
-        State.newSub.docs[slot] = {
+        const targetPremiumDetected = slot === 'additional' && nsDetectTargetPremium(parsed);
+        // Append to the slot's file array so the user can attach more than
+        // one document per required slot (e.g. multiple years of loss runs
+        // delivered as separate files).
+        if (!Array.isArray(State.newSub.docs[slot])) State.newSub.docs[slot] = [];
+        State.newSub.docs[slot].push({
           name: file.name,
           size: fmtFileSize(file.size),
           ext,
           checks,
+          targetPremiumDetected,
           parsed: { headers: parsed.headers, rowCount: parsed.rows?.length || 0, type: parsed.type },
-        };
+        });
       } catch (err) {
         console.error('Parse failed:', err);
-        // Surface to user via state — slot stays empty, but we briefly stash an error
         State.newSub.lastError = `Could not parse "${file.name}": ${err.message || err}`;
       }
       render();
@@ -2499,73 +2816,46 @@
       // ---- Body content per step ----
       let bodyHTML = '';
       if (s.step === 1) {
-        // Render each required document — uploaded docs show their parse
-        // results inline; missing ones show a slim "not yet uploaded" row so
-        // the user sees the full required-doc list upfront.
+        // Per-slot upload — each slot can hold MULTIPLE files.  Slot header
+        // shows the label + status icon + "Upload File" link to add more.
+        // Each uploaded file is listed below as its own sub-row with a trash
+        // button to remove just that file.  Additional Documents → "Target
+        // Premium Detected" if any file in the slot parses a target premium.
         const docRows = NS_DOC_DEFS.map(d => {
-          const f = s.docs[d.key];
-          if (!f) {
-            return `
-              <div class="doc-row">
-                <i class="ph ph-circle ck" style="font-size:20px;color:var(--fg-muted)"></i>
-                <span class="label" style="color:var(--fg-muted)">${d.label}<span style="display:block;font-size:11px;margin-top:2px">Required: ${d.checks.filter(c => c.required).map(c => c.label).join(', ')}</span></span>
-                <span style="color:var(--fg-muted);font-size:12px">Not uploaded</span>
-                <span></span>
-              </div>
-            `;
-          }
-          const docPassed = nsDocPassed(d.key);
-          const checksHTML = d.checks.map(c => {
-            const ok = f.checks[c.key];
-            const colorClass = ok ? '' : (c.required ? 'is-missing' : '');
-            const ico = ok ? 'ph-check-circle-fill' : (c.required ? 'ph-x-circle-fill' : 'ph-circle');
-            const color = ok ? 'var(--ok)' : (c.required ? 'var(--err)' : 'var(--fg-muted)');
-            return `
-              <li style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;color:${ok || !c.required ? 'var(--fg)' : 'var(--err)'}">
-                <i class="ph ${ico}" style="font-size:14px;color:${color}"></i>
-                ${c.label}${ok ? '' : (c.required ? ' — not detected' : '')}
-              </li>
-            `;
-          }).join('');
-          return `
-            <div class="doc-row ${docPassed ? '' : 'is-missing'}" style="grid-template-columns: 24px 1fr auto auto; align-items:start">
-              <i class="ph ${docPassed ? 'ph-check-circle-fill ck' : 'ph-warning-fill ck is-missing'}" style="font-size:20px;margin-top:2px"></i>
-              <div>
-                <div class="label" style="${docPassed ? '' : 'color:var(--err);font-weight:500'}">${d.label}${docPassed && d.key === 'targetPremium' ? ' Detected' : ''}</div>
-                <ul style="list-style:none;padding:0;margin:6px 0 0">${checksHTML}</ul>
-              </div>
+          const files       = nsSlotFiles(d.key);
+          const hasFiles    = files.length > 0;
+          const docPassed   = hasFiles && (d.checks.length === 0 ? true : nsDocPassed(d.key));
+          const hasDetected = d.key === 'additional' && files.some(f => f.targetPremiumDetected);
+          const displayLabel = hasDetected ? 'Target Premium Detected' : d.label;
+          const ico = !hasFiles ? 'ph-circle' : (docPassed ? 'ph-check-circle-fill' : 'ph-warning-fill');
+          const iconColor = !hasFiles ? 'var(--fg-muted)' : (docPassed ? 'var(--ok)' : 'var(--err)');
+          const fileRows = files.map((f, i) => `
+            <div class="doc-file-row">
               <span class="file">
-                <span class="badge ${d.ext.toLowerCase()}">${d.ext}</span>
+                <span class="badge ${(f.ext || '').toLowerCase()}">${f.ext}</span>
                 <span class="meta"><span class="name">${f.name}</span><span class="size">${f.size}</span></span>
               </span>
-              <span style="display:inline-flex;gap:4px;align-items:center">
-                ${docPassed ? '' : `<button class="text-btn" data-reupload-doc="${d.key}" style="font-size:12px;color:var(--info);padding:4px 6px"><i class="ph ph-upload-simple" style="font-size:12px"></i> Re-upload</button>`}
-                <button class="trash" data-remove-doc="${d.key}" title="Remove"><i class="ph ph-trash" style="font-size:16px"></i></button>
-              </span>
+              <button class="trash" data-remove-file="${d.key}:${i}" title="Remove file"><i class="ph ph-trash" style="font-size:16px"></i></button>
+            </div>
+          `).join('');
+          return `
+            <div class="doc-slot ${docPassed ? '' : (hasFiles ? 'is-missing' : '')}">
+              <div class="doc-slot-head">
+                <i class="ph ${ico}" style="font-size:20px;color:${iconColor}"></i>
+                <span class="label" style="${hasFiles && !docPassed ? 'color:var(--err);font-weight:500' : ''}">${displayLabel}${files.length > 1 ? ` <span style="color:var(--fg-muted);font-weight:400">· ${files.length} files</span>` : ''}</span>
+                <a class="upload-link" data-upload-slot="${d.key}">${hasFiles ? 'Upload File' : 'Upload File'}</a>
+              </div>
+              ${hasFiles ? `<div class="doc-slot-files">${fileRows}</div>` : ''}
             </div>
           `;
         }).join('');
-        const hasAny = NS_DOC_DEFS.some(d => s.docs[d.key]);
-        const banner = allUp && !allValid
-          ? `<div style="margin-top:var(--sp-3);padding:var(--sp-3) var(--sp-4);background:var(--err-bg, #fde7e7);border-radius:var(--r-md);font-size:13px;color:var(--err);display:flex;gap:8px;align-items:flex-start">
-              <i class="ph ph-warning-fill" style="font-size:16px;flex:0 0 16px;margin-top:1px"></i>
-              <span>${nsFailedChecks().length} required check${nsFailedChecks().length === 1 ? '' : 's'} failed. Re-upload the flagged documents to proceed.</span>
-            </div>`
-          : '';
         bodyHTML = `
-          <div class="drop-zone" id="ns-drop">
-            <div class="upload-ico"><i class="ph ph-upload-simple" style="font-size:24px"></i></div>
-            <div class="copy"><a id="ns-pick">Select from device</a> or drag and drop</div>
-            <span class="req">Accepted: .csv, .xlsx, .pdf  ·  Required: 5 Years of Loss Runs · SOV  (Target Premium entered in next step)</span>
-            <input type="file" id="ns-file-input" multiple accept=".csv,.tsv,.xlsx,.xls,.pdf" style="display:none"/>
-          </div>
           <div class="doc-list">
             <div class="doc-head">Required Documents</div>
             ${docRows}
           </div>
           ${s.lastError ? `<div style="margin-top:var(--sp-3);padding:var(--sp-3) var(--sp-4);background:var(--err-bg, #fde7e7);border-radius:var(--r-md);font-size:13px;color:var(--err)">${s.lastError}</div>` : ''}
-          ${banner}
-          <input type="file" id="ns-slot-input" accept=".csv,.tsv,.xlsx,.xls,.pdf" style="display:none"/>
+          <input type="file" id="ns-slot-input" multiple accept=".csv,.tsv,.xlsx,.xls,.pdf" style="display:none"/>
         `;
       } else if (s.step === 2) {
         bodyHTML = `
@@ -2580,9 +2870,6 @@
           <div class="ns-field"><i class="ph ph-storefront ns-ico"></i>
             <input id="ns-business" type="text" placeholder="Business name" value="${s.fields.businessName}"/>
           </div>
-          <div class="ns-field"><i class="ph ph-identification-card ns-ico"></i>
-            <input id="ns-appid" type="text" placeholder="Application ID" value="${s.fields.appId}"/>
-          </div>
           <div class="ns-field"><i class="ph ph-calendar ns-ico"></i>
             <input id="ns-eff" type="date" placeholder="Target Effective Date" value="${s.fields.effDate}"/>
           </div>
@@ -2592,13 +2879,10 @@
           <div class="ns-field"><i class="ph ph-currency-dollar ns-ico"></i>
             <input id="ns-premium" type="text" placeholder="Target Premium" value="${s.fields.targetPremium}"/>
           </div>
-          <div class="ns-field"><i class="ph ph-shield ns-ico"></i>
-            <select id="ns-product">
-              <option value="" ${!s.fields.product ? 'selected' : ''}>Product Desired</option>
-              <option ${s.fields.product === 'GL' ? 'selected' : ''}>GL</option>
-              <option ${s.fields.product === 'GL + Umbrella' ? 'selected' : ''}>GL + Umbrella</option>
-              <option ${s.fields.product === 'Property' ? 'selected' : ''}>Property</option>
-            </select>
+          <!-- Notes textarea — 120 char limit per Figma 78:28931 -->
+          <div class="ns-textarea">
+            <textarea id="ns-notes" placeholder="Add Notes" maxlength="120" rows="4">${(s.fields.notes || '').replace(/</g,'&lt;')}</textarea>
+            <span class="ns-counter">${(s.fields.notes || '').length} / 120</span>
           </div>
         `;
       } else {
@@ -2661,8 +2945,8 @@
     function openNewSubmission() {
       State.newSub = {
         open: true, step: 1,
-        docs: { lossRuns: null, sov: null },
-        fields: { tenant: '', businessName: '', appId: '', effDate: '', needBy: '', targetPremium: '', product: '' },
+        docs: { lossRuns: [], sov: [], expiringPremium: [], additional: [] },
+        fields: { tenant: '', businessName: '', effDate: '', needBy: '', targetPremium: '', notes: '' },
       };
       render();
     }
@@ -2670,6 +2954,66 @@
       State.newSub.open = false;
       render();
     }
+
+    /* ---- Underwriter Decision modal ---- */
+    const UW_DECLINE_REASONS = ['Need more info','Loss history','Capacity','Outside appetite','Data quality','Other'];
+    function openUwDecision() {
+      const ind = getBDEIndication();
+      State.uwDecision = {
+        open: true, mode: 'approve',
+        declineReason: '',
+        notes: '',
+        approveAmount: ind.selected,
+      };
+      render();
+    }
+    function closeUwDecision() { State.uwDecision.open = false; render(); }
+    function renderUwDecision() {
+      const d = State.uwDecision;
+      if (!d.open) return '';
+      const amount = (d.approveAmount || 0).toLocaleString('en-US');
+      const isApprove = d.mode === 'approve';
+      const isDecline = d.mode === 'decline';
+      const canConfirm = isApprove || (isDecline && d.declineReason);
+      const reasonsHTML = UW_DECLINE_REASONS.map(r => {
+        const sel = d.declineReason === r;
+        return `
+          <button class="uw-reason ${sel ? 'is-selected' : ''}" data-uw-reason="${r}">
+            <span class="radio ${sel ? 'is-on' : ''}"></span>
+            <span>${r}</span>
+          </button>
+        `;
+      }).join('');
+      return `
+        <div class="modal-overlay" id="uw-overlay">
+          <div class="modal-card" style="max-width:560px" onclick="event.stopPropagation()">
+            <div class="modal-head">
+              <div><h2>Underwriter Decision</h2></div>
+              <button class="modal-close" id="uw-close"><i class="ph ph-x" style="font-size:18px"></i></button>
+            </div>
+            <div class="modal-body" style="padding-bottom:var(--sp-3)">
+              <div class="uw-mode-row">
+                <button class="uw-pill ${isApprove ? 'is-on' : ''}" data-uw-mode="approve">Approved $${amount}</button>
+                <button class="uw-pill is-decline ${isDecline ? 'is-on' : ''}" data-uw-mode="decline">Decline</button>
+              </div>
+              ${isDecline ? `<div class="uw-reasons">${reasonsHTML}</div>` : ''}
+              <div class="ns-textarea" style="margin-top:var(--sp-3)">
+                <textarea id="uw-notes" placeholder="Add Notes" maxlength="120" rows="4">${(d.notes || '').replace(/</g,'&lt;')}</textarea>
+                <span class="ns-counter">${(d.notes || '').length} / 120</span>
+              </div>
+            </div>
+            <div class="modal-foot">
+              <div class="left"></div>
+              <div class="right">
+                <button class="text-btn" id="uw-cancel">Cancel</button>
+                <button class="btn btn-primary" id="uw-confirm" ${canConfirm ? '' : 'disabled'}>${isApprove ? 'Approve & Quote' : 'Confirm Decline'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
 
     function renderHome() {
       // Today = error red; future ISO date = muted grey
@@ -3009,10 +3353,10 @@
       // same derivation works whether it's BDE Florida or a synthesized row.
       const ind = getBDEIndication();
       rec.stats = [
-        { label:'Selected Premium',    value: fmtUSD(ind.selected),       kind:'ok'   },
-        { label:'Target Premium',      value: fmtUSD(ind.premIndication), kind:''     },
-        { label:'Expected Lost Ratio', value: ind.expectedLRPct,          kind:'ok'   },
-        { label:'Parsed Confident',    value:'60%',                       kind:'warn' },
+        { label:'Calculated (Selected Premium)', value: fmtUSD(ind.selected),       kind:'ok'   },
+        { label:'Target Premium',                value: fmtUSD(ind.premIndication), kind:''     },
+        { label:'Expected Lost Ratio',           value: ind.expectedLRPct,          kind:'ok'   },
+        { label:'Parsed Confident',              value:'60%',                       kind:'warn' },
       ];
       const stats = rec.stats;
       const tlCount = (rec.timeline || []).length;
@@ -3048,7 +3392,7 @@
               <span class="count">${commentCount}</span>
             </button>
             <div class="status-menu-wrap">
-              <button class="btn btn-primary" id="status-update-btn"><span>Status Update</span><i class="ph ph-caret-down" style="font-size:12px"></i></button>
+              <button class="btn btn-primary" id="make-decision-btn"><span>Make Decision</span></button>
               ${State.statusMenuOpen ? `
                 <div class="status-menu" onclick="event.stopPropagation()">
                   ${STATUS_OPTIONS.map(o => `
@@ -3060,19 +3404,38 @@
           </div>
         </div>
 
-        <div class="stat-strip">
-          ${stats.map(c => `
-            <div class="stat-cell ${c.kind || ''}">
-              <span class="label">${c.label}</span>
-              <span class="value">${c.value}</span>
+        <div class="detail-sticky">
+          <div class="stat-strip">
+            <div class="stat-metrics">
+              ${stats.map(c => `
+                <div class="stat-cell ${c.kind || ''}">
+                  <span class="label">${c.label}</span>
+                  <span class="value">${c.value}</span>
+                </div>
+              `).join('')}
             </div>
-          `).join('')}
-        </div>
+            <div class="stat-triggers">
+              <div class="trig-row"><span class="lbl">Large Loss Influence <i class="ph ph-info info-ico" title="Refer to UW MGR if large losses have an outsized impact on the indication (uncapped vs. capped method more than 2x difference)."></i></span><span class="pill-ok">OK TO BIND</span></div>
+              <div class="trig-row"><span class="lbl">Claim data Credibility <i class="ph ph-info info-ico" title="Refer when total reported claims are too few for the BF method to be credible (typically < 30 claims over 5y)."></i></span><span class="pill-ok">OK TO BIND</span></div>
+              <div class="trig-row"><span class="lbl">Age of Loss Runs <i class="ph ph-info info-ico" title="Refer if the valuation date is more than 120 days stale; reserves may have developed materially."></i></span><span class="pill-ok">OK TO BIND</span></div>
+              <div class="trig-row"><span class="lbl">Orphan Claims <i class="ph ph-info info-ico" title="Refer if any claim's accident year falls outside the 5-year matrix; investigate before binding."></i></span><span class="pill-ok">OK TO BIND</span></div>
+            </div>
+            <!-- Sticky-only actions: Status pill + comment count + Status Update.
+                 Hidden until .is-detail-scrolled so the original detail-actions
+                 (above) still render in the unscrolled state. -->
+            <div class="sticky-actions">
+              <span class="status-label">Status:</span>
+              <span class="pill ${rec.statusKind}">${rec.status}</span>
+              <button class="comment-btn"><i class="ph ph-chat-circle" style="font-size:16px"></i><span class="count">${commentCount}</span></button>
+              <button class="btn btn-primary" id="make-decision-btn-sticky"><span>Make Decision</span></button>
+            </div>
+          </div>
 
-        <div class="tabs">
-          <button class="tab ${State.tab==='indication'?'active':''}" data-tab="indication">Indication</button>
-          <button class="tab ${State.tab==='loss-run'?'active':''}" data-tab="loss-run">LossRun</button>
-          <button class="tab ${State.tab==='quote'?'active':''}" data-tab="quote">Quote <span class="badge">1</span></button>
+          <div class="tabs">
+            <button class="tab ${State.tab==='indication'?'active':''}" data-tab="indication">Indication</button>
+            <button class="tab ${State.tab==='loss-run'?'active':''}" data-tab="loss-run">Claims</button>
+            <button class="tab ${State.tab==='quote'?'active':''}" data-tab="quote">Quote <span class="badge">1</span></button>
+          </div>
         </div>
       `;
     }
@@ -3114,16 +3477,9 @@
                       ${attachments.length ? `
                         <div class="ad-attach">
                           <div class="ad-attach-head">
-                            <span><b>Attachments</b> <span class="muted">· ${attachments.length} files</span></span>
+                            <span><b>Attachments</b></span>
                             <a class="btn btn-sm" href="bde-files/BDE_Florida_Original_Files.zip" download="BDE_Florida_Original_Files.zip">Download All</a>
                           </div>
-                          ${attachments.map(a => `
-                            <a class="ad-file" ${a.href ? `href="${a.href}" download` : ''}>
-                              <i class="ph ${a.type === 'xlsx' ? 'ph-file-xls' : 'ph-file-pdf'}" style="font-size:18px;color:${a.type==='xlsx'?'var(--ok)':'var(--err)'}"></i>
-                              <span class="ad-file-name">${a.name}</span>
-                              <span class="ad-file-meta">${a.size || ''}</span>
-                            </a>
-                          `).join('')}
                         </div>
                       ` : ''}
                     </div>
@@ -3368,14 +3724,19 @@
         </div>
       `;
       return `
-        ${bdeSection('indication',  'Indication',                          indSec)}
-        ${bdeSection('policy',      'Policy Information',                  polSec)}
-        ${Number(BDE.indication.deductible) > 0
-          ? bdeSection('deductible', 'Deductible Analysis', renderBDEDeductibleAnalysisBody())
-          : ''}
-        ${bdeSection('ujc',         'Underwriting Judgment Considerations', ujcSec)}
-        ${bdeSection('pricing',     'Pricing Assumptions',                  priceSec)}
-        ${bdeSection('triggers',    'Referral Triggers',                    trigSec)}
+        <div class="bde-sections">
+          <div class="section-row">
+            ${bdeSection('indication', 'Indication',                            indSec)}
+            ${bdeSection('ujc',        'Underwriting Judgment Considerations',  ujcSec)}
+          </div>
+          <div class="section-row">
+            ${bdeSection('policy',     'Policy Information',                    polSec)}
+            ${bdeSection('pricing',    'Pricing Assumptions',                   priceSec)}
+          </div>
+          ${Number(BDE.indication.deductible) > 0
+            ? bdeSection('deductible', 'Deductible Analysis', renderBDEDeductibleAnalysisBody())
+            : ''}
+        </div>
       `;
     }
 
@@ -3790,7 +4151,7 @@
       else hideToast(true);
       // Render the New Submission modal into a dedicated overlay container so
       // it sits above page content but participates in the same render cycle.
-      $('#ns-root').innerHTML = renderNewSubmission();
+      $('#ns-root').innerHTML = renderNewSubmission() + renderUwDecision();
 
       // Mobile-nav class toggle on the shell
       document.querySelector('.shell')?.classList.toggle('is-nav-open', !!State.mobileNavOpen);
@@ -3811,11 +4172,72 @@
     }
 
     function wireEvents() {
+      // Make Decision (replaces Status Update) — both the title-row button
+      // and the sticky-bar duplicate open the Underwriter Decision modal.
+      const mdBtn  = $('#make-decision-btn');
+      const mdBtn2 = $('#make-decision-btn-sticky');
+      if (mdBtn)  mdBtn .onclick = (e) => { e.stopPropagation(); openUwDecision(); };
+      if (mdBtn2) mdBtn2.onclick = (e) => { e.stopPropagation(); openUwDecision(); };
+      // Underwriter Decision modal — overlay backdrop close, close X, mode
+      // toggle pills, decline-reason selection, notes textarea, footer btns
+      const uwOverlay = $('#uw-overlay');
+      if (uwOverlay) uwOverlay.onclick = () => closeUwDecision();
+      const uwClose  = $('#uw-close');  if (uwClose)  uwClose .onclick = (e) => { e.stopPropagation(); closeUwDecision(); };
+      const uwCancel = $('#uw-cancel'); if (uwCancel) uwCancel.onclick = (e) => { e.stopPropagation(); closeUwDecision(); };
+      $$('[data-uw-mode]').forEach(b => b.onclick = (e) => {
+        e.stopPropagation();
+        State.uwDecision.mode = b.dataset.uwMode;
+        if (State.uwDecision.mode === 'approve') State.uwDecision.declineReason = '';
+        render();
+      });
+      $$('[data-uw-reason]').forEach(b => b.onclick = (e) => {
+        e.stopPropagation();
+        State.uwDecision.declineReason = b.dataset.uwReason;
+        render();
+      });
+      const uwNotes = $('#uw-notes');
+      if (uwNotes) uwNotes.oninput = () => {
+        State.uwDecision.notes = uwNotes.value;
+        const counter = uwNotes.parentElement.querySelector('.ns-counter');
+        if (counter) counter.textContent = `${uwNotes.value.length} / 120`;
+      };
+      const uwConfirm = $('#uw-confirm');
+      if (uwConfirm && !uwConfirm.disabled) uwConfirm.onclick = (e) => {
+        e.stopPropagation();
+        const d = State.uwDecision;
+        const rec = RECORDS[State.currentId] || BDE;
+        if (d.mode === 'approve') {
+          rec.status = 'Quoted/Approved'; rec.statusKind = 'success';
+        } else {
+          rec.status = 'Rejected'; rec.statusKind = 'error';
+        }
+        closeUwDecision();
+      };
+
       // Mobile nav — hamburger opens, backdrop or nav-item click closes
       const mobileBtn = $('#mobile-nav-toggle');
       if (mobileBtn) mobileBtn.onclick = (e) => { e.stopPropagation(); State.mobileNavOpen = !State.mobileNavOpen; render(); };
       const backdrop = $('#mobile-nav-backdrop');
       if (backdrop) backdrop.onclick = () => { State.mobileNavOpen = false; render(); };
+
+      // Detail page: collapse the topbar AND the surrounding padding once
+      // the user scrolls past the breadcrumb + title so the sticky stat-strip
+      // sits flush against the very top of the viewport.
+      const dm      = document.querySelector('.detail-main');
+      const surface = document.querySelector('.surface');
+      const appBody = document.querySelector('.app-body');
+      if (dm && surface) {
+        const apply = () => {
+          const on = dm.scrollTop > 60;
+          surface.classList.toggle('is-detail-scrolled', on);
+          if (appBody) appBody.classList.toggle('is-detail-scrolled', on);
+        };
+        dm.onscroll = apply;
+        apply();
+      } else {
+        if (surface) surface.classList.remove('is-detail-scrolled');
+        if (appBody) appBody.classList.remove('is-detail-scrolled');
+      }
       // Sidebar collapse toggle
       const collapseBtn = $('#sidebar-collapse');
       if (collapseBtn) collapseBtn.onclick = () => { State.sidebarCollapsed = !State.sidebarCollapsed; render(); };
@@ -3835,32 +4257,22 @@
       if (overlay) overlay.onclick = () => closeNewSubmission();
       const closeX = $('#ns-close');     if (closeX)     closeX.onclick = (e) => { e.stopPropagation(); closeNewSubmission(); };
       const cancel = $('#ns-cancel');    if (cancel)     cancel.onclick = (e) => { e.stopPropagation(); closeNewSubmission(); };
-      // ---- Real file upload wiring ----
-      const fileInput = $('#ns-file-input');
+      // ---- Per-slot file upload wiring ----
+      // Each slot can hold multiple files; "Upload File" opens a slot-scoped
+      // picker (accept=multiple) and the trash on each file removes just
+      // that file from the slot's array.
       const slotInput = $('#ns-slot-input');
-      const pick      = $('#ns-pick');
-      if (pick && fileInput) pick.onclick = (e) => { e.stopPropagation(); fileInput.click(); };
-      if (fileInput) fileInput.onchange = (e) => {
-        State.newSub.lastError = null;
-        nsHandleFiles(e.target.files);
-        e.target.value = ''; // allow re-selecting the same file
-      };
-      // Drag-and-drop on the drop zone
-      const drop = $('#ns-drop');
-      if (drop) {
-        drop.ondragover = (e) => { e.preventDefault(); drop.style.background = 'var(--bg-accent)'; };
-        drop.ondragleave = ()  => { drop.style.background = ''; };
-        drop.ondrop = (e) => {
-          e.preventDefault(); drop.style.background = '';
-          State.newSub.lastError = null;
-          nsHandleFiles(e.dataTransfer.files);
-        };
-      }
-      $$('[data-remove-doc]').forEach(b => b.onclick = (e) => { e.stopPropagation(); State.newSub.docs[b.dataset.removeDoc] = null; render(); });
-      // Re-upload to a specific slot via a slot-scoped file picker
-      $$('[data-reupload-doc]').forEach(b => b.onclick = (e) => {
+      $$('[data-remove-file]').forEach(b => b.onclick = (e) => {
         e.stopPropagation();
-        const slot = b.dataset.reuploadDoc;
+        const [slot, idxStr] = b.dataset.removeFile.split(':');
+        const i = Number(idxStr);
+        const arr = State.newSub.docs[slot];
+        if (Array.isArray(arr) && i >= 0 && i < arr.length) arr.splice(i, 1);
+        render();
+      });
+      $$('[data-upload-slot]').forEach(b => b.onclick = (e) => {
+        e.stopPropagation();
+        const slot = b.dataset.uploadSlot;
         if (!slotInput) return;
         slotInput.onchange = (ev) => {
           State.newSub.lastError = null;
@@ -3877,16 +4289,16 @@
         const f = {
           tenant:        ($('#ns-tenant')?.value || ''),
           businessName:  ($('#ns-business')?.value || ''),
-          appId:         ($('#ns-appid')?.value || ''),
           effDate:       ($('#ns-eff')?.value || ''),
           needBy:        ($('#ns-needby')?.value || ''),
           targetPremium: ($('#ns-premium')?.value || ''),
-          product:       ($('#ns-product')?.value || 'GL'),
+          notes:         ($('#ns-notes')?.value || ''),
         };
         // Prepend the new submission so it appears at the top of Growth
         GROWTH_ROWS.unshift({
-          type:'Sub', product: (f.product || 'GL').split(' ')[0],
-          name: f.businessName || 'New Submission', sub: f.appId || 'Pending review',
+          type:'Sub', product:'GL',
+          name: f.businessName || 'New Submission',
+          sub: f.notes ? f.notes.slice(0, 60) : 'Pending review',
           status:'New', kind:'purple',
           owner:'Hunt Carroll', ownerAv:'orange',
           premium: Number(String(f.targetPremium).replace(/[^0-9.]/g, '')) || 0,
@@ -3898,13 +4310,20 @@
         render();
       };
       // Persist form-field edits between renders
-      ['tenant','business','appid','eff','needby','premium','product'].forEach(k => {
+      ['tenant','business','eff','needby','premium'].forEach(k => {
         const el = $('#ns-' + k);
         if (el) el.oninput = el.onchange = () => {
-          const map = { tenant:'tenant', business:'businessName', appid:'appId', eff:'effDate', needby:'needBy', premium:'targetPremium', product:'product' };
+          const map = { tenant:'tenant', business:'businessName', eff:'effDate', needby:'needBy', premium:'targetPremium' };
           State.newSub.fields[map[k]] = el.value;
         };
       });
+      // Notes textarea — live update model + counter without losing caret
+      const notesEl = $('#ns-notes');
+      if (notesEl) notesEl.oninput = () => {
+        State.newSub.fields.notes = notesEl.value;
+        const counter = document.querySelector('.ns-counter');
+        if (counter) counter.textContent = `${notesEl.value.length} / 120`;
+      };
 
 
       // Nav clicks — also dismiss the mobile overlay
