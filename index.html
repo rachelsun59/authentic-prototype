@@ -627,11 +627,16 @@
       gap: var(--sp-3);
       align-items: center;
       padding: var(--sp-3) var(--sp-4);
+      border: none;
       border-bottom: 1px solid var(--border-soft);
+      background: transparent;
+      text-align: left;
+      width: 100%;
+      cursor: pointer;
+      transition: background var(--transition-base);
     }
     .wrow:last-child { border-bottom: 0; }
-    .wrow { transition: background var(--transition-base); }
-    .wrow:hover { background: var(--bg-accent); cursor: pointer; }
+    .wrow:hover { background: var(--bg-accent); }
     .wrow .name { font-size: 14px; color: var(--fg); }
     .wrow .premium { font-size: 14px; line-height: 16px; color: var(--fg); font-weight: 500; }
 
@@ -641,8 +646,15 @@
       grid-template-columns: 20px 1fr;
       gap: var(--sp-2);
       padding: var(--sp-3) var(--sp-4);
+      border: none;
       border-bottom: 1px solid var(--border-soft);
+      width: 100%;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      transition: background var(--transition-base);
     }
+    .trow:hover { background: var(--bg); }
     .trow:last-child { border-bottom: 0; }
     .trow .head {
       display: flex; align-items: baseline; gap: var(--sp-2);
@@ -1166,6 +1178,7 @@
     .activity-drawer {
       flex: 0 0 400px;
       width: 400px;
+      position: relative;
       height: 100%;
       align-self: stretch;
       border-left: 1px solid var(--border);
@@ -1173,6 +1186,17 @@
       display: flex; flex-direction: column;
       overflow: hidden;
     }
+    .ad-resize-handle {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      cursor: col-resize;
+      z-index: 10;
+      background: transparent;
+      transition: background 0.15s;
+    }
+    .ad-resize-handle:hover,
+    .ad-resize-handle.is-dragging { background: var(--primary, #640b0b); opacity: 0.25; }
     .ad-head {
       display: flex; align-items: center; justify-content: space-between;
       padding: var(--sp-3) var(--sp-4);
@@ -1297,7 +1321,8 @@
     .tbl-wrap {
       border: 1px solid var(--border);
       border-radius: var(--r-lg);
-      overflow: hidden;
+      overflow-x: auto;
+      overflow-y: hidden;
       background: var(--surface);
     }
     .tbl-foot {
@@ -1470,18 +1495,6 @@
     .tab.active { background: var(--surface); color: var(--fg); box-shadow: var(--shadow-sm); }
     .tab:hover { color: var(--fg); }
 
-    /* Indication banner */
-    .ind-banner {
-      display: flex; align-items: center; gap: var(--sp-2);
-      padding: var(--sp-3) var(--sp-4);
-      background: var(--info-bg); color: var(--info);
-      border-radius: var(--r-md);
-      margin: var(--sp-5) 0 var(--sp-3);
-      font-size: 13px; line-height: 16px;
-    }
-    .ind-banner .links { margin-left: auto; display: inline-flex; gap: var(--sp-3); }
-    .ind-banner a { color: var(--info); font-weight: 500; text-decoration: underline; cursor: pointer; }
-
     /* Section card — used by Indication roll-up, Loss run detail, Indication form, Adjust application, Quote */
     .sec {
       background: var(--surface);
@@ -1520,7 +1533,7 @@
     .xtable td.gut { color: var(--fg-muted); width: 24px; text-align: right; }
     .xtable tbody tr:hover td { background: var(--bg); }
     .xtable tr.total td { background: var(--bg); font-weight: 500; border-top: 1px solid var(--border-soft); }
-    .xtable td.cap-hit { background: #fff4d8; }
+    .xtable td.cap-hit { background: transparent; }
 
     /* Excel-grid styling — vertical dividers between every column,
        a heavier bottom border on the header row, and a heavier top
@@ -1570,15 +1583,80 @@
     }
     .xtable td.cell-edit input.cell-input::placeholder { color: var(--fg-muted); font-style: italic; }
     /* Per-row delete button living in the gutter */
-    .xtable td.gut .row-del {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 18px; height: 18px; padding: 0;
-      background: transparent; border: 1px solid transparent; border-radius: var(--r-sm);
-      color: var(--fg-muted); cursor: pointer; opacity: 0;
-      transition: opacity var(--transition-base), background var(--transition-base), color var(--transition-base);
+    .xtable td.gut { text-align: center; }
+    .xtable td.gut .row-chk,
+    .xtable th.gut input[type=checkbox] { cursor: pointer; accent-color: var(--primary, #640b0b); width: 14px; height: 14px; }
+    .xtable tr.row-selected td { background: #fdf3f3; }
+    .xtable tr.row-selected td.cell-edit { background: #fae8e8; }
+    .btn-danger { color: var(--err, #b91c1c); border-color: var(--err, #b91c1c); }
+    .btn-danger:hover { background: var(--err-bg, #fde7e7); }
+
+    /* Claims floating toolbar */
+    .claims-float-wrap {
+      position: sticky;
+      bottom: var(--sp-4);
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+      margin-top: var(--sp-4);
     }
-    .xtable tr:hover .row-del { opacity: 1; }
-    .xtable td.gut .row-del:hover { background: var(--err-bg, #fde7e7); color: var(--err); border-color: var(--err); }
+    .claims-float-bar {
+      pointer-events: all;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+      white-space: nowrap;
+    }
+    .cfb-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--fg);
+      min-width: 100px;
+    }
+    .cfb-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    .cfb-group { display: inline-flex; gap: 4px; align-items: center; }
+    .cfb-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      color: var(--fg);
+      cursor: pointer;
+      font-size: 14px;
+      transition: background var(--transition-base), color var(--transition-base), border-color var(--transition-base);
+    }
+    .cfb-btn:hover:not(:disabled) { background: var(--bg); }
+    .cfb-btn--danger:hover { background: var(--err-bg, #fde7e7); color: var(--err); border-color: var(--err); }
+    .cfb-btn--dim { opacity: 0.35; cursor: not-allowed; }
+    .cfb-btn-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 8px;
+      height: 24px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      color: var(--fg);
+      cursor: pointer;
+      font-size: 13px;
+      transition: background var(--transition-base);
+    }
+    .cfb-btn-text:hover { background: var(--bg); }
 
     /* Indication form table — accordion sections with key/value rows.
        Per Figma 73:21263 the head is a button that collapses/expands the body.
@@ -2143,13 +2221,14 @@
       // Growth list — sort + filters + open popover
       sort: { key: null, dir: 'asc' },          // null = received-desc default
       filters: {
-        type: [], product: [], status: [], owner: [], broker: [],
+        type: [], product: [], status: [], owner: [], broker: [], createdBy: [],
         premium: null,    // 'lt-50' | 'gte-50' | 'gte-100' | null
         q: '',
       },
       openFilter: null,                          // column key whose popover is open
       // Submission detail — drawer + dropdown state
       activityOpen: false,                       // activity-timeline drawer
+      drawerWidth: 400,                          // resizable activity drawer width (px)
       statusMenuOpen: false,                     // status update dropdown
       // Collapsed accordion sections on the BDE indication form (keyed by id)
       bdeCollapsed: new Set(),
@@ -2163,6 +2242,8 @@
       sidebarCollapsed: false,
       // Mobile-only: when true, the sidebar slides in as a full-height overlay
       mobileNavOpen: false,
+      // Claims tab — indices of selected rows for bulk delete
+      selectedClaims: new Set(),
       // Underwriter Decision modal — opened from the "Make Decision" button
       uwDecision: { open: false, mode: 'approve', declineReason: '', notes: '' },
       // "New Submission" modal flow — Figma 38:20599 / 38:21469 / 38:25386 /
@@ -2189,32 +2270,32 @@
     ];
 
     const HOME_THREADS = [
-      { author:'Bobby Vo', avatar:'blue', initials:'BV', what:'Mentioned you in Submission#', when:'Just now',  body:"Let me know if you need anything else <span class='at'>@Hunt</span>" },
-      { author:'Bobby Vo', avatar:'blue', initials:'BV', what:'Mentioned you in Submission#', when:'2m ago',   body:"When will we have the final quote <span class='at'>@Hunt</span>" },
-      { author:'Bobby Vo', avatar:'blue', initials:'BV', what:'Mentioned you in Submission#', when:'20m ago',  body:"This is ready! <span class='at'>@Hunt</span>" },
+      { author:'Bobby Vo', avatar:'blue', initials:'BV', id:'bde',     what:'Mentioned you in BDE Florida',           when:'Just now',  body:"Let me know if you need anything else <span class='at'>@Hunt</span>" },
+      { author:'Bobby Vo', avatar:'blue', initials:'BV', id:'borg',    what:'Mentioned you in Borg Restaurant Group', when:'2m ago',    body:"When will we have the final quote <span class='at'>@Hunt</span>" },
+      { author:'Bobby Vo', avatar:'blue', initials:'BV', id:'hibachi', what:'Mentioned you in Hibachi Holdings',      when:'20m ago',   body:"This is ready! <span class='at'>@Hunt</span>" },
     ];
 
     const HOME_WATCH = [
-      { name:'Iron & Oak Crossfit',  status:'Auto Renewing', kind:'purple',  premium:68000 },
-      { name:'Lighthouse Hospitality',status:'Quoted',       kind:'success', premium:68000 },
-      { name:'Hibachi Holdings LLC', status:'Quoted',        kind:'success', premium:128000 },
-      { name:'Dance Studio LLC',     status:'Quoted',        kind:'success', premium:128000 },
-      { name:'Pulse Fitness Co.',    status:'Bound',         kind:'success', premium:128000 },
-      { name:'Bellwether Bistro',    status:'Bound',         kind:'success', premium:128000 },
+      { name:'Iron & Oak Crossfit',   status:'Auto Renewing', kind:'purple',  premium:68000,  id:'iron-oak-crossfit' },
+      { name:'Lighthouse Hospitality',status:'Quoted',        kind:'success', premium:68000  },
+      { name:'Hibachi Holdings LLC',  status:'Quoted',        kind:'success', premium:128000, id:'hibachi' },
+      { name:'Dance Studio LLC',      status:'Quoted',        kind:'success', premium:128000 },
+      { name:'Pulse Fitness Co.',     status:'Bound',         kind:'success', premium:128000, id:'pulse-fitness-co' },
+      { name:'Bellwether Bistro',     status:'Bound',         kind:'success', premium:128000, id:'sub-bellwether-bistro' },
     ];
 
     const GROWTH_ROWS = [
-      { type:'Sub', product:'GL', name:'BDE Florida, LLC',       sub:'27 Taco Bell locations · FL',  status:'New',       kind:'purple',  owner:'Hunt Carroll', ownerAv:'orange', premium:290000, broker:'HUB International', eff:'2026-06-29', recv:'2026-05-22', needBy:'Today',      id:'bde' },
-      { type:'Sub', product:'GL', name:'Borg Restaurant Group',  sub:'Jacko@gmail.com',  status:'Reviewing',  kind:'info',    owner:'Hunt Carroll', ownerAv:'orange', premium:184500, broker:'HUBCA',        eff:'2026-07-01', recv:'2026-05-01', needBy:'2026-06-15', id:'borg' },
-      { type:'Sub', product:'GL', name:'Hibachi Holdings LLC',   sub:'Jacko@gmail.com',  status:'Parsing',    kind:'warn',    owner:'Hunt Carroll', ownerAv:'orange', premium:184500, broker:'Borg',         eff:'2026-07-15', recv:'2026-05-15', needBy:'2026-07-01', id:'hibachi' },
-      { type:'Sub', product:'GL', name:'Pulse Fitness Co.',      sub:'Description',      status:'Needs Info', kind:'warn',    owner:'Hunt Carroll', ownerAv:'orange', premium:212500, broker:'IMA-RRMA',     eff:'2026-06-15', recv:'2026-04-15', needBy:'2026-06-01' },
-      { type:'Sub', product:'GL', name:'Bellwether Bistro',      sub:'Description',      status:'Quoted',     kind:'success', owner:'Peter Han',    ownerAv:'blue',   premium:75500,  broker:'Hilb Grocery', eff:'2026-08-01', recv:'2026-05-01', needBy:'2026-07-15' },
-      { type:'Sub', product:'GL', name:'Sunrise Yoga Studio LLC',sub:'Description',      status:'Bound',      kind:'success', owner:'Peter Han',    ownerAv:'blue',   premium:75500,  broker:'Mindbody',     eff:'2026-05-20', recv:'2026-03-20', needBy:'2026-05-20' },
-      { type:'APP', product:'GL', name:'Greenline Logistic INC', sub:'Description',      status:'Declined',   kind:'error',   owner:'Hunt Carroll', ownerAv:'orange', premium:3200,   broker:'Mindbody',     eff:'2026-05-24', recv:'2026-04-24', needBy:'2026-05-24' },
-      { type:'APP', product:'GL', name:'Iron & Oak Crossfit',    sub:'Description',      status:'Quoted',     kind:'success', owner:'Hunt Carroll', ownerAv:'orange', premium:12200,  broker:'PushPress',    eff:'2026-06-01', recv:'2026-04-01', needBy:'2026-06-01' },
-      { type:'APP', product:'GL',       name:'Bellwether Bistro',      sub:'Description',      status:'New',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:8600,   broker:'Unleashed',    eff:'2026-06-10', recv:'2026-03-10', needBy:'2026-06-10' },
-      { type:'APP', product:'Umbrella', name:'Maplewood Pilates',      sub:'Description',      status:'New',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:8600,   broker:'WithCoverage', eff:'2026-04-15', recv:'2026-02-15', needBy:'2026-04-15' },
-      { type:'APP', product:'GL',       name:'Caliber Climbing Gym',   sub:'Description',      status:'New',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:4200,   broker:'PushPress',    eff:'—',          recv:'2026-02-15', needBy:'2026-04-15' },
+      { type:'Sub', product:'GL', name:'BDE Florida, LLC',       sub:'27 Taco Bell locations · FL',  status:'New',       kind:'purple',  owner:'Hunt Carroll', ownerAv:'orange', premium:290000, broker:'HUB International', eff:'2026-06-29', recv:'2026-05-22', needBy:'Today',      id:'bde',    createdBy:'h.carroll@authentic.com' },
+      { type:'Sub', product:'GL', name:'Borg Restaurant Group',  sub:'Jacko@gmail.com',  status:'Reviewing',  kind:'info',    owner:'Hunt Carroll', ownerAv:'orange', premium:184500, broker:'HUBCA',        eff:'2026-07-01', recv:'2026-05-01', needBy:'2026-06-15', id:'borg',    createdBy:'jacko@hubca.com' },
+      { type:'Sub', product:'GL', name:'Hibachi Holdings LLC',   sub:'Jacko@gmail.com',  status:'Parsing',    kind:'warn',    owner:'Hunt Carroll', ownerAv:'orange', premium:184500, broker:'Borg',         eff:'2026-07-15', recv:'2026-05-15', needBy:'2026-07-01', id:'hibachi', createdBy:'jacko@hubca.com' },
+      { type:'Sub', product:'GL', name:'Pulse Fitness Co.',      sub:'Description',      status:'Needs Info', kind:'warn',    owner:'Hunt Carroll', ownerAv:'orange', premium:212500, broker:'IMA-RRMA',     eff:'2026-06-15', recv:'2026-04-15', needBy:'2026-06-01',              createdBy:'r.chen@imarra.com' },
+      { type:'Sub', product:'GL', name:'Bellwether Bistro',      sub:'Description',      status:'Quoted',     kind:'success', owner:'Peter Han',    ownerAv:'blue',   premium:75500,  broker:'Hilb Grocery', eff:'2026-08-01', recv:'2026-05-01', needBy:'2026-07-15',              createdBy:'p.han@authentic.com' },
+      { type:'Sub', product:'GL', name:'Sunrise Yoga Studio LLC',sub:'Description',      status:'Bound',      kind:'success', owner:'Peter Han',    ownerAv:'blue',   premium:75500,  broker:'Mindbody',     eff:'2026-05-20', recv:'2026-03-20', needBy:'2026-05-20',              createdBy:'p.han@authentic.com' },
+      { type:'APP', product:'GL', name:'Greenline Logistic INC', sub:'Description',      status:'Declined',   kind:'error',   owner:'Hunt Carroll', ownerAv:'orange', premium:3200,   broker:'Mindbody',     eff:'2026-05-24', recv:'2026-04-24', needBy:'2026-05-24',              createdBy:'h.carroll@authentic.com' },
+      { type:'APP', product:'GL', name:'Iron & Oak Crossfit',    sub:'Description',      status:'Quoted',     kind:'success', owner:'Hunt Carroll', ownerAv:'orange', premium:12200,  broker:'PushPress',    eff:'2026-06-01', recv:'2026-04-01', needBy:'2026-06-01',              createdBy:'pushpress-api' },
+      { type:'APP', product:'GL',       name:'Bellwether Bistro',      sub:'Description',      status:'New',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:8600,   broker:'Unleashed',    eff:'2026-06-10', recv:'2026-03-10', needBy:'2026-06-10',        createdBy:'k.babirad@authentic.com' },
+      { type:'APP', product:'Umbrella', name:'Maplewood Pilates',      sub:'Description',      status:'New',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:8600,   broker:'WithCoverage', eff:'2026-04-15', recv:'2026-02-15', needBy:'2026-04-15',        createdBy:'k.babirad@authentic.com' },
+      { type:'APP', product:'GL',       name:'Caliber Climbing Gym',   sub:'Description',      status:'New',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:4200,   broker:'PushPress',    eff:'—',          recv:'2026-02-15', needBy:'2026-04-15',        createdBy:'k.babirad@authentic.com' },
     ];
 
     // (Hibachi previously hand-coded here — now generated by the BDE-shape
@@ -3035,7 +3116,7 @@
       }).join('');
 
       const t = HOME_THREADS.map(c => `
-        <div class="trow">
+        <button class="trow" data-thread-go="${c.id}">
           <span class="avatar sm ${c.avatar}">${c.initials}</span>
           <div>
             <div class="head">
@@ -3045,15 +3126,15 @@
             </div>
             <div class="body">${c.body}</div>
           </div>
-        </div>
+        </button>
       `).join('');
 
       const w = HOME_WATCH.map(r => `
-        <div class="wrow">
+        <button class="wrow" data-watch-go="${r.id || ''}">
           <span class="name">${r.name}</span>
           <span class="pill ${r.kind} no-dot">${r.status}</span>
           <span class="premium">${fmtUSDk(r.premium)}</span>
-        </div>
+        </button>
       `).join('');
 
       return `
@@ -3113,8 +3194,9 @@
       { key: 'product', label: 'Product',       filter: 'multi',   filterKey: 'product', recField: 'product', valueLabel: v => v, sortable: true  },
       { key: 'name',    label: 'Business name', filter: null,                                                                       sortable: true  },
       { key: 'status',  label: 'Status',        filter: 'multi',   filterKey: 'status',  recField: 'status',  valueLabel: v => v, sortable: true  },
-      { key: 'owner',   label: 'UW Owner',      filter: 'multi',   filterKey: 'owner',   recField: 'owner',   valueLabel: v => v, sortable: true  },
-      { key: 'premium', label: 'Premium',       filter: 'premium',                                                                  sortable: true  },
+      { key: 'owner',     label: 'UW Owner',    filter: 'multi',   filterKey: 'owner',     recField: 'owner',     valueLabel: v => v, sortable: true  },
+      { key: 'createdBy', label: 'Created by',  filter: 'multi',   filterKey: 'createdBy', recField: 'createdBy', valueLabel: v => v, sortable: true  },
+      { key: 'premium',   label: 'Premium',     filter: 'premium',                                                                   sortable: true  },
       { key: 'broker',  label: 'Broker',        filter: 'multi',   filterKey: 'broker',  recField: 'broker',  valueLabel: v => v, sortable: true  },
       { key: 'eff',     label: 'Effective Date',filter: null,                                                                       sortable: true  },
       { key: 'recv',    label: 'Received',      filter: null,                                                                       sortable: true  },
@@ -3134,14 +3216,15 @@
         if (has(f.type)    && !f.type.includes(r.type))       return false;
         if (has(f.product) && !f.product.includes(r.product)) return false;
         if (has(f.status)  && !f.status.includes(r.status))   return false;
-        if (has(f.owner)   && !f.owner.includes(r.owner))     return false;
-        if (has(f.broker)  && !f.broker.includes(r.broker))   return false;
+        if (has(f.owner)     && !f.owner.includes(r.owner))         return false;
+        if (has(f.createdBy) && !f.createdBy.includes(r.createdBy)) return false;
+        if (has(f.broker)    && !f.broker.includes(r.broker))       return false;
         if (f.premium === 'gte-50'  && (r.premium || 0) <  50000)  return false;
         if (f.premium === 'gte-100' && (r.premium || 0) < 100000)  return false;
         if (f.premium === 'lt-50'   && (r.premium || 0) >= 50000)  return false;
         if (f.q) {
           const q = f.q.toLowerCase();
-          if (!(r.name + ' ' + r.broker + ' ' + r.sub).toLowerCase().includes(q)) return false;
+          if (!(r.name + ' ' + r.broker + ' ' + r.sub + ' ' + (r.createdBy || '')).toLowerCase().includes(q)) return false;
         }
         return true;
       });
@@ -3257,7 +3340,10 @@
 
     function renderGrowth() {
       const filtered = applyGrowthFilters(GROWTH_ROWS);
-      const newCount = GROWTH_ROWS.filter(r => r.status === 'New').length;
+      const pipelinePremium = filtered.reduce((sum, r) => sum + (r.premium || 0), 0);
+      const uwReviewCount   = filtered.filter(r => r.status === 'Reviewing').length;
+      const quotedCount     = filtered.filter(r => r.status === 'Quoted').length;
+      const newCount        = filtered.filter(r => r.status === 'New').length;
       const rows = filtered.map(r => `
         <tr data-open-rec="${r.id || ''}">
           <td><span class="type-tag ${r.type === 'Sub' ? 'sub' : 'app'}">${r.type}</span></td>
@@ -3268,6 +3354,7 @@
           </td>
           <td><span class="pill ${r.kind}">${r.status}</span></td>
           <td><span style="display:inline-flex;align-items:center;gap:6px"><span class="avatar sm ${r.ownerAv}">${r.owner.split(' ').map(s=>s[0]).join('').slice(0,2)}</span>${r.owner}</span></td>
+          <td>${r.createdBy || '—'}</td>
           <td>${fmtUSD(r.premium)}</td>
           <td>${r.broker}</td>
           <td>${r.eff}</td>
@@ -3277,7 +3364,7 @@
       `).join('');
 
       const hasFiltersApplied =
-        ['type','product','status','owner','broker'].some(k => (State.filters[k] || []).length > 0)
+        ['type','product','status','owner','broker','createdBy'].some(k => (State.filters[k] || []).length > 0)
         || State.filters.premium || State.filters.q;
 
       return `
@@ -3294,10 +3381,10 @@
         <div class="metric-strip">
           <div class="metric">
             <span class="label">Pipeline premium</span>
-            <span class="value">$831,200 <span class="delta"><i class="ph ph-trend-up" style="font-size:11px"></i>10k</span></span>
+            <span class="value">${fmtUSDk(pipelinePremium)}</span>
           </div>
-          <div class="metric"><span class="label">In UW review</span><span class="value">2</span></div>
-          <div class="metric"><span class="label">Quoted</span><span class="value">4</span></div>
+          <div class="metric"><span class="label">In UW review</span><span class="value">${uwReviewCount}</span></div>
+          <div class="metric"><span class="label">Quoted</span><span class="value">${quotedCount}</span></div>
           <div class="metric"><span class="label">New Submissions</span><span class="value">${newCount}</span></div>
         </div>
 
@@ -3387,6 +3474,10 @@
           <div class="detail-actions">
             <span class="status-label">Status:</span>
             <span class="pill ${rec.statusKind}">${rec.status}</span>
+            ${rec.id === 'bde'
+              ? `<a class="comment-btn" href="bde-files/GL_Indication_BDEFLORIDA_V1.4-updated.xlsx" download="GL_Indication_BDEFLORIDA_V1.4.xlsx" title="Download workbook"><i class="ph ph-download-simple" style="font-size:16px"></i></a>`
+              : `<a class="comment-btn" href="#" title="Download workbook"><i class="ph ph-download-simple" style="font-size:16px"></i></a>`
+            }
             <button class="comment-btn" id="open-activity-drawer">
               <i class="ph ph-chat-circle" style="font-size:16px"></i>
               <span class="count">${commentCount}</span>
@@ -3447,7 +3538,8 @@
       const tl = rec.timeline || [];
       const attachments = rec.attachments || [];
       return `
-        <aside class="activity-drawer">
+        <aside class="activity-drawer" id="activity-drawer" style="flex-basis:${State.drawerWidth}px;width:${State.drawerWidth}px">
+          <div class="ad-resize-handle" id="ad-resize-handle"></div>
           <header class="ad-head">
             <div class="ad-title">
               <i class="ph ph-clock-counter-clockwise" style="font-size:16px"></i>
@@ -3546,19 +3638,6 @@
       `).join('');
 
       return `
-        <div class="ind-banner">
-          <i class="ph ph-info" style="font-size:16px"></i>
-          <span>Powered by the underwriter's indication workbook</span>
-          <span class="links">
-            ${rec.id === 'bde'
-              ? `<a href="bde-files/GL_Indication_BDEFLORIDA_V1.4-updated.xlsx" download="GL_Indication_BDEFLORIDA_V1.4.xlsx">Download Parsed File <i class="ph ph-arrow-up-right" style="font-size:11px"></i></a>
-                 <a href="bde-files/BDE_Florida_Original_Files.zip" download="BDE_Florida_Original_Files.zip">Download Original Files <i class="ph ph-arrow-up-right" style="font-size:11px"></i></a>`
-              : `<a href="#">Download Parsed File <i class="ph ph-arrow-up-right" style="font-size:11px"></i></a>
-                 <a href="#">Download Original Files <i class="ph ph-arrow-up-right" style="font-size:11px"></i></a>`
-            }
-          </span>
-        </div>
-
         <div class="sec">
           <div class="sec-head">
             <div class="left">
@@ -3808,10 +3887,12 @@
           <input class="cell-input" id="bde-${field}-${i}" type="text" inputmode="decimal" data-bde-claim="${i}" data-bde-field="${field}" value="${val == null ? '' : val}"/>
         </td>
       `;
+      const sel = State.selectedClaims;
+      const allChecked = rec.claims.length > 0 && rec.claims.every((_, i) => sel.has(i));
       const rows = rec.claims.map((c, i) => `
-        <tr>
+        <tr class="${sel.has(i) ? 'row-selected' : ''}">
           <td class="gut">
-            <button class="row-del" data-bde-del-claim="${i}" title="Delete row"><i class="ph ph-x" style="font-size:11px"></i></button>
+            <input type="checkbox" class="row-chk" data-bde-chk-claim="${i}" ${sel.has(i) ? 'checked' : ''} title="Select row"/>
           </td>
           ${cellText(i, 'date',    c.date,    'placeholder="YYYY-MM-DD"')}
           ${cellText(i, 'valDate', c.valDate, 'placeholder="optional"')}
@@ -3824,6 +3905,7 @@
           ${cellText(i, 'src',     c.src,     'placeholder="source"')}
         </tr>
       `).join('');
+      const selLabel = sel.size > 0 ? `${sel.size} row${sel.size > 1 ? 's' : ''} selected` : 'No rows selected';
       return `
         <div class="sec" style="margin-top:var(--sp-5)">
           <div class="sec-head">
@@ -3831,17 +3913,12 @@
               <strong>Loss run detail</strong>
               <span class="sub">${rec.claims.length} claims · valued 04/03/2026 · ${Number(BDE.indication.deductible) > 0 ? `net of $${Number(BDE.indication.deductible).toLocaleString('en-US')} per-occ deductible` : 'ground-up (no deductible)'} · every cell editable; edits flow to Indication</span>
             </div>
-            <div class="right">
-              <button class="btn btn-sm" id="bde-add-claim"><i class="ph ph-plus"></i>Add row</button>
-              <button class="btn btn-sm" id="bde-reset-claims" title="Restore Excel values"><i class="ph ph-arrow-counter-clockwise"></i>Reset</button>
-              <button class="btn btn-sm"><i class="ph ph-download-simple"></i>Export</button>
-            </div>
           </div>
           <div style="overflow-x:auto">
             <table class="xtable excel-grid">
               <thead>
                 <tr>
-                  <th class="gut"></th>
+                  <th class="gut"><input type="checkbox" id="bde-chk-all" ${allChecked ? 'checked' : ''} title="Select all"/></th>
                   <th>Loss Date</th>
                   <th>Valuation Date<br><span style="color:var(--fg-muted);font-weight:400">optional</span></th>
                   <th>Accident<br>Year</th>
@@ -3868,6 +3945,23 @@
             </table>
           </div>
         </div>
+
+        ${sel.size > 0 ? `
+        <div class="claims-float-wrap">
+          <div class="claims-float-bar">
+            <span class="cfb-label">${selLabel}</span>
+            <div class="cfb-divider"></div>
+            <div class="cfb-group">
+              <button class="cfb-btn cfb-btn--danger" id="bde-del-selected" title="Delete selected rows"><i class="ph ph-trash"></i></button>
+              <button class="cfb-btn" id="bde-add-claim" title="Add row"><i class="ph ph-plus"></i></button>
+              <button class="cfb-btn" id="bde-reset-claims" title="Reset to source data"><i class="ph ph-arrow-counter-clockwise"></i></button>
+              <button class="cfb-btn" title="Export"><i class="ph ph-arrow-line-down"></i></button>
+            </div>
+            <div class="cfb-divider"></div>
+            <button class="cfb-btn-text" title="Reupload loss runs"><i class="ph ph-upload-simple"></i>Reupload</button>
+          </div>
+        </div>
+        ` : ''}
       `;
     }
 
@@ -4141,10 +4235,18 @@
 
     function render() {
       const main = $('#main');
+      // Preserve scroll position on the detail page so actions don't jump to top
+      const prevScroll = State.page === 'detail'
+        ? (document.querySelector('.detail-main') || {}).scrollTop || 0
+        : 0;
       main.className = 'main' + (State.page === 'detail' ? ' detail-mode' : '');
       if      (State.page === 'home')           main.innerHTML = renderHome();
       else if (State.page === 'detail')         main.innerHTML = renderDetail();
       else                                       main.innerHTML = renderGrowth();
+      if (prevScroll > 0) {
+        const dm = document.querySelector('.detail-main');
+        if (dm) dm.scrollTop = prevScroll;
+      }
       // Toast — show on Home only, slide in once per Home visit, auto-dismiss
       // after 10s.  showToast() guards against duplicate timers.
       if (State.page === 'home') showToast();
@@ -4343,6 +4445,40 @@
         };
       });
 
+      // Home: "Threads waiting on you" — each row opens the linked submission's
+      // detail page with the activity drawer already open.
+      $$('[data-thread-go]').forEach(el => {
+        el.onclick = () => {
+          const id = el.dataset.threadGo;
+          if (!RECORDS[id]) return;
+          BDE = RECORDS[id];
+          State.currentId = id;
+          State.page = 'detail';
+          State.tab = 'indication';
+          State.activityOpen = true;
+          render();
+        };
+      });
+
+      // Home: Watchlist — rows with a known submission id open the detail page;
+      // rows without one (no RECORDS entry) fall back to the Growth list.
+      $$('[data-watch-go]').forEach(el => {
+        el.onclick = () => {
+          const id = el.dataset.watchGo;
+          if (id && RECORDS[id]) {
+            BDE = RECORDS[id];
+            State.currentId = id;
+            State.page = 'detail';
+            State.tab = 'indication';
+            State.activityOpen = false;
+          } else {
+            State.page = 'growth';
+            State.currentId = null;
+          }
+          render();
+        };
+      });
+
       // Row clicks to open a detail page.  Repoint the BDE pointer at the
       // selected record so every helper that references BDE.* (claims,
       // indication, ayParams, originalClaims, etc.) operates on this row.
@@ -4407,12 +4543,27 @@
         };
       });
       // Delete a single claim row
-      $$('[data-bde-del-claim]').forEach(b => b.onclick = (e) => {
-        e.stopPropagation();
-        const i = Number(b.dataset.bdeDelClaim);
-        BDE.claims.splice(i, 1);
+      // Per-row checkboxes
+      $$('[data-bde-chk-claim]').forEach(chk => chk.onchange = () => {
+        const i = Number(chk.getAttribute('data-bde-chk-claim'));
+        if (chk.checked) State.selectedClaims.add(i);
+        else State.selectedClaims.delete(i);
         render();
       });
+      // Select-all checkbox
+      const chkAll = document.getElementById('bde-chk-all');
+      if (chkAll) chkAll.onchange = () => {
+        if (chkAll.checked) BDE.claims.forEach((_, i) => State.selectedClaims.add(i));
+        else State.selectedClaims.clear();
+        render();
+      };
+      // Delete selected rows
+      const delSel = document.getElementById('bde-del-selected');
+      if (delSel) delSel.onclick = () => {
+        BDE.claims = BDE.claims.filter((_, i) => !State.selectedClaims.has(i));
+        State.selectedClaims.clear();
+        render();
+      };
       // Append a fresh empty claim — pre-fills AY = current year so it lands
       // in the most recent matrix row by default.
       const addBtn = document.getElementById('bde-add-claim');
@@ -4539,6 +4690,34 @@
       }
 
       // Activity drawer toggle
+      // Resizable activity drawer — drag the left edge to resize
+      const resizeHandle = document.getElementById('ad-resize-handle');
+      if (resizeHandle) {
+        resizeHandle.onmousedown = (e) => {
+          e.preventDefault();
+          const drawer = document.getElementById('activity-drawer');
+          if (!drawer) return;
+          resizeHandle.classList.add('is-dragging');
+          const startX     = e.clientX;
+          const startWidth = drawer.offsetWidth;
+          const onMove = (ev) => {
+            const delta    = startX - ev.clientX;  // drag left = wider
+            const newWidth = Math.max(280, Math.min(700, startWidth + delta));
+            drawer.style.flexBasis = newWidth + 'px';
+            drawer.style.width     = newWidth + 'px';
+          };
+          const onUp = (ev) => {
+            resizeHandle.classList.remove('is-dragging');
+            const delta    = startX - ev.clientX;
+            State.drawerWidth = Math.max(280, Math.min(700, startWidth + delta));
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup',   onUp);
+          };
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup',   onUp);
+        };
+      }
+
       const openAd  = document.getElementById('open-activity-drawer');
       if (openAd) openAd.onclick = (e) => { e.stopPropagation(); State.activityOpen = !State.activityOpen; render(); };
       const closeAd = document.getElementById('close-activity-drawer');
@@ -4573,7 +4752,7 @@
 
       // Tab switches inside detail
       $$('.tab[data-tab]').forEach(t => {
-        t.onclick = () => { State.tab = t.dataset.tab; render(); };
+        t.onclick = () => { State.tab = t.dataset.tab; State.selectedClaims.clear(); render(); };
       });
 
       /* --- Growth: column filter / sort / chip wiring ---------------------- */
