@@ -855,50 +855,75 @@
       position: absolute; right: 12px; bottom: 6px;
       font-size: 11px; color: var(--fg-muted);
     }
-    /* Underwriter Decision modal — Approve / Decline pill row + reasons */
-    .uw-mode-row {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: var(--sp-2);
+    /* Underwriter Decision modal */
+    .uw-decision-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--sp-3);
     }
-    .uw-pill {
-      padding: 10px 12px; height: 44px;
+    .uw-amount-badge {
+      display: inline-flex; align-items: center;
+      height: 32px; padding: 0 12px;
+      background: var(--ok-bg); color: var(--ok);
+      border-radius: var(--r-full);
+      font-size: 13px; font-weight: 600;
+      white-space: nowrap;
+    }
+    .uw-tabs {
+      display: flex; gap: 6px;
+    }
+    .uw-tab {
+      height: 32px; padding: 0 14px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--r-md);
-      font-size: 14px; font-weight: 500;
-      color: var(--fg); text-align: left;
-      cursor: pointer;
-      transition: border-color var(--transition-base), background var(--transition-base);
+      font-size: 13px; font-weight: 500;
+      color: var(--fg); cursor: pointer;
+      transition: border-color 120ms, background 120ms, color 120ms;
     }
-    .uw-pill:hover { background: var(--bg); }
-    .uw-pill.is-on { border-color: var(--tertiary); }
-    .uw-pill.is-decline.is-on { border-color: var(--tertiary); }
+    .uw-tab:hover { background: var(--bg); }
+    .uw-tab.is-on {
+      border-color: var(--info);
+      background: #eff6ff; color: var(--info);
+    }
+    .uw-tab--decline.is-on {
+      border-color: var(--err);
+      background: var(--err-bg); color: var(--err);
+    }
     .uw-reasons {
-      display: flex; flex-direction: column; gap: var(--sp-2);
+      display: flex; flex-direction: column;
       margin-top: var(--sp-3);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      overflow: hidden;
     }
     .uw-reason {
       display: flex; align-items: center; gap: var(--sp-3);
-      padding: 10px 12px; min-height: 40px;
+      padding: 10px 14px; min-height: 40px;
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-md);
+      border: none; border-bottom: 1px solid var(--border-soft);
       cursor: pointer;
       font-size: 14px; color: var(--fg);
       text-align: left;
     }
+    .uw-reason:last-child { border-bottom: none; }
     .uw-reason:hover { background: var(--bg); }
-    .uw-reason.is-selected { border-color: var(--tertiary); background: var(--surface); }
+    .uw-reason.is-selected { background: #fdf3f3; }
     .uw-reason .radio {
       width: 16px; height: 16px; border-radius: 50%;
       border: 1.5px solid var(--border);
       position: relative; flex: 0 0 16px;
     }
     .uw-reason .radio.is-on {
-      border-color: var(--tertiary);
-      background: var(--tertiary);
+      border-color: var(--err);
+      background: var(--err);
       box-shadow: inset 0 0 0 3px var(--surface);
     }
+    .btn-primary-danger {
+      background: var(--err); border-color: var(--err);
+      color: #fff;
+    }
+    .btn-primary-danger:hover { background: #991b1b; border-color: #991b1b; }
+    .btn-primary-danger:disabled { opacity: 0.45; cursor: not-allowed; }
     /* Per-row "Upload File" / "Re-upload" link in step 1 doc list */
     .upload-link {
       color: var(--info);
@@ -1221,12 +1246,39 @@
 
     .ad-content { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
     .ad-content-lite { padding-top: 6px; }
+    .ad-item-head {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 4px;
+    }
+    .ad-item-body { display: flex; flex-direction: column; gap: var(--sp-2); }
+    .ad-collapse-btn {
+      flex: 0 0 20px; height: 20px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: transparent; border: none; cursor: pointer;
+      color: var(--fg-muted); padding: 0; margin-top: 2px;
+      border-radius: var(--r-sm);
+      transition: color 120ms, background 120ms;
+    }
+    .ad-collapse-btn:hover { color: var(--fg); background: var(--bg-accent); }
+    .ad-collapse-btn i { font-size: 12px; transition: transform 150ms; }
+    .ad-collapse-btn.is-collapsed i { transform: rotate(-90deg); }
     .ad-line {
-      display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 1;
       font-size: var(--fs-sm); color: var(--fg);
     }
     .ad-line .muted { color: var(--fg-muted); }
     .ad-line .ad-when { color: var(--fg-muted); font-size: var(--fs-xs); margin-left: auto; }
+    .ad-note {
+      font-size: var(--fs-sm); color: var(--fg); line-height: 1.5;
+      padding: var(--sp-2) var(--sp-3);
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-md);
+    }
+    .ad-item--compact { margin-bottom: var(--sp-3); }
+    .ad-email-foot {
+      display: flex; justify-content: flex-end;
+      padding: 4px var(--sp-2);
+      border-top: 1px solid var(--border-soft);
+    }
 
     /* Email card */
     .ad-email {
@@ -1384,6 +1436,57 @@
     .meta-row .meta-k { color: var(--fg-muted); margin-right: 4px; }
     .meta-row .meta-pair { display: inline-flex; align-items: center; gap: var(--sp-2); }
 
+    /* Rep picker */
+    .rep-picker-wrap { position: relative; }
+    .rep-avatars { display: inline-flex; align-items: center; }
+    .rep-picker-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; border: none; cursor: pointer;
+      padding: 2px 4px; border-radius: var(--r-sm);
+      font-size: inherit; color: inherit;
+    }
+    .rep-picker-btn:hover { background: var(--bg-accent); }
+    .rep-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      min-width: 190px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+      z-index: 200;
+      overflow: hidden;
+    }
+    .rep-opt {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px;
+      width: 100%;
+      background: transparent; border: none; border-bottom: 1px solid var(--border-soft);
+      cursor: pointer; font-size: 13px; text-align: left; color: var(--fg);
+    }
+    .rep-opt:last-child { border-bottom: 0; }
+    .rep-opt:hover { background: var(--bg); }
+    .rep-opt.active { background: var(--bg-accent); font-weight: 500; }
+    .rep-opt:disabled { opacity: 0.45; cursor: not-allowed; }
+    .rep-opt:disabled:hover { background: transparent; }
+
+    /* Need-by date picker */
+    .needby-wrap { position: relative; }
+    .needby-btn {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: transparent; border: none; cursor: pointer;
+      padding: 2px 4px; border-radius: var(--r-sm);
+      font-size: inherit; color: inherit;
+    }
+    .needby-btn:hover { background: var(--bg-accent); }
+    .needby-input {
+      font-size: 13px; font-family: inherit;
+      border: 1px solid var(--brand); border-radius: var(--r-sm);
+      padding: 2px 6px; background: var(--surface); color: var(--fg);
+      outline: none;
+    }
+
     .detail-actions {
       display: flex; align-items: center; gap: var(--sp-2);
       flex-wrap: wrap;
@@ -1451,7 +1554,7 @@
       color: var(--fg-muted); font-size: 13px; cursor: help;
     }
     .stat-strip .stat-triggers .trig-row .pill-ok {
-      color: var(--ok); font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+      color: var(--ok); font-size: 14px; line-height: 1;
     }
     @media (max-width: 1100px) {
       .stat-strip { grid-template-columns: 1fr; }
@@ -1701,8 +1804,10 @@
     .form-section .sub-head {
       padding: var(--sp-3) var(--sp-4);
       border-bottom: 1px solid var(--border-soft);
-      font-size: 12px; color: var(--fg-muted);
+      border-top: 1px solid var(--border-soft);
+      font-size: 12px; color: var(--fg-muted); font-weight: 500;
     }
+    .form-section .sub-head:first-child { border-top: 0; }
     /* Info icon next to row keys — neutral muted glyph, light hover */
     .form-row .key .info-ico {
       display: inline-block; margin-left: 4px;
@@ -1745,12 +1850,11 @@
     /* Referral trigger rows — key on the left, status pill / icon on the right */
     .form-row.trigger { grid-template-columns: 1fr auto; align-items: center; }
     .trigger-state.ok {
-      display: inline-flex; align-items: center;
-      height: 24px; padding: 4px 10px;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px;
       border-radius: var(--r-full);
       background: var(--ok-bg); color: var(--ok);
-      font-size: var(--fs-xs); line-height: 14px; font-weight: 500;
-      letter-spacing: 0.02em;
+      font-size: 14px;
     }
     .trigger-state.refer { color: var(--err); display: inline-flex; align-items: center; }
 
@@ -2229,6 +2333,8 @@
       // Submission detail — drawer + dropdown state
       activityOpen: false,                       // activity-timeline drawer
       drawerWidth: 400,                          // resizable activity drawer width (px)
+      repDropdown: null,                         // null | 'salesRep' | 'uwRep'
+      needByEditing: false,                      // inline date picker open
       statusMenuOpen: false,                     // status update dropdown
       // Collapsed accordion sections on the BDE indication form (keyed by id)
       bdeCollapsed: new Set(),
@@ -2244,6 +2350,7 @@
       mobileNavOpen: false,
       // Claims tab — indices of selected rows for bulk delete
       selectedClaims: new Set(),
+      tlCollapsed: new Set(),                    // indices of collapsed timeline items
       // Underwriter Decision modal — opened from the "Make Decision" button
       uwDecision: { open: false, mode: 'approve', declineReason: '', notes: '' },
       // "New Submission" modal flow — Figma 38:20599 / 38:21469 / 38:25386 /
@@ -2318,9 +2425,9 @@
     let BDE = {
       id:'bde',
       name:'BDE Florida, LLC',
-      appId:'App ID', states:'Florida',
-      salesRep:{ name:'Bobby Vo',   av:'blue',   initials:'BV' },
-      uwRep:  { name:'Hunt Caroll', av:'orange', initials:'HC' },
+      appId:'683de8', fullAppId:'683de88e-4ebd-40da-b331-f1ab3305dc8c', states:'Florida',
+      salesRep:[ { name:'Bobby Vo',    av:'blue',   initials:'BV' } ],
+      uwRep:   [ { name:'Hunt Caroll', av:'orange', initials:'HC' } ],
       needBy: 'Today',
       status:'New', statusKind:'purple',
       // Per Figma 36:7724 — BDE shows 4 stat cells (no "vs Target premium").
@@ -2410,7 +2517,11 @@
             body:    "Hi UW team,\n\nPlease find attached a copy of the above mentioned new business submission for your review and quote. This is an owner of twenty-seven (27) Taco Bell restaurants in Florida.\n\nTarget: GL $189,000 / Excess $70,000\n\nPlease review and let us know if you need anything additional.\n\nThank you,\nSusan Sgroi, AAI, AIS, CISR\nAccount Executive, Commercial — HUB International",
           },
         },
-        { kind:'assigned', who:'Hunt Caroll', av:'orange', initials:'HC', when:'2 mins ago', from:'Auto-assigned' },
+        { kind:'assigned', who:'Hunt Carroll', av:'orange', initials:'HC', when:'10 mins ago', from:'Auto assigned to' },
+        { kind:'status-change', who:'Hunt Carroll', av:'orange', initials:'HC', when:'10 mins ago', to:'Reviewing', toKind:'info' },
+        { kind:'comment', who:'Hunt Carroll', av:'orange', initials:'HC', when:'2 mins ago',
+          body:'Large shock losses, don\'t know details but somewhat outsized impact on premium. $189K strikes me as a reach even if we get favorable information around those losses. <span style="color:var(--info)">@Bobby Vo</span>' },
+        { kind:'status-change', who:'Hunt Carroll', av:'orange', initials:'HC', when:'1 min ago', to:'Indication', toKind:'info' },
       ],
     };
 
@@ -2436,6 +2547,12 @@
       { name:'Carlos Rivas', av:'purple', initials:'CR' },
       { name:'Dana Park',    av:'orange', initials:'DP' },
     ];
+    const UWREP_POOL = [
+      { name:'Hunt Carroll',  av:'orange', initials:'HC' },
+      { name:'Peter Han',     av:'blue',   initials:'PH' },
+      { name:'Kyle Babirad',  av:'green',  initials:'KB' },
+      { name:'Sarah Mitchell',av:'purple', initials:'SM' },
+    ];
     const LOC_POOL = {
       NY: ['Manhattan, NY','Brooklyn, NY','Queens, NY','Staten Island, NY','Bronx, NY','Albany, NY'],
       NJ: ['Newark, NJ','Jersey City, NJ','Trenton, NJ','Sayreville, NJ'],
@@ -2459,8 +2576,8 @@
       rec.needBy    = row.needBy;
       rec.status    = row.status;
       rec.statusKind= row.kind;
-      rec.salesRep  = SREP_POOL[idx % SREP_POOL.length];
-      rec.uwRep     = { name: row.owner, av: row.ownerAv, initials: row.owner.split(' ').map(s => s[0]).join('').slice(0,2) };
+      rec.salesRep  = [ SREP_POOL[idx % SREP_POOL.length] ];
+      rec.uwRep     = [ { name: row.owner, av: row.ownerAv, initials: row.owner.split(' ').map(s => s[0]).join('').slice(0,2) } ];
       // Scale all monetary values by the row's premium relative to BDE's
       const targetPrem = row.premium || 50000;
       const ratio      = targetPrem / 290000;
@@ -2492,7 +2609,7 @@
       // Adjust the submission email subject so it reads correctly
       if (rec.timeline?.[0]?.email) {
         rec.timeline[0].email.subject = `${row.name} — GL Submission, Eff ${row.eff} — Target $${Math.round(targetPrem).toLocaleString('en-US')}`;
-        rec.timeline[0].email.body    = `Hi UW team,\n\nPlease find attached the new business submission for ${row.name}. Target premium is $${Math.round(targetPrem).toLocaleString('en-US')}.\n\nThank you,\n${rec.salesRep.name}`;
+        rec.timeline[0].email.body    = `Hi UW team,\n\nPlease find attached the new business submission for ${row.name}. Target premium is $${Math.round(targetPrem).toLocaleString('en-US')}.\n\nThank you,\n${rec.salesRep[0].name}`;
       }
       // Re-snapshot the newly-scaled claims so Reset returns to *this* row's
       // scaled baseline (not BDE's).
@@ -3037,7 +3154,7 @@
     }
 
     /* ---- Underwriter Decision modal ---- */
-    const UW_DECLINE_REASONS = ['Need more info','Loss history','Capacity','Outside appetite','Data quality','Other'];
+    const UW_DECLINE_REASONS = ['Loss history','Capacity','Outside appetite','Data quality','Other'];
     function openUwDecision() {
       const ind = getBDEIndication();
       State.uwDecision = {
@@ -3053,29 +3170,32 @@
       const d = State.uwDecision;
       if (!d.open) return '';
       const amount = (d.approveAmount || 0).toLocaleString('en-US');
-      const isApprove = d.mode === 'approve';
-      const isDecline = d.mode === 'decline';
-      const canConfirm = isApprove || (isDecline && d.declineReason);
+      const isNeedInfo = d.mode === 'needInfo';
+      const isDecline  = d.mode === 'decline';
+      const canConfirm = !isDecline || !!d.declineReason;
       const reasonsHTML = UW_DECLINE_REASONS.map(r => {
         const sel = d.declineReason === r;
-        return `
-          <button class="uw-reason ${sel ? 'is-selected' : ''}" data-uw-reason="${r}">
-            <span class="radio ${sel ? 'is-on' : ''}"></span>
-            <span>${r}</span>
-          </button>
-        `;
+        return `<button class="uw-reason${sel ? ' is-selected' : ''}" data-uw-reason="${r}">
+          <span class="radio${sel ? ' is-on' : ''}"></span>
+          <span>${r}</span>
+        </button>`;
       }).join('');
+      const ctaLabel = isDecline ? 'Confirm Decline' : isNeedInfo ? 'Request More Info' : 'Approve & Quote';
+      const ctaCls   = isDecline ? 'btn-primary-danger' : 'btn-primary';
       return `
         <div class="modal-overlay" id="uw-overlay">
           <div class="modal-card" style="max-width:560px" onclick="event.stopPropagation()">
             <div class="modal-head">
-              <div><h2>Underwriter Decision</h2></div>
+              <h2>Underwriter Decision</h2>
               <button class="modal-close" id="uw-close"><i class="ph ph-x" style="font-size:18px"></i></button>
             </div>
             <div class="modal-body" style="padding-bottom:var(--sp-3)">
-              <div class="uw-mode-row">
-                <button class="uw-pill ${isApprove ? 'is-on' : ''}" data-uw-mode="approve">Approved $${amount}</button>
-                <button class="uw-pill is-decline ${isDecline ? 'is-on' : ''}" data-uw-mode="decline">Decline</button>
+              <div class="uw-decision-header">
+                <span class="uw-amount-badge">Approved $${amount}</span>
+                <div class="uw-tabs">
+                  <button class="uw-tab${isNeedInfo ? ' is-on' : ''}" data-uw-mode="needInfo">Need more info</button>
+                  <button class="uw-tab uw-tab--decline${isDecline ? ' is-on' : ''}" data-uw-mode="decline">Decline</button>
+                </div>
               </div>
               ${isDecline ? `<div class="uw-reasons">${reasonsHTML}</div>` : ''}
               <div class="ns-textarea" style="margin-top:var(--sp-3)">
@@ -3087,7 +3207,7 @@
               <div class="left"></div>
               <div class="right">
                 <button class="text-btn" id="uw-cancel">Cancel</button>
-                <button class="btn btn-primary" id="uw-confirm" ${canConfirm ? '' : 'disabled'}>${isApprove ? 'Approve & Quote' : 'Confirm Decline'}</button>
+                <button class="btn ${ctaCls}" id="uw-confirm" ${canConfirm ? '' : 'disabled'}>${ctaLabel}</button>
               </div>
             </div>
           </div>
@@ -3464,11 +3584,61 @@
               <span class="badge-sub">Submission</span>
             </div>
             <div class="meta-row">
-              <span><span class="meta-k">${rec.appId}</span></span>
-              <span>${rec.states}</span>
-              <span class="meta-pair"><span class="meta-k">Sales Rep:</span><span class="avatar sm ${rec.salesRep.av}">${rec.salesRep.initials}</span><b>${rec.salesRep.name}</b></span>
-              <span class="meta-pair"><span class="meta-k">UW Rep:</span><span class="avatar sm ${rec.uwRep.av}">${rec.uwRep.initials}</span><b>${rec.uwRep.name}</b></span>
-              ${rec.needBy ? `<span class="meta-pair"><span class="meta-k">Need by:</span><b style="color:var(--err)">${rec.needBy}</b></span>` : ''}
+              <span class="app-id-tip" title="${rec.fullAppId || rec.appId}"><span class="meta-k">${rec.appId}</span></span>
+              <span class="meta-pair rep-picker-wrap">
+                <span class="meta-k">Sales Rep:</span>
+                <button class="rep-picker-btn" data-rep-toggle="salesRep">
+                  <span class="rep-avatars">${rec.salesRep.map((p,i) => `<span class="avatar sm ${p.av}" style="margin-left:${i>0?'-6px':'0'};z-index:${10-i}">${p.initials}</span>`).join('')}</span>
+                  <b>${rec.salesRep.map(p => p.name).join(', ')}</b>
+                  <i class="ph ph-caret-down" style="font-size:10px;color:var(--fg-muted)"></i>
+                </button>
+                ${State.repDropdown === 'salesRep' ? `
+                  <div class="rep-dropdown">
+                    ${SREP_POOL.map(p => {
+                      const inList = rec.salesRep.some(r => r.name === p.name);
+                      const isLast = inList && rec.salesRep.length === 1;
+                      return `<button class="rep-opt${inList ? ' active' : ''}" data-set-rep="salesRep" data-rep-name="${p.name}" data-rep-av="${p.av}" data-rep-initials="${p.initials}"${isLast ? ' disabled title="At least one rep required"' : ''}>
+                        <span class="avatar sm ${p.av}">${p.initials}</span>
+                        <span>${p.name}</span>
+                        ${inList ? '<i class="ph ph-check" style="margin-left:auto;font-size:12px"></i>' : ''}
+                      </button>`;
+                    }).join('')}
+                  </div>
+                ` : ''}
+              </span>
+              <span class="meta-pair rep-picker-wrap">
+                <span class="meta-k">UW Rep:</span>
+                <button class="rep-picker-btn" data-rep-toggle="uwRep">
+                  <span class="rep-avatars">${rec.uwRep.map((p,i) => `<span class="avatar sm ${p.av}" style="margin-left:${i>0?'-6px':'0'};z-index:${10-i}">${p.initials}</span>`).join('')}</span>
+                  <b>${rec.uwRep.map(p => p.name).join(', ')}</b>
+                  <i class="ph ph-caret-down" style="font-size:10px;color:var(--fg-muted)"></i>
+                </button>
+                ${State.repDropdown === 'uwRep' ? `
+                  <div class="rep-dropdown">
+                    ${UWREP_POOL.map(p => {
+                      const inList = rec.uwRep.some(r => r.name === p.name);
+                      const isLast = inList && rec.uwRep.length === 1;
+                      return `<button class="rep-opt${inList ? ' active' : ''}" data-set-rep="uwRep" data-rep-name="${p.name}" data-rep-av="${p.av}" data-rep-initials="${p.initials}"${isLast ? ' disabled title="At least one rep required"' : ''}>
+                        <span class="avatar sm ${p.av}">${p.initials}</span>
+                        <span>${p.name}</span>
+                        ${inList ? '<i class="ph ph-check" style="margin-left:auto;font-size:12px"></i>' : ''}
+                      </button>`;
+                    }).join('')}
+                  </div>
+                ` : ''}
+              </span>
+              <span class="meta-pair needby-wrap">
+                <span class="meta-k">Need by:</span>
+                ${State.needByEditing ? `
+                  <input id="needby-input" type="date" class="needby-input"
+                    value="${rec.needBy === 'Today' ? new Date().toISOString().slice(0,10) : (rec.needBy || '')}">
+                ` : `
+                  <button class="needby-btn" data-needby-edit>
+                    <b style="color:${(!rec.needBy || rec.needBy === 'Today') ? 'var(--err)' : 'var(--fg)'}">${rec.needBy || 'Set date'}</b>
+                    <i class="ph ph-pencil-simple" style="font-size:11px;color:var(--fg-muted);margin-left:2px"></i>
+                  </button>
+                `}
+              </span>
             </div>
           </div>
           <div class="detail-actions">
@@ -3506,10 +3676,10 @@
               `).join('')}
             </div>
             <div class="stat-triggers">
-              <div class="trig-row"><span class="lbl">Large Loss Influence <i class="ph ph-info info-ico" title="Refer to UW MGR if large losses have an outsized impact on the indication (uncapped vs. capped method more than 2x difference)."></i></span><span class="pill-ok">OK TO BIND</span></div>
-              <div class="trig-row"><span class="lbl">Claim data Credibility <i class="ph ph-info info-ico" title="Refer when total reported claims are too few for the BF method to be credible (typically < 30 claims over 5y)."></i></span><span class="pill-ok">OK TO BIND</span></div>
-              <div class="trig-row"><span class="lbl">Age of Loss Runs <i class="ph ph-info info-ico" title="Refer if the valuation date is more than 120 days stale; reserves may have developed materially."></i></span><span class="pill-ok">OK TO BIND</span></div>
-              <div class="trig-row"><span class="lbl">Orphan Claims <i class="ph ph-info info-ico" title="Refer if any claim's accident year falls outside the 5-year matrix; investigate before binding."></i></span><span class="pill-ok">OK TO BIND</span></div>
+              <div class="trig-row"><span class="lbl">Large Loss Influence <i class="ph ph-info info-ico" title="Refer to UW MGR if large losses have an outsized impact on the indication (uncapped vs. capped method more than 2x difference)."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+              <div class="trig-row"><span class="lbl">Claim data Credibility <i class="ph ph-info info-ico" title="Refer when total reported claims are too few for the BF method to be credible (typically < 30 claims over 5y)."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+              <div class="trig-row"><span class="lbl">Age of Loss Runs <i class="ph ph-info info-ico" title="Refer if the valuation date is more than 120 days stale; reserves may have developed materially."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+              <div class="trig-row"><span class="lbl">Orphan Claims <i class="ph ph-info info-ico" title="Refer if any claim's accident year falls outside the 5-year matrix; investigate before binding."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
             </div>
             <!-- Sticky-only actions: Status pill + comment count + Status Update.
                  Hidden until .is-detail-scrolled so the original detail-actions
@@ -3531,80 +3701,123 @@
       `;
     }
 
-    /* ---------- Activity timeline drawer (Figma 36:7724) ----------
-       Right-side panel showing the submission timeline, broker email,
-       attachments, and comment composer. ---------- */
+    /* ---------- Activity timeline drawer (Figma 73:21726) ---------- */
     function renderActivityDrawer(rec) {
       const tl = rec.timeline || [];
       const attachments = rec.attachments || [];
+
+      const item = (t, i) => {
+        const collapsed = State.tlCollapsed.has(i);
+        const chevron = (hasBody) => !hasBody ? '' : `
+          <button class="ad-collapse-btn${collapsed ? ' is-collapsed' : ''}" data-tl-collapse="${i}" title="${collapsed ? 'Expand' : 'Collapse'}">
+            <i class="ph ph-caret-down"></i>
+          </button>`;
+
+        if (t.kind === 'submission') {
+          return `
+            <div class="ad-item">
+              <span class="ad-dot"><span class="avatar sm ${t.av}">${t.initials}</span></span>
+              <div class="ad-content">
+                <div class="ad-item-head">
+                  <div class="ad-line"><b>${t.who}</b> <span class="muted">created new submission</span><span class="ad-when">${t.when}</span></div>
+                  ${chevron(true)}
+                </div>
+                ${collapsed ? '' : `
+                  <div class="ad-item-body">
+                    <div class="ad-email">
+                      <div class="ad-email-head">
+                        <div><span class="ek">From</span> ${t.email.from}</div>
+                        <div><span class="ek">To</span> ${t.email.to}</div>
+                        <div><span class="ek">Date</span> ${t.email.date}</div>
+                        <div><span class="ek">Subject</span> <b>${t.email.subject}</b></div>
+                        ${t.email.attachments ? `<div><span class="ek">Attachments</span> <span class="muted">${t.email.attachments}</span></div>` : ''}
+                      </div>
+                      <pre class="ad-email-body">${t.email.body}</pre>
+                      <div class="ad-email-foot"><button class="icon-btn" title="Expand"><i class="ph ph-arrows-out" style="font-size:13px"></i></button></div>
+                    </div>
+                    ${attachments.length ? `
+                      <div class="ad-attach">
+                        <div class="ad-attach-head">
+                          <b>Attachments</b>
+                          <a class="btn btn-sm" href="bde-files/BDE_Florida_Original_Files.zip" download="BDE_Florida_Original_Files.zip">Download All</a>
+                        </div>
+                      </div>
+                    ` : ''}
+                  </div>
+                `}
+              </div>
+            </div>`;
+        }
+
+        if (t.kind === 'comment') {
+          return `
+            <div class="ad-item">
+              <span class="ad-dot"><span class="avatar sm ${t.av}">${t.initials}</span></span>
+              <div class="ad-content">
+                <div class="ad-item-head">
+                  <div class="ad-line"><b>${t.who}</b><span class="ad-when">${t.when}</span></div>
+                  ${chevron(true)}
+                </div>
+                ${collapsed ? '' : `
+                  <div class="ad-item-body">
+                    <div class="ad-note">${t.body}</div>
+                  </div>
+                `}
+              </div>
+            </div>`;
+        }
+
+        if (t.kind === 'assigned') {
+          return `
+            <div class="ad-item ad-item--compact">
+              <span class="ad-dot ad-dot-icon"><i class="ph ph-gear" style="font-size:14px"></i></span>
+              <div class="ad-content ad-content-lite">
+                <div class="ad-line">
+                  <span class="muted">${t.from}</span>
+                  <span class="avatar sm ${t.av}">${t.initials}</span>
+                  <b>${t.who}</b>
+                  <span class="ad-when">${t.when}</span>
+                </div>
+              </div>
+            </div>`;
+        }
+
+        if (t.kind === 'status-change') {
+          return `
+            <div class="ad-item ad-item--compact">
+              <span class="ad-dot"><span class="avatar sm ${t.av}">${t.initials}</span></span>
+              <div class="ad-content ad-content-lite">
+                <div class="ad-line">
+                  <b>${t.who}</b>
+                  <span class="muted">change status to</span>
+                  <span class="pill ${t.toKind} no-dot">${t.to}</span>
+                  <span class="ad-when">${t.when}</span>
+                </div>
+              </div>
+            </div>`;
+        }
+
+        return '';
+      };
+
       return `
         <aside class="activity-drawer" id="activity-drawer" style="flex-basis:${State.drawerWidth}px;width:${State.drawerWidth}px">
           <div class="ad-resize-handle" id="ad-resize-handle"></div>
           <header class="ad-head">
             <div class="ad-title">
-              <i class="ph ph-clock-counter-clockwise" style="font-size:16px"></i>
+              <i class="ph ph-chat-circle-dots" style="font-size:16px"></i>
               <span>Activity timeline</span>
               <span class="badge">${tl.length}</span>
             </div>
             <button class="icon-btn" id="close-activity-drawer" title="Close"><i class="ph ph-x" style="font-size:16px"></i></button>
           </header>
-
           <div class="ad-body">
-            ${tl.map((t, i) => {
-              if (t.kind === 'submission') {
-                return `
-                  <div class="ad-item">
-                    <span class="ad-dot"><span class="avatar sm ${t.av}">${t.initials}</span></span>
-                    <div class="ad-content">
-                      <div class="ad-line"><b>${t.who}</b> <span class="muted">created new submission</span><span class="ad-when">${t.when}</span></div>
-                      <div class="ad-email">
-                        <div class="ad-email-head">
-                          <div><span class="ek">From</span> ${t.email.from}</div>
-                          <div><span class="ek">To</span> ${t.email.to}</div>
-                          <div><span class="ek">Date</span> ${t.email.date}</div>
-                          <div><span class="ek">Subject</span> <b>${t.email.subject}</b></div>
-                        </div>
-                        <pre class="ad-email-body">${t.email.body}</pre>
-                      </div>
-                      ${attachments.length ? `
-                        <div class="ad-attach">
-                          <div class="ad-attach-head">
-                            <span><b>Attachments</b></span>
-                            <a class="btn btn-sm" href="bde-files/BDE_Florida_Original_Files.zip" download="BDE_Florida_Original_Files.zip">Download All</a>
-                          </div>
-                        </div>
-                      ` : ''}
-                    </div>
-                  </div>
-                `;
-              }
-              if (t.kind === 'assigned') {
-                return `
-                  <div class="ad-item">
-                    <span class="ad-dot ad-dot-icon"><i class="ph ph-user-circle-plus" style="font-size:14px"></i></span>
-                    <div class="ad-content ad-content-lite">
-                      <div class="ad-line"><span class="muted">${t.from}</span> <span class="avatar sm ${t.av}">${t.initials}</span> <b>${t.who}</b><span class="ad-when">${t.when}</span></div>
-                    </div>
-                  </div>
-                `;
-              }
-              if (t.kind === 'status-change') {
-                return `
-                  <div class="ad-item">
-                    <span class="ad-dot ad-dot-icon"><i class="ph ph-arrow-circle-right" style="font-size:14px"></i></span>
-                    <div class="ad-content ad-content-lite">
-                      <div class="ad-line"><span class="avatar sm ${t.av}">${t.initials}</span> <b>${t.who}</b> <span class="muted">change status to</span> <span class="pill ${t.toKind} no-dot">${t.to}</span><span class="ad-when">${t.when}</span></div>
-                    </div>
-                  </div>
-                `;
-              }
-              return '';
-            }).join('')}
+            ${tl.map(item).join('')}
           </div>
-
           <footer class="ad-foot">
             <span class="avatar sm orange">HC</span>
             <input type="text" placeholder="Leave a comment..." />
+            <button class="icon-btn" title="Snapshot"><i class="ph ph-camera" style="font-size:16px"></i></button>
             <button class="icon-btn" title="Attach"><i class="ph ph-paperclip" style="font-size:16px"></i></button>
             <button class="icon-btn" title="Send"><i class="ph ph-paper-plane-tilt" style="font-size:16px"></i></button>
           </footer>
@@ -3643,9 +3856,6 @@
             <div class="left">
               <strong>Indication roll-up</strong>
               <span class="sub">5y accident-year matrix · valued ${rec.id === 'bde' ? '2026-04-03' : '2026-05-12'}</span>
-            </div>
-            <div class="right">
-              <button class="btn btn-sm"><i class="ph ph-download-simple"></i>${rec.id === 'bde' ? 'Export Parsed Indication' : 'Export'}</button>
             </div>
           </div>
           <div style="overflow-x:auto">
@@ -3787,30 +3997,29 @@
       const trigSec = `
         <div class="form-row trigger">
           <span class="key">Large Loss Influence  (net ultimate – net capped) / net unlimited <i class="ph ph-info info-ico" title="Refers to UW MGR if large losses have an outsized impact on the indication (uncapped vs. capped method more than 2x difference)."></i></span>
-          <span class="trigger-state ok">OK TO BIND</span>
+          <span class="trigger-state ok"><i class="ph ph-check-circle"></i></span>
         </div>
         <div class="form-row trigger">
           <span class="key">Age of Loss Runs <i class="ph ph-info info-ico" title="Refer if the valuation date is more than 120 days stale; reserves may have developed materially."></i></span>
-          <span class="trigger-state ok">OK TO BIND</span>
+          <span class="trigger-state ok"><i class="ph ph-check-circle"></i></span>
         </div>
         <div class="form-row trigger">
           <span class="key">Claim data Credibility <i class="ph ph-info info-ico" title="Refer when total reported claims are too few for the BF method to be credible (typically < 30 claims over 5y)."></i></span>
-          <span class="trigger-state ok">OK TO BIND</span>
+          <span class="trigger-state ok"><i class="ph ph-check-circle"></i></span>
         </div>
         <div class="form-row trigger">
           <span class="key">Orphan Claims <i class="ph ph-info info-ico" title="Refer if any claim's accident year falls outside the 5-year matrix; investigate before binding."></i></span>
-          <span class="trigger-state ok">OK TO BIND</span>
+          <span class="trigger-state ok"><i class="ph ph-check-circle"></i></span>
         </div>
       `;
+      const subHead = (label) => `<div class="sub-head">${label}</div>`;
       return `
         <div class="bde-sections">
           <div class="section-row">
-            ${bdeSection('indication', 'Indication',                            indSec)}
-            ${bdeSection('ujc',        'Underwriting Judgment Considerations',  ujcSec)}
-          </div>
-          <div class="section-row">
-            ${bdeSection('policy',     'Policy Information',                    polSec)}
-            ${bdeSection('pricing',    'Pricing Assumptions',                   priceSec)}
+            ${bdeSection('indication', 'Indication & Policy Information',
+                subHead('Indication') + indSec + subHead('Policy Information') + polSec)}
+            ${bdeSection('ujc', 'Underwriting Judgment & Price Assumptions',
+                subHead('Underwriting Judgment') + ujcSec + subHead('Price Assumptions') + priceSec)}
           </div>
           ${Number(BDE.indication.deductible) > 0
             ? bdeSection('deductible', 'Deductible Analysis', renderBDEDeductibleAnalysisBody())
@@ -4288,8 +4497,15 @@
       const uwCancel = $('#uw-cancel'); if (uwCancel) uwCancel.onclick = (e) => { e.stopPropagation(); closeUwDecision(); };
       $$('[data-uw-mode]').forEach(b => b.onclick = (e) => {
         e.stopPropagation();
-        State.uwDecision.mode = b.dataset.uwMode;
-        if (State.uwDecision.mode === 'approve') State.uwDecision.declineReason = '';
+        const clicked = b.dataset.uwMode;
+        // Clicking the active tab deactivates it (returns to approve)
+        if (State.uwDecision.mode === clicked) {
+          State.uwDecision.mode = 'approve';
+          State.uwDecision.declineReason = '';
+        } else {
+          State.uwDecision.mode = clicked;
+          if (clicked !== 'decline') State.uwDecision.declineReason = '';
+        }
         render();
       });
       $$('[data-uw-reason]').forEach(b => b.onclick = (e) => {
@@ -4308,10 +4524,12 @@
         e.stopPropagation();
         const d = State.uwDecision;
         const rec = RECORDS[State.currentId] || BDE;
-        if (d.mode === 'approve') {
-          rec.status = 'Quoted/Approved'; rec.statusKind = 'success';
+        if (d.mode === 'decline') {
+          rec.status = 'Declined'; rec.statusKind = 'error';
+        } else if (d.mode === 'needInfo') {
+          rec.status = 'Needs Info'; rec.statusKind = 'warn';
         } else {
-          rec.status = 'Rejected'; rec.statusKind = 'error';
+          rec.status = 'Quoted'; rec.statusKind = 'success';
         }
         closeUwDecision();
       };
@@ -4456,6 +4674,7 @@
           State.page = 'detail';
           State.tab = 'indication';
           State.activityOpen = true;
+          State.tlCollapsed = new Set();
           render();
         };
       });
@@ -4490,8 +4709,8 @@
           State.currentId = id;
           BDE = RECORDS[id];
           State.page = 'detail'; State.tab = 'indication';
-          // Open the activity drawer by default — matches Figma 36:7724
-          State.activityOpen = true;
+          State.activityOpen = false;
+          State.tlCollapsed = new Set();
           State.statusMenuOpen = false;
           render();
         };
@@ -4718,6 +4937,67 @@
         };
       }
 
+      // Timeline item collapse toggle
+      $$('[data-tl-collapse]').forEach(btn => btn.onclick = (e) => {
+        e.stopPropagation();
+        const idx = Number(btn.dataset.tlCollapse);
+        if (State.tlCollapsed.has(idx)) State.tlCollapsed.delete(idx);
+        else State.tlCollapsed.add(idx);
+        render();
+      });
+
+      // Rep picker — toggle dropdown open/closed
+      $$('[data-rep-toggle]').forEach(btn => btn.onclick = (e) => {
+        e.stopPropagation();
+        const which = btn.dataset.repToggle;
+        State.repDropdown = State.repDropdown === which ? null : which;
+        render();
+      });
+      // Rep picker — toggle a person in/out of the array
+      $$('[data-set-rep]').forEach(btn => btn.onclick = (e) => {
+        e.stopPropagation();
+        if (btn.disabled) return;
+        const field = btn.dataset.setRep;
+        const rec = RECORDS[State.currentId] || BDE;
+        const person = { name: btn.dataset.repName, av: btn.dataset.repAv, initials: btn.dataset.repInitials };
+        const arr = rec[field];
+        const idx = arr.findIndex(r => r.name === person.name);
+        if (idx === -1) {
+          arr.push(person);
+        } else if (arr.length > 1) {
+          arr.splice(idx, 1);
+        }
+        render();
+      });
+      // Close rep dropdown on outside click
+      if (State.repDropdown) {
+        const closeRep = (e) => {
+          if (!e.target.closest('.rep-picker-wrap')) {
+            State.repDropdown = null;
+            document.removeEventListener('mousedown', closeRep, true);
+            render();
+          }
+        };
+        setTimeout(() => document.addEventListener('mousedown', closeRep, true), 0);
+      }
+
+      // Need-by date picker
+      const needbyBtn = document.querySelector('[data-needby-edit]');
+      if (needbyBtn) needbyBtn.onclick = () => { State.needByEditing = true; render(); };
+      const needbyInput = document.getElementById('needby-input');
+      if (needbyInput) {
+        needbyInput.focus();
+        try { needbyInput.showPicker(); } catch(e) {}
+        needbyInput.onchange = (e) => {
+          const rec = RECORDS[State.currentId] || BDE;
+          rec.needBy = e.target.value;
+          State.needByEditing = false;
+          render();
+        };
+        needbyInput.onblur = () => { State.needByEditing = false; render(); };
+        needbyInput.onkeydown = (e) => { if (e.key === 'Escape') { State.needByEditing = false; render(); } };
+      }
+
       const openAd  = document.getElementById('open-activity-drawer');
       if (openAd) openAd.onclick = (e) => { e.stopPropagation(); State.activityOpen = !State.activityOpen; render(); };
       const closeAd = document.getElementById('close-activity-drawer');
@@ -4752,7 +5032,7 @@
 
       // Tab switches inside detail
       $$('.tab[data-tab]').forEach(t => {
-        t.onclick = () => { State.tab = t.dataset.tab; State.selectedClaims.clear(); render(); };
+        t.onclick = () => { State.tab = t.dataset.tab; State.selectedClaims.clear(); State.repDropdown = null; State.needByEditing = false; render(); };
       });
 
       /* --- Growth: column filter / sort / chip wiring ---------------------- */
