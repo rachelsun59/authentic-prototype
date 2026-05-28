@@ -1621,10 +1621,9 @@
     .uwq-page { display: flex; flex-direction: column; gap: 0; }
     .uwq-block {
       display: flex; flex-direction: column; gap: var(--sp-3);
-      padding: var(--sp-4) 0;
+      padding: 16px;
       border-bottom: 1px solid var(--border-soft);
     }
-    .uwq-block:first-child { padding-top: 0; }
     .uwq-block-q { font-size: 13px; color: var(--fg); line-height: 1.5; }
     .uwq-yn-btns { display: flex; gap: var(--sp-2); }
     .uwq-yn-btn {
@@ -1683,21 +1682,6 @@
     }
     .uwq-pct-input:focus { border-color: var(--info); box-shadow: 0 0 0 2px var(--info-bg); }
     .uwq-pct-unit { font-size: 13px; color: var(--fg-muted); }
-    .uwq-opt-wrap {
-      border: 1px solid var(--border); border-radius: var(--r-md);
-      overflow: hidden; margin-top: var(--sp-4);
-    }
-    .uwq-opt-header {
-      width: 100%; display: flex; align-items: center; gap: var(--sp-2);
-      padding: var(--sp-3) var(--sp-4); font-size: 13px; font-weight: 600;
-      background: #1A7A4A; color: #fff; border: none; cursor: pointer;
-      text-align: left;
-    }
-    .uwq-opt-body {
-      display: flex; flex-direction: column; gap: 0;
-      padding: 0 var(--sp-4);
-      background: var(--surface);
-    }
 
     /* Exposures tab */
     .exp-subtab-bar {
@@ -4675,15 +4659,17 @@
           </div>
 
           <!-- Optional Coverages -->
-          <div class="uwq-opt-wrap">
-            <button class="uwq-opt-header" data-uwq-opt-toggle>
-              <i class="ph ph-shield-plus" style="font-size:16px"></i>
-              <span>Optional Coverages</span>
-              <i class="ph ph-caret-${optOpen ? 'up' : 'down'}" style="margin-left:auto;font-size:13px"></i>
+          <div class="${optOpen ? 'acc-shell' : ''}" style="margin-top:var(--sp-4)">
+            <button class="acc-item" data-uwq-opt-toggle>
+              <span class="left">
+                <i class="ph ph-shield-plus" style="font-size:16px"></i>
+                <span class="title">Optional Coverages</span>
+              </span>
+              <span class="toggle-ico" aria-hidden="true">${optOpen ? '−' : '+'}</span>
             </button>
             ${optOpen ? `
-              <div class="uwq-opt-body">
-                <div class="uwq-block">
+              <div class="acc-body">
+                <div class="uwq-block" style="padding-top:var(--sp-2)">
                   <div class="uwq-block-q">Add Additional Insureds to your General Liability policy (e.g. Landlord, Franchisor, Municipality, Venue) <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></div>
                   ${yn('addlIns', addlIns)}
                   ${addlIns === 'yes' ? `
