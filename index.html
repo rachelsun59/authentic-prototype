@@ -2533,6 +2533,7 @@
       selectedClaims: new Set(),
       tlCollapsed: new Set(),                    // indices of collapsed timeline items
       exposuresSubTab: 'perExposure',            // 'perExposure' | 'addresses'
+      expStateOpen: new Set(['FL', 'NY']),       // expanded state accordions
       // Underwriter Decision modal — opened from the "Make Decision" button
       uwDecision: { open: false, mode: 'approve', declineReason: '', notes: '' },
       // "New Submission" modal flow — Figma 38:20599 / 38:21469 / 38:25386 /
@@ -4622,6 +4623,14 @@
       { addr:'27345 Wesley Chapel Blvd', city:'Wesley Chapel',   st:'FL', zip:'33544', sales:2420000, sqft:3260, emp:40, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:8960, lararo:100000 },
       { addr:'3030 Land O Lakes Blvd',   city:'Land O Lakes',    st:'FL', zip:'34639', sales:1750000, sqft:2810, emp:26, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6640,  lararo:100000 },
       { addr:'18302 N Dale Mabry Hwy',   city:'Lutz',            st:'FL', zip:'33548', sales:1880000, sqft:2870, emp:29, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7180,  lararo:100000 },
+      // New York locations
+      { addr:'250 W 34th St',            city:'New York',         st:'NY', zip:'10119', sales:2850000, sqft:3400, emp:48, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:12400, lararo:100000 },
+      { addr:'1500 Flatbush Ave',        city:'Brooklyn',         st:'NY', zip:'11210', sales:2210000, sqft:2980, emp:36, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL',        prem:10150, lararo:100000 },
+      { addr:'3601 Junction Blvd',       city:'Jackson Heights',  st:'NY', zip:'11372', sales:2430000, sqft:3100, emp:40, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:11200, lararo:100000 },
+      { addr:'2880 Broadway',            city:'New York',         st:'NY', zip:'10025', sales:3150000, sqft:3650, emp:52, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:13800, lararo:100000 },
+      { addr:'782 Clarkson Ave',         city:'Brooklyn',         st:'NY', zip:'11203', sales:1940000, sqft:2760, emp:30, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',        prem:8900,  lararo:100000 },
+      { addr:'147-38 Jamaica Ave',       city:'Jamaica',          st:'NY', zip:'11435', sales:2090000, sqft:2900, emp:33, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',        prem:9600,  lararo:100000 },
+      { addr:'2560 Webster Ave',         city:'Bronx',            st:'NY', zip:'10458', sales:1870000, sqft:2720, emp:28, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',        prem:8600,  lararo:100000 },
     ];
 
     function expLocIsValid(str) {
@@ -4632,7 +4641,7 @@
     function renderExposuresTab(rec) {
       const rows = EXPOSURE_ROWS;
 
-      // Editable cell helpers — same pattern as claims table
+      // Editable cell helpers
       const cText = (i, field, val, ph = '') => `
         <td class="cell-edit">
           <input class="cell-input cell-text" type="text" data-exp-row="${i}" data-exp-field="${field}"
@@ -4653,10 +4662,69 @@
         </td>`;
       };
 
-      const errCount = rows.filter((r, i) => {
+      const errCount = rows.filter(r => {
         const loc = `${r.addr}, ${r.city}, ${r.st} ${r.zip}`;
         return loc.trim().length > 0 && !expLocIsValid(loc);
       }).length;
+
+      // Group rows by state, preserving global row index for data-exp-row
+      const byState = {};
+      rows.forEach((r, i) => {
+        if (!byState[r.st]) byState[r.st] = [];
+        byState[r.st].push({ r, i });
+      });
+
+      const STATE_NAMES = { FL: 'Florida', NY: 'New York', CA: 'California', TX: 'Texas' };
+
+      const tableFor = (stateRows) => `
+        <div style="overflow-x:auto">
+          <table class="xtable excel-grid">
+            <thead>
+              <tr>
+                <th class="gut" style="width:32px"></th>
+                <th style="width:32px;text-align:center">#</th>
+                <th style="min-width:240px">Location</th>
+                <th class="r" style="min-width:120px">Annual Sales</th>
+                <th class="r" style="min-width:110px">Sqft</th>
+                <th class="r" style="min-width:90px">Employees</th>
+                <th style="min-width:100px">Coverage</th>
+                <th class="r" style="min-width:100px">Premium</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${stateRows.map(({ r, i }) => `
+                <tr>
+                  <td class="gut"><input type="checkbox" class="row-chk exp-row-chk" data-exp-chk="${i}"></td>
+                  <td style="text-align:center;color:var(--fg-muted)">${i + 1}</td>
+                  ${cLoc(i, `${r.addr}, ${r.city}, ${r.st} ${r.zip}`)}
+                  ${cNum (i, 'sales', r.sales)}
+                  ${cNum (i, 'sqft',  r.sqft)}
+                  ${cNum (i, 'emp',   r.emp)}
+                  ${cText(i, 'cov',   r.cov)}
+                  ${cNum (i, 'prem',  r.prem)}
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+
+      const stateAccordions = Object.entries(byState).map(([st, stateRows]) => {
+        const open = State.expStateOpen.has(st);
+        const totalPrem = stateRows.reduce((s, { r }) => s + (r.prem || 0), 0);
+        const stateName = STATE_NAMES[st] || st;
+        return `
+          <div class="${open ? 'acc-shell' : ''}" style="margin-bottom:var(--sp-3)">
+            <button class="acc-item" data-exp-state-toggle="${st}">
+              <span class="left">
+                <i class="ph ph-map-pin" style="font-size:16px"></i>
+                <span class="title">${stateName}</span>
+                <span style="font-size:11px;color:var(--fg-muted);font-weight:400">${stateRows.length} location${stateRows.length !== 1 ? 's' : ''}</span>
+                <span style="font-size:11px;color:var(--fg-muted);font-weight:400">· $${totalPrem.toLocaleString('en-US')} premium</span>
+              </span>
+              <span class="toggle-ico" aria-hidden="true">${open ? '−' : '+'}</span>
+            </button>
+            ${open ? `<div class="acc-body" style="padding:0">${tableFor(stateRows)}</div>` : ''}
+          </div>`;
+      }).join('');
 
       return `
         <div class="sec" style="padding-bottom:var(--sp-6)">
@@ -4667,35 +4735,8 @@
               <span class="pill error exp-err-badge" style="font-size:11px${errCount === 0 ? ';display:none' : ''}"><i class="ph ph-warning" style="font-size:11px;margin-right:3px"></i>${errCount} invalid address${errCount > 1 ? 'es' : ''}</span>
             </div>
           </div>
-          <div style="overflow-x:auto;margin-top:var(--sp-3)">
-            <table class="xtable excel-grid">
-              <thead>
-                <tr>
-                  <th class="gut" style="width:32px"><input type="checkbox" id="exp-chk-all" title="Select all"></th>
-                  <th style="width:32px;text-align:center">#</th>
-                  <th style="min-width:240px">Location</th>
-                  <th class="r" style="min-width:120px">Annual Sales</th>
-                  <th class="r" style="min-width:110px">Location Sqft</th>
-                  <th class="r" style="min-width:100px"># Employees</th>
-                  <th style="min-width:100px">Coverage</th>
-                  <th class="r" style="min-width:100px">Premium</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows.map((r, i) => `
-                  <tr>
-                    <td class="gut"><input type="checkbox" class="row-chk exp-row-chk" data-exp-chk="${i}"></td>
-                    <td style="text-align:center;color:var(--fg-muted)">${i + 1}</td>
-                    ${cLoc(i, `${r.addr}, ${r.city}, ${r.st} ${r.zip}`)}
-                    ${cNum (i, 'sales',    r.sales)}
-                    ${cNum (i, 'sqft',     r.sqft)}
-                    ${cNum (i, 'emp',      r.emp)}
-                    ${cText(i, 'cov',      r.cov)}
-                    ${cNum (i, 'prem',     r.prem)}
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
+          <div style="padding:var(--sp-3) var(--sp-3) 0">
+            ${stateAccordions}
           </div>
         </div>`;
     }
@@ -5543,6 +5584,15 @@
       // Exposures sub-tab
       $$('[data-exp-tab]').forEach(b => {
         b.onclick = () => { State.exposuresSubTab = b.dataset.expTab; render(); };
+      });
+      // Exposure state accordions
+      $$('[data-exp-state-toggle]').forEach(b => {
+        b.onclick = () => {
+          const st = b.dataset.expStateToggle;
+          if (State.expStateOpen.has(st)) State.expStateOpen.delete(st);
+          else State.expStateOpen.add(st);
+          render();
+        };
       });
       // UW Questions — text inputs
       $$('[data-uwq-field]').forEach(el => {
