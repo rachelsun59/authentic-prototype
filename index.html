@@ -344,10 +344,11 @@
     /* Strip the left/right padding from .detail-main when scrolled so the
        sticky band reaches the surface edges with no horizontal inset. */
     .surface.is-detail-scrolled .detail-main { padding-left: 0; padding-right: 0; }
-    /* Restore the side padding on non-sticky content below the band so the
-       indication tables and form cards don't hug the edges. */
-    .surface.is-detail-scrolled .detail-main > :not(.detail-sticky) {
-      padding-left: var(--sp-5); padding-right: var(--sp-5);
+    /* .sec cards go full-width edge-to-edge when scrolled */
+    .surface.is-detail-scrolled .sec {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
     }
     .surface.is-detail-scrolled .stat-strip .sticky-actions { display: inline-flex; }
     .surface.is-detail-scrolled .stat-cell .value { font-size: 18px; line-height: 22px; }
