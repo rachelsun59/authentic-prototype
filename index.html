@@ -2292,6 +2292,13 @@
       .user-chip { padding: 4px 6px; }
       .user-chip span:not(.avatar) { display: none; }
 
+      /* Tighten surface + detail-main padding */
+      .surface { padding-left: var(--sp-3); padding-right: var(--sp-3); }
+      .detail-main { padding: var(--sp-3); }
+      .surface.is-detail-scrolled .detail-main > :not(.detail-sticky) {
+        padding-left: var(--sp-3); padding-right: var(--sp-3);
+      }
+
       /* Stat strip — single column, otherwise the value font crowds the label */
       .stat-strip { grid-template-columns: 1fr; }
 
@@ -2304,16 +2311,43 @@
       /* Tabs — allow horizontal scroll if too crowded */
       .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
 
+      /* All data tables: horizontal scroll container */
+      .xtable, .gtable { white-space: normal; }
+      [style*="overflow-x:auto"], div > .xtable, div > table { overflow-x: auto; }
+      .xtable th, .xtable td { white-space: nowrap; }
+
       /* Quote form rows — drop side-by-side mailing+unit to stacked */
       .qf-row { flex-direction: column; }
       .qf-row .qf-field.unit { flex: 1; }
 
       /* Indication form rows — labels above inputs, not side-by-side */
       .form-row { grid-template-columns: 1fr; gap: var(--sp-1); }
+      .form-row .control { max-width: 100%; }
 
       /* Section padding shrinks */
       .home-action-row h1, .h1 { font-size: 32px; line-height: 36px; }
       .h2 { font-size: 24px; line-height: 28px; }
+
+      /* Claims bulk-action toolbar: hide label text, keep buttons */
+      .cfb-label { display: none; }
+      .claims-float-bar { gap: 6px; padding: 4px 8px; }
+
+      /* Detail head title shrinks */
+      .detail-head .title-row h1 { font-size: 20px; line-height: 24px; }
+      .autosave-badge { display: none; }
+
+      /* Meta row wraps tightly */
+      .meta-row { gap: 4px; }
+      .meta-vsep { display: none; }
+      .meta-val { font-size: 10px; }
+
+      /* UW Questions: tighten padding */
+      .uwq-block { padding: 12px; }
+      .uwq-yn-btn { padding: 5px 12px; }
+
+      /* Accordion body padding */
+      .acc-shell .acc-body { padding: var(--sp-2); }
+      .sec-head { padding: var(--sp-2) var(--sp-3); }
 
       /* New Submission stepper — collapse second step to just the dot */
       .stepper .step { min-width: 32px; }
@@ -2322,6 +2356,33 @@
       .modal-body { padding: 0 var(--sp-4); }
       .modal-foot { padding: var(--sp-3) var(--sp-4); flex-wrap: wrap; }
       .modal-foot .left, .modal-foot .right { flex: 1 1 auto; justify-content: flex-end; }
+
+      /* Breadcrumb: truncate long names */
+      .breadcrumb { flex-wrap: nowrap; overflow: hidden; }
+      .breadcrumb .crumb-cur { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+
+      /* Rep picker: stack on very small screens */
+      .rep-picker-btn b { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+
+      /* Activity drawer: full-width on mobile */
+      .activity-drawer { width: 100% !important; }
+      .detail-shell.with-drawer { flex-direction: column; }
+      .detail-shell.with-drawer .activity-drawer { border-left: none; border-top: 1px solid var(--border); max-height: 50vh; overflow-y: auto; }
+    }
+
+    /* 375px: fine-tune for smallest phones */
+    @media (max-width: 390px) {
+      .surface { padding-left: var(--sp-2); padding-right: var(--sp-2); }
+      .detail-main { padding: var(--sp-2); }
+      .surface.is-detail-scrolled .detail-main > :not(.detail-sticky) {
+        padding-left: var(--sp-2); padding-right: var(--sp-2);
+      }
+      .detail-head .title-row h1 { font-size: 18px; line-height: 22px; }
+      .badge-sub { display: none; }
+      .tabs .tab { font-size: 12px; padding: 5px 8px; }
+      .stat-cell .value { font-size: 18px; line-height: 22px; }
+      .detail-actions .btn-primary span { display: none; }
+      .uwq-block { padding: 8px; }
     }
   </style>
 </head>
