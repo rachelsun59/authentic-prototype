@@ -452,6 +452,16 @@
       margin-bottom: 4px;
     }
     .breadcrumb .crumb-cur { color: var(--fg-muted); }
+    .crumb-link {
+      background: none; border: none; padding: 0; cursor: pointer;
+      font-size: 12px; color: var(--fg-muted); font-family: inherit;
+    }
+    .crumb-link:hover { color: var(--fg); text-decoration: underline; }
+    .meta-vsep {
+      display: inline-block; width: 1px; height: 14px;
+      background: var(--border); flex-shrink: 0; align-self: center;
+    }
+    .meta-val { color: var(--fg); font-size: 10px; white-space: nowrap; }
 
     /* Buttons — matches the DS Button (variant: base / primary / icon / link).
        Per DS: base radius, 1px border (DS borderBaseWidthPx), fontSize sm (14px),
@@ -1429,12 +1439,12 @@
       font-size: 12px; line-height: 14px; font-weight: 500;
     }
     .meta-row {
-      display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap;
+      display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap;
       margin-top: var(--sp-2);
-      font-size: 13px; line-height: 16px;
+      font-size: 10px; line-height: 12px;
     }
-    .meta-row .meta-k { color: var(--fg-muted); margin-right: 4px; }
-    .meta-row .meta-pair { display: inline-flex; align-items: center; gap: var(--sp-2); }
+    .meta-row .meta-k { color: var(--fg-muted); margin-right: 2px; }
+    .meta-row .meta-pair { display: inline-flex; align-items: center; gap: var(--sp-1); }
 
     /* Rep picker */
     .rep-picker-wrap { position: relative; }
@@ -2582,7 +2592,7 @@
         policyStartDate: 'May 11, 2026',
         basicInfo: {
           fullName:      'Laura Martinez',
-          phone:         '',
+          phone:         '(407)-617-0870',
           mailingAddress:'1032 E Brandon Blvd, Brandon, FL 33511, US',
           unit:          'Suit 44',
           businessName:  'BDE Florida, LLC',
@@ -3680,13 +3690,28 @@
         </div>
 
         <div class="detail-head">
-          <div>
+          <div style="flex:1;min-width:0">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+              <button class="crumb-link" data-nav="home">Growth</button>
+              <i class="ph ph-caret-right" style="font-size:10px"></i>
+              <span class="crumb-cur">${rec.name}</span>
+            </div>
+
+            <!-- Title row -->
             <div class="title-row">
               <h1>${rec.name.replace(', LLC','').toUpperCase().includes('BDE') ? 'BDE FLORIDA' : rec.name}</h1>
               <span class="badge-sub">Submission</span>
+              <button class="icon-btn" style="margin-left:var(--sp-1)" title="More actions"><i class="ph ph-dots-three" style="font-size:16px"></i></button>
             </div>
+
+            <!-- Info row -->
             <div class="meta-row">
-              <span class="app-id-tip" title="${rec.fullAppId || rec.appId}"><span class="meta-k">${rec.appId}</span></span>
+              <span class="meta-k app-id-tip" title="${rec.fullAppId || rec.appId}">${rec.appId}</span>
+              ${rec.quote?.basicInfo?.fullName ? `<span class="meta-vsep"></span><span class="meta-val">${rec.quote.basicInfo.fullName}</span>` : ''}
+              ${rec.quote?.basicInfo?.phone    ? `<span class="meta-vsep"></span><span class="meta-val">${rec.quote.basicInfo.phone}</span>` : ''}
+              ${rec.quote?.basicInfo?.mailingAddress ? `<span class="meta-vsep"></span><span class="meta-val">${rec.quote.basicInfo.mailingAddress}</span>` : ''}
+              <span class="meta-vsep"></span>
               <span class="meta-pair rep-picker-wrap">
                 <span class="meta-k">Sales Rep:</span>
                 <button class="rep-picker-btn" data-rep-toggle="salesRep">
@@ -3708,6 +3733,7 @@
                   </div>
                 ` : ''}
               </span>
+              <span class="meta-vsep"></span>
               <span class="meta-pair rep-picker-wrap">
                 <span class="meta-k">UW Rep:</span>
                 <button class="rep-picker-btn" data-rep-toggle="uwRep">
@@ -3729,6 +3755,7 @@
                   </div>
                 ` : ''}
               </span>
+              <span class="meta-vsep"></span>
               <span class="meta-pair needby-wrap">
                 <span class="meta-k">Need by:</span>
                 ${State.needByEditing ? `
@@ -5007,7 +5034,7 @@
 
 
       // Nav clicks — also dismiss the mobile overlay
-      $$('.nav-item[data-nav]').forEach(n => {
+      $$('.nav-item[data-nav], .crumb-link[data-nav]').forEach(n => {
         n.onclick = () => {
           const t = n.dataset.nav;
           if (t === 'home' || t === 'growth') { State.page = t; State.currentId = null; State.mobileNavOpen = false; render(); }
