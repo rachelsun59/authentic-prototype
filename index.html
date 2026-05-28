@@ -4584,6 +4584,26 @@
     }
 
     /* ---- UW Questions tab ---- */
+    const LRARO_RATES = {
+      AL:5.82, AZ:6.15, CA:8.45, CO:6.75, CT:7.80,
+      FL:6.48, GA:6.20, IL:7.35, IN:5.95, MA:8.10,
+      MD:7.20, MI:6.60, MN:6.90, MO:5.75, NC:6.05,
+      NJ:8.80, NV:7.50, NY:9.20, OH:6.30, PA:7.65,
+      SC:5.90, TN:5.85, TX:7.12, VA:6.45, WA:7.25, WI:6.15,
+    };
+
+    function calcLraroMult() {
+      let totalSales = 0, weightedSum = 0;
+      for (const r of EXPOSURE_ROWS) {
+        const rate = LRARO_RATES[r.st];
+        if (rate == null) continue;
+        weightedSum += rate * r.sales;
+        totalSales  += r.sales;
+      }
+      if (totalSales === 0) return 6.48;
+      return Math.round((weightedSum / totalSales) * 100) / 100;
+    }
+
     const UWQ_KNOCKOUTS = [
       { id:'osha',       text:'My business has had serious OSHA violations in the past 3 years' },
       { id:'bankruptcy', text:'My business filed for bankruptcy in the past 3 years' },
@@ -4644,10 +4664,25 @@
           </div>
 
           <!-- LRARO Rate Multiplier -->
-          <div class="uwq-value-card">
-            <div class="uwq-vc-label">LRARO Rate Multiplier</div>
-            <input class="uwq-vc-input" type="text" inputmode="decimal" data-uwq-field="lraroMult" value="${q.lraroMult ?? 6.48}"/>
-          </div>
+          ${(() => {
+            const stateRates = [...new Map(
+              EXPOSURE_ROWS.filter(r => LRARO_RATES[r.st]).map(r => [r.st, LRARO_RATES[r.st]])
+            )];
+            const mult = calcLraroMult();
+            const multiState = stateRates.length > 1;
+            return `
+            <div class="uwq-value-card">
+              <div class="uwq-vc-label">LRARO Rate Multiplier</div>
+              <div style="display:flex;align-items:baseline;gap:var(--sp-2)">
+                <span style="font-size:15px;font-weight:600;color:var(--fg)">${mult.toFixed(2)}</span>
+                ${multiState ? `<span style="font-size:11px;color:var(--fg-muted)">(sales-weighted avg)</span>` : `<span style="font-size:11px;color:var(--fg-muted)">${stateRates[0]?.[0] ?? ''} rate</span>`}
+              </div>
+              ${stateRates.length > 0 ? `
+              <div style="display:flex;gap:var(--sp-2);margin-top:6px;flex-wrap:wrap">
+                ${stateRates.map(([st, rate]) => `<span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--fg-muted)">${st} ${rate.toFixed(2)}</span>`).join('')}
+              </div>` : ''}
+            </div>`;
+          })()}
 
           <!-- Annual Alcohol Sales % -->
           <div class="uwq-block">
