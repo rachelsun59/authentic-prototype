@@ -3682,13 +3682,6 @@
       // Number of "comment" badges — count timeline entries since last view
       const commentCount = tlCount;
       return `
-        <div class="breadcrumb">
-          <span data-go="growth">Growth</span>
-          <i class="ph ph-caret-right" style="font-size:10px"></i>
-          <span>${rec.name.replace(', LLC','').toUpperCase().includes('BDE') ? 'BDE FLORIDA' : rec.name}</span>
-          <i class="ph ph-caret-right" style="font-size:10px"></i>
-        </div>
-
         <div class="detail-head">
           <div style="flex:1;min-width:0">
             <!-- Breadcrumb -->
