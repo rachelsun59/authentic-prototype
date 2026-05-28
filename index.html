@@ -1424,6 +1424,14 @@
     .detail-head .title-row {
       display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
     }
+    .autosave-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; color: var(--fg-muted); font-weight: 400;
+      transition: color .2s;
+    }
+    .autosave-badge.is-saving { color: var(--info); }
+    @keyframes autosave-spin { to { transform: rotate(360deg); } }
+    .autosave-spin { display: inline-block; animation: autosave-spin .7s linear infinite; }
     .detail-head .title-row h1 {
       font-family: var(--font-display);
       font-size: 32px; line-height: 36px; font-weight: 400;
@@ -1617,7 +1625,7 @@
     }
     .sec-head {
       display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3);
-      padding: var(--sp-3) var(--sp-4);
+      padding: var(--sp-3) var(--sp-3);
       border-bottom: 1px solid var(--border-soft);
     }
     .sec-head .left { display: inline-flex; align-items: baseline; gap: var(--sp-3); flex-wrap: wrap; }
@@ -2455,6 +2463,7 @@
       quoteExpanded: new Set(),
       // Quote billing toggle — 'annual' shows /yr, 'agency' shows /mo
       quoteBilling: 'annual',
+      autoSave: 'saved',           // 'saved' | 'saving'
       // Sidebar collapsed state (icon-only narrow rail) — Figma 78:25178
       sidebarCollapsed: false,
       // Mobile-only: when true, the sidebar slides in as a full-height overlay
@@ -3693,6 +3702,11 @@
             <!-- Title row -->
             <div class="title-row">
               <h1>${rec.name.replace(', LLC','').toUpperCase().includes('BDE') ? 'BDE FLORIDA' : rec.name}</h1>
+              <span class="autosave-badge ${State.autoSave === 'saving' ? 'is-saving' : ''}">
+                ${State.autoSave === 'saving'
+                  ? `<i class="ph ph-circle-notch autosave-spin"></i> Saving…`
+                  : `<i class="ph ph-check-circle"></i> Saved`}
+              </span>
               <span class="badge-sub">Submission</span>
               <button class="icon-btn" style="margin-left:var(--sp-1)" title="More actions"><i class="ph ph-dots-three" style="font-size:16px"></i></button>
             </div>
@@ -4820,6 +4834,20 @@
       setTimeout(() => { el.hidden = true; el.classList.remove('is-out'); }, 260);
     }
 
+    let _autoSaveTimer = null;
+    function triggerAutoSave() {
+      if (State.page !== 'detail') return;
+      State.autoSave = 'saving';
+      const badge = document.querySelector('.autosave-badge');
+      if (badge) { badge.className = 'autosave-badge is-saving'; badge.innerHTML = '<i class="ph ph-circle-notch autosave-spin"></i> Saving…'; }
+      clearTimeout(_autoSaveTimer);
+      _autoSaveTimer = setTimeout(() => {
+        State.autoSave = 'saved';
+        const b = document.querySelector('.autosave-badge');
+        if (b) { b.className = 'autosave-badge'; b.innerHTML = '<i class="ph ph-check-circle"></i> Saved'; }
+      }, 1200);
+    }
+
     function render() {
       const main = $('#main');
       // Preserve scroll position on the detail page so actions don't jump to top
@@ -5136,6 +5164,7 @@
             const num = raw === '' || raw === '.' ? 0 : Number(raw);
             BDE.claims[i][f] = isNaN(num) ? 0 : num;
           }
+          triggerAutoSave();
           bdeRerenderPreservingFocus();
         };
       });
@@ -5151,6 +5180,7 @@
           } else {
             EXPOSURE_ROWS[i][f === 'location' ? 'addr' : f] = inp.value;
           }
+          triggerAutoSave();
           // Live error state for location cells — no full re-render needed
           if (f === 'location') {
             const td = inp.closest('td');
@@ -5275,6 +5305,7 @@
         inp.oninput = () => {
           const f = inp.dataset.quoteField;
           BDE.quote.basicInfo[f] = inp.value;
+          triggerAutoSave();
           quoteRerenderPreservingFocus(`input[data-quote-field="${f}"]`);
         };
       });
@@ -5379,6 +5410,7 @@
         } else if (arr.length > 1) {
           arr.splice(idx, 1);
         }
+        triggerAutoSave();
         render();
       });
       // Close rep dropdown on outside click
@@ -5404,6 +5436,7 @@
           const rec = RECORDS[State.currentId] || BDE;
           rec.needBy = e.target.value;
           State.needByEditing = false;
+          triggerAutoSave();
           render();
         };
         needbyInput.onblur = () => { State.needByEditing = false; render(); };
@@ -5456,6 +5489,7 @@
           const rec = RECORDS[State.currentId] || BDE;
           if (!rec.uwq) rec.uwq = {};
           rec.uwq[el.dataset.uwqField] = el.value;
+          triggerAutoSave();
         };
       });
       // UW Questions — Yes/No toggle buttons
