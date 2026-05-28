@@ -1783,6 +1783,10 @@
       color: var(--fg);
     }
     .xtable td.cell-edit input.cell-input::placeholder { color: var(--fg-muted); font-style: italic; }
+    .xtable td.cell-edit.cell-invalid { background: var(--err-bg); }
+    .xtable td.cell-edit.cell-invalid:hover { background: #f5d0ce; }
+    .xtable td.cell-edit.cell-invalid:focus-within { background: var(--err-bg); box-shadow: inset 0 0 0 2px var(--err); }
+    .xtable td.cell-edit.cell-invalid input.cell-input { color: var(--err); }
     /* Per-row delete button living in the gutter */
     .xtable td.gut { text-align: center; }
     .xtable td.gut .row-chk,
@@ -4527,6 +4531,11 @@
       { addr:'18302 N Dale Mabry Hwy',   city:'Lutz',            st:'FL', zip:'33548', sales:1880000, sqft:2870, emp:29, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7180,  lararo:100000 },
     ];
 
+    function expLocIsValid(str) {
+      const s = String(str || '').trim();
+      return s.includes(',') && /\d/.test(s) && /\b[A-Z]{2}\b/.test(s) && /\b\d{5}\b/.test(s);
+    }
+
     function renderExposuresTab(rec) {
       const rows = EXPOSURE_ROWS;
 
@@ -4541,6 +4550,20 @@
           <input class="cell-input" type="text" inputmode="decimal" data-exp-row="${i}" data-exp-field="${field}"
             value="${val == null ? '' : val}"/>
         </td>`;
+      const cLoc = (i, val) => {
+        const loc = val == null ? '' : String(val);
+        const invalid = loc.trim().length > 0 && !expLocIsValid(loc);
+        return `
+        <td class="cell-edit${invalid ? ' cell-invalid' : ''}"${invalid ? ' title="Expected format: Street, City, ST 00000"' : ''}>
+          <input class="cell-input cell-text" type="text" data-exp-row="${i}" data-exp-field="location"
+            value="${loc.replace(/"/g, '&quot;')}" placeholder="Street, City, ST ZIP"/>
+        </td>`;
+      };
+
+      const errCount = rows.filter((r, i) => {
+        const loc = `${r.addr}, ${r.city}, ${r.st} ${r.zip}`;
+        return loc.trim().length > 0 && !expLocIsValid(loc);
+      }).length;
 
       return `
         <div class="sec" style="padding-bottom:var(--sp-6)">
@@ -4548,6 +4571,7 @@
             <div class="left">
               <strong>Exposures</strong>
               <span class="sub">${rows.length} locations · every cell editable</span>
+              <span class="pill error exp-err-badge" style="font-size:11px${errCount === 0 ? ';display:none' : ''}"><i class="ph ph-warning" style="font-size:11px;margin-right:3px"></i>${errCount} invalid address${errCount > 1 ? 'es' : ''}</span>
             </div>
           </div>
           <div style="overflow-x:auto;margin-top:var(--sp-3)">
@@ -4569,7 +4593,7 @@
                   <tr>
                     <td class="gut"><input type="checkbox" class="row-chk exp-row-chk" data-exp-chk="${i}"></td>
                     <td style="text-align:center;color:var(--fg-muted)">${i + 1}</td>
-                    ${cText(i, 'location', `${r.addr}, ${r.city}, ${r.st} ${r.zip}`)}
+                    ${cLoc(i, `${r.addr}, ${r.city}, ${r.st} ${r.zip}`)}
                     ${cNum (i, 'sales',    r.sales)}
                     ${cNum (i, 'sqft',     r.sqft)}
                     ${cNum (i, 'emp',      r.emp)}
@@ -5108,6 +5132,25 @@
             EXPOSURE_ROWS[i][f] = isNaN(n) ? 0 : n;
           } else {
             EXPOSURE_ROWS[i][f === 'location' ? 'addr' : f] = inp.value;
+          }
+          // Live error state for location cells — no full re-render needed
+          if (f === 'location') {
+            const td = inp.closest('td');
+            const invalid = inp.value.trim().length > 0 && !expLocIsValid(inp.value);
+            td.classList.toggle('cell-invalid', invalid);
+            td.title = invalid ? 'Expected format: Street, City, ST 00000' : '';
+            // Recount and update the header badge
+            const errCount = $$('input.cell-input[data-exp-field="location"]')
+              .filter(el => el.value.trim().length > 0 && !expLocIsValid(el.value)).length;
+            const badgeEl = document.querySelector('.exp-err-badge');
+            if (badgeEl) {
+              if (errCount > 0) {
+                badgeEl.textContent = `${errCount} invalid address${errCount > 1 ? 'es' : ''}`;
+                badgeEl.style.display = '';
+              } else {
+                badgeEl.style.display = 'none';
+              }
+            }
           }
         };
       });
