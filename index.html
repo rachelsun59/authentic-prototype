@@ -1616,6 +1616,120 @@
     .sec-head .left .sub { font-size: 12px; color: var(--fg-muted); }
     .sec-head .right { display: inline-flex; align-items: center; gap: var(--sp-2); }
 
+    /* UW Questions tab */
+    /* UW Questions tab */
+    .uwq-page { display: flex; flex-direction: column; gap: 0; }
+    .uwq-block {
+      display: flex; flex-direction: column; gap: var(--sp-3);
+      padding: var(--sp-4) 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .uwq-block:first-child { padding-top: 0; }
+    .uwq-block-q { font-size: 13px; color: var(--fg); line-height: 1.5; }
+    .uwq-yn-btns { display: flex; gap: var(--sp-2); }
+    .uwq-yn-btn {
+      padding: 5px 18px; font-size: 13px; font-weight: 500;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      background: var(--surface); color: var(--fg); cursor: pointer;
+    }
+    .uwq-yn-btn.active {
+      background: #EBF9F1; border-color: #27AE60; color: #27AE60;
+    }
+    .uwq-knock-list { display: flex; flex-direction: column; gap: 0; }
+    .uwq-knock-item {
+      display: flex; align-items: flex-start; gap: var(--sp-3);
+      padding: 8px 0; cursor: pointer;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .uwq-knock-item:last-child { border-bottom: none; }
+    .uwq-knock-chk, .uwq-none-radio { display: none; }
+    .uwq-circle {
+      flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px;
+      border: 2px solid var(--border); border-radius: 50%;
+      background: var(--surface);
+      transition: border-color .15s, background .15s;
+      position: relative;
+    }
+    .uwq-knock-chk:checked + .uwq-circle,
+    .uwq-none-radio:checked + .uwq-circle {
+      border-color: var(--primary); background: var(--primary);
+    }
+    .uwq-knock-chk:checked + .uwq-circle::after,
+    .uwq-none-radio:checked + .uwq-circle::after {
+      content: ''; position: absolute;
+      top: 3px; left: 3px;
+      width: 8px; height: 8px;
+      border-radius: 50%; background: #fff;
+    }
+    .uwq-knock-text { font-size: 13px; color: var(--fg); line-height: 1.5; flex: 1; }
+    .uwq-knock-sep { height: 1px; background: var(--border); margin: 4px 0; }
+    .uwq-value-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4);
+      margin-top: var(--sp-1);
+    }
+    .uwq-vc-label { font-size: 11px; color: var(--fg-muted); margin-bottom: 2px; }
+    .uwq-vc-input {
+      border: none; background: transparent; font-size: 15px; font-weight: 600;
+      color: var(--fg); width: 100%; outline: none; padding: 0;
+    }
+    .uwq-vc-input--text { font-size: 13px; font-weight: 400; }
+    .uwq-vc-input:focus { border-bottom: 1px solid var(--info); }
+    .uwq-pct-row { display: flex; align-items: center; gap: var(--sp-2); }
+    .uwq-pct-input {
+      width: 80px; padding: 5px 8px; font-size: 13px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      background: var(--surface); color: var(--fg); outline: none;
+    }
+    .uwq-pct-input:focus { border-color: var(--info); box-shadow: 0 0 0 2px var(--info-bg); }
+    .uwq-pct-unit { font-size: 13px; color: var(--fg-muted); }
+    .uwq-opt-wrap {
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      overflow: hidden; margin-top: var(--sp-4);
+    }
+    .uwq-opt-header {
+      width: 100%; display: flex; align-items: center; gap: var(--sp-2);
+      padding: var(--sp-3) var(--sp-4); font-size: 13px; font-weight: 600;
+      background: #1A7A4A; color: #fff; border: none; cursor: pointer;
+      text-align: left;
+    }
+    .uwq-opt-body {
+      display: flex; flex-direction: column; gap: 0;
+      padding: 0 var(--sp-4);
+      background: var(--surface);
+    }
+
+    /* Exposures tab */
+    .exp-subtab-bar {
+      display: inline-flex; gap: 2px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 3px;
+      margin-bottom: var(--sp-3);
+    }
+    .exp-subtab {
+      height: 28px; padding: 0 12px;
+      background: transparent; border: none; border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 500; color: var(--fg-muted);
+      cursor: pointer; transition: background 120ms, color 120ms;
+      white-space: nowrap;
+    }
+    .exp-subtab:hover { color: var(--fg); }
+    .exp-subtab.active { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .exp-table thead th { white-space: nowrap; }
+    .exp-addr-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
+    .exp-addr-row {
+      display: flex; align-items: center; gap: var(--sp-3);
+      padding: 10px var(--sp-4);
+      border-bottom: 1px solid var(--border-soft);
+      font-size: 13px;
+    }
+    .exp-addr-row:last-child { border-bottom: none; }
+    .exp-addr-row:hover { background: var(--bg); }
+    .exp-addr-num { color: var(--fg-muted); font-size: 12px; min-width: 20px; text-align: right; }
+    .exp-addr-info { flex: 1; min-width: 0; }
+    .exp-addr-main { font-weight: 500; color: var(--fg); }
+    .exp-addr-meta { font-size: 12px; color: var(--fg-muted); margin-top: 2px; }
+
     /* Excel-style data table */
     .xtable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
     .xtable th, .xtable td {
@@ -2351,6 +2465,7 @@
       // Claims tab — indices of selected rows for bulk delete
       selectedClaims: new Set(),
       tlCollapsed: new Set(),                    // indices of collapsed timeline items
+      exposuresSubTab: 'perExposure',            // 'perExposure' | 'addresses'
       // Underwriter Decision modal — opened from the "Make Decision" button
       uwDecision: { open: false, mode: 'approve', declineReason: '', notes: '' },
       // "New Submission" modal flow — Figma 38:20599 / 38:21469 / 38:25386 /
@@ -3276,7 +3391,6 @@
           <div class="home-card">
             <div class="card-head">
               <h3>In your queue <span class="badge">${HOME_QUEUE.filter(r => r.needBy === 'Today' || r.status === 'Need Info').length}</span></h3>
-              <a class="open-link" data-go="growth">Open Growth <i class="ph ph-arrow-right" style="font-size:12px"></i></a>
             </div>
             ${q}
           </div>
@@ -3695,6 +3809,8 @@
           <div class="tabs">
             <button class="tab ${State.tab==='indication'?'active':''}" data-tab="indication">Indication</button>
             <button class="tab ${State.tab==='loss-run'?'active':''}" data-tab="loss-run">Claims</button>
+            <button class="tab ${State.tab==='exposures'?'active':''}" data-tab="exposures">Exposures</button>
+            <button class="tab ${State.tab==='uwq'?'active':''}" data-tab="uwq">UW Questions</button>
             <button class="tab ${State.tab==='quote'?'active':''}" data-tab="quote">Quote <span class="badge">1</span></button>
           </div>
         </div>
@@ -4338,12 +4454,6 @@
                     const bad = (BDE.quote.locations || []).filter(l => !quoteAddressIsValid(l.address)).length;
                     return bad > 0 ? { type:'error', count: bad } : null;
                   })())}
-              ${quoteSection('uw',        'question',      'Underwriting Questions',
-                  `<div class="qf-field"><div class="stack"><span class="label">Prior carrier non-renewal?</span><input type="text" placeholder="Yes / No"/></div></div>`,
-                  { type:'missing', count: 1 })}
-              ${quoteSection('optional',  'plus-circle',   'Optional Coverages',
-                  `<div class="qf-field"><div class="stack"><span class="label">Cyber liability</span><input type="text" placeholder="Decline / Add"/></div></div>`,
-                  { type:'missing', count: 1 })}
             </div>
           </div>
 
@@ -4402,11 +4512,216 @@
       `;
     }
 
+    /* ---- Exposures tab ---- */
+    const EXPOSURE_ROWS = [
+      { addr:'3401 5th Ave N',           city:'St. Petersburg', st:'FL', zip:'33713', sales:2102629, sqft:3112, emp:35, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:8210,  lararo:100000 },
+      { addr:'2840 34th St N',           city:'St. Petersburg', st:'FL', zip:'33713', sales:1874500, sqft:2890, emp:28, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7540,  lararo:100000 },
+      { addr:'4625 Henderson Blvd',      city:'Tampa',          st:'FL', zip:'33629', sales:2340000, sqft:3240, emp:41, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:9180, lararo:100000 },
+      { addr:'1610 E Busch Blvd',        city:'Tampa',          st:'FL', zip:'33612', sales:2670000, sqft:3500, emp:44, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:9820, lararo:100000 },
+      { addr:'8901 N Dale Mabry Hwy',    city:'Tampa',          st:'FL', zip:'33614', sales:1990000, sqft:2960, emp:32, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:7100,  lararo:100000 },
+      { addr:'3105 W Hillsborough Ave',  city:'Tampa',          st:'FL', zip:'33614', sales:2215000, sqft:3050, emp:37, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7880,  lararo:100000 },
+      { addr:'1235 Bloomingdale Ave',    city:'Brandon',        st:'FL', zip:'33511', sales:2480000, sqft:3300, emp:39, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:9010, lararo:100000 },
+      { addr:'700 W Brandon Blvd',       city:'Brandon',        st:'FL', zip:'33511', sales:2105000, sqft:3080, emp:33, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:7420,  lararo:100000 },
+      { addr:'10029 E Adamo Dr',         city:'Tampa',          st:'FL', zip:'33619', sales:1760000, sqft:2750, emp:26, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6660,  lararo:100000 },
+      { addr:'4920 N Armenia Ave',       city:'Tampa',          st:'FL', zip:'33603', sales:1830000, sqft:2820, emp:29, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7050,  lararo:100000 },
+      { addr:'6231 Gall Blvd',           city:'Zephyrhills',    st:'FL', zip:'33542', sales:1540000, sqft:2640, emp:22, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:5980,  lararo:100000 },
+      { addr:'4135 Sun City Center Blvd',city:'Sun City Center',st:'FL', zip:'33573', sales:1620000, sqft:2710, emp:24, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6240,  lararo:100000 },
+      { addr:'3105 SR 674',              city:'Ruskin',         st:'FL', zip:'33570', sales:1720000, sqft:2800, emp:27, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6590,  lararo:100000 },
+      { addr:'5480 Trouble Creek Rd',    city:'New Port Richey', st:'FL', zip:'34652', sales:1850000, sqft:2900, emp:30, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7120,  lararo:100000 },
+      { addr:'2140 Seven Springs Blvd',  city:'New Port Richey', st:'FL', zip:'34655', sales:1910000, sqft:2950, emp:31, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7290,  lararo:100000 },
+      { addr:'18959 US-19 N',            city:'Clearwater',      st:'FL', zip:'33764', sales:2050000, sqft:3020, emp:34, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7680,  lararo:100000 },
+      { addr:'1200 Missouri Ave N',      city:'Largo',           st:'FL', zip:'33770', sales:1780000, sqft:2840, emp:27, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6730,  lararo:100000 },
+      { addr:'7200 Park Blvd N',         city:'Pinellas Park',   st:'FL', zip:'33781', sales:1920000, sqft:2930, emp:30, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7310,  lararo:100000 },
+      { addr:'1551 Main St',             city:'Dunedin',         st:'FL', zip:'34698', sales:1660000, sqft:2720, emp:23, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6350,  lararo:100000 },
+      { addr:'802 McMullen Booth Rd',    city:'Safety Harbor',   st:'FL', zip:'34695', sales:1590000, sqft:2680, emp:22, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6100,  lararo:100000 },
+      { addr:'10112 Riverview Dr',       city:'Riverview',       st:'FL', zip:'33578', sales:2280000, sqft:3180, emp:38, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:8790, lararo:100000 },
+      { addr:'3023 Lithia Pinecrest Rd', city:'Valrico',         st:'FL', zip:'33596', sales:1700000, sqft:2770, emp:25, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6490,  lararo:100000 },
+      { addr:'1906 W Baker St',          city:'Plant City',      st:'FL', zip:'33563', sales:1640000, sqft:2700, emp:23, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6280,  lararo:100000 },
+      { addr:'3210 US-98 N',             city:'Lakeland',        st:'FL', zip:'33805', sales:1980000, sqft:2980, emp:32, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7450,  lararo:100000 },
+      { addr:'27345 Wesley Chapel Blvd', city:'Wesley Chapel',   st:'FL', zip:'33544', sales:2420000, sqft:3260, emp:40, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:8960, lararo:100000 },
+      { addr:'3030 Land O Lakes Blvd',   city:'Land O Lakes',    st:'FL', zip:'34639', sales:1750000, sqft:2810, emp:26, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6640,  lararo:100000 },
+      { addr:'18302 N Dale Mabry Hwy',   city:'Lutz',            st:'FL', zip:'33548', sales:1880000, sqft:2870, emp:29, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7180,  lararo:100000 },
+    ];
+
+    function renderExposuresTab(rec) {
+      const rows = EXPOSURE_ROWS;
+
+      // Editable cell helpers — same pattern as claims table
+      const cText = (i, field, val, ph = '') => `
+        <td class="cell-edit">
+          <input class="cell-input cell-text" type="text" data-exp-row="${i}" data-exp-field="${field}"
+            value="${val == null ? '' : String(val).replace(/"/g, '&quot;')}" placeholder="${ph}"/>
+        </td>`;
+      const cNum = (i, field, val) => `
+        <td class="r cell-edit">
+          <input class="cell-input" type="text" inputmode="decimal" data-exp-row="${i}" data-exp-field="${field}"
+            value="${val == null ? '' : val}"/>
+        </td>`;
+
+      return `
+        <div class="sec" style="padding-bottom:var(--sp-6)">
+          <div class="sec-head">
+            <div class="left">
+              <strong>Exposures</strong>
+              <span class="sub">${rows.length} locations · every cell editable</span>
+            </div>
+          </div>
+          <div style="overflow-x:auto;margin-top:var(--sp-3)">
+            <table class="xtable excel-grid">
+              <thead>
+                <tr>
+                  <th class="gut" style="width:32px"><input type="checkbox" id="exp-chk-all" title="Select all"></th>
+                  <th style="width:32px;text-align:center">#</th>
+                  <th style="min-width:240px">Location</th>
+                  <th class="r" style="min-width:120px">Annual Sales</th>
+                  <th class="r" style="min-width:110px">Location Sqft</th>
+                  <th class="r" style="min-width:100px"># Employees</th>
+                  <th style="min-width:100px">Coverage</th>
+                  <th class="r" style="min-width:100px">Premium</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map((r, i) => `
+                  <tr>
+                    <td class="gut"><input type="checkbox" class="row-chk exp-row-chk" data-exp-chk="${i}"></td>
+                    <td style="text-align:center;color:var(--fg-muted)">${i + 1}</td>
+                    ${cText(i, 'location', `${r.addr}, ${r.city}, ${r.st} ${r.zip}`)}
+                    ${cNum (i, 'sales',    r.sales)}
+                    ${cNum (i, 'sqft',     r.sqft)}
+                    ${cNum (i, 'emp',      r.emp)}
+                    ${cText(i, 'cov',      r.cov)}
+                    ${cNum (i, 'prem',     r.prem)}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    /* ---- UW Questions tab ---- */
+    const UWQ_KNOCKOUTS = [
+      { id:'osha',       text:'My business has had serious OSHA violations in the past 3 years' },
+      { id:'bankruptcy', text:'My business filed for bankruptcy in the past 3 years' },
+      { id:'coverage',   text:'My business has had commercial insurance coverage cancelled, revoked or non-renewed in the last 5 years (other than cancellation for non-payment or non-renewal for discontinuation of program)' },
+      { id:'aware',      text:'I\'m aware of losses, accidents, or circumstances that might give rise to a claim against this policy being sold' },
+      { id:'felony',     text:'Me or my partners have been convicted of a felony in the last 5 years' },
+    ];
+
+    function renderUWQuestionsTab(rec) {
+      if (!rec.uwq) rec.uwq = {};
+      const q = rec.uwq;
+      const knockouts  = q.knockouts  || [];
+      const noneAbove  = q.noneAbove  !== false;
+      const claims     = q.claims     || 'no';
+      const delivery   = q.delivery   || 'no';
+      const addlIns    = q.addlIns    || 'yes';
+      const hnoa       = q.hnoa       || 'no';
+      const optOpen    = q.optOpen    !== false;
+
+      const yn = (id, val) => `
+        <div class="uwq-yn-btns">
+          <button class="uwq-yn-btn${val === 'yes' ? ' active' : ''}" data-uwq-yn="${id}" data-uwq-val="yes">Yes</button>
+          <button class="uwq-yn-btn${val === 'no'  ? ' active' : ''}" data-uwq-yn="${id}" data-uwq-val="no">No</button>
+        </div>`;
+
+      return `
+        <div class="sec uwq-page" style="padding-bottom:var(--sp-6)">
+
+          <!-- Knockout questions -->
+          <div class="uwq-block">
+            <div class="uwq-block-q">Are any of the following true about you or your business?</div>
+            <div class="uwq-knock-list">
+              ${UWQ_KNOCKOUTS.map(k => `
+                <label class="uwq-knock-item">
+                  <input type="checkbox" class="uwq-knock-chk" data-uwq-knock="${k.id}" ${knockouts.includes(k.id) ? 'checked' : ''}>
+                  <span class="uwq-circle"></span>
+                  <span class="uwq-knock-text">${k.text}</span>
+                </label>`).join('')}
+              <div class="uwq-knock-sep"></div>
+              <label class="uwq-knock-item">
+                <input type="radio" name="uwq-none" class="uwq-none-radio" ${noneAbove && !knockouts.length ? 'checked' : ''}>
+                <span class="uwq-circle"></span>
+                <span class="uwq-knock-text">None of the above</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Claims -->
+          <div class="uwq-block">
+            <div class="uwq-block-q">Has your business had any insurance claims in the past 3 years?</div>
+            ${yn('claims', claims)}
+          </div>
+
+          <!-- Delivery -->
+          <div class="uwq-block">
+            <div class="uwq-block-q">Does your restaurant offer delivery or off-site catering?</div>
+            ${yn('delivery', delivery)}
+          </div>
+
+          <!-- LRARO Rate Multiplier -->
+          <div class="uwq-value-card">
+            <div class="uwq-vc-label">LRARO Rate Multiplier</div>
+            <input class="uwq-vc-input" type="text" inputmode="decimal" data-uwq-field="lraroMult" value="${q.lraroMult ?? 6.48}"/>
+          </div>
+
+          <!-- Annual Alcohol Sales % -->
+          <div class="uwq-block">
+            <div class="uwq-block-q">Annual Alcohol Sales Percentage</div>
+            <div class="uwq-pct-row">
+              <input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct ?? 0}"/>
+              <span class="uwq-pct-unit">%</span>
+            </div>
+          </div>
+
+          <!-- Optional Coverages -->
+          <div class="uwq-opt-wrap">
+            <button class="uwq-opt-header" data-uwq-opt-toggle>
+              <i class="ph ph-shield-plus" style="font-size:16px"></i>
+              <span>Optional Coverages</span>
+              <i class="ph ph-caret-${optOpen ? 'up' : 'down'}" style="margin-left:auto;font-size:13px"></i>
+            </button>
+            ${optOpen ? `
+              <div class="uwq-opt-body">
+                <div class="uwq-block">
+                  <div class="uwq-block-q">Add Additional Insureds to your General Liability policy (e.g. Landlord, Franchisor, Municipality, Venue) <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></div>
+                  ${yn('addlIns', addlIns)}
+                  ${addlIns === 'yes' ? `
+                    <div class="uwq-value-card" style="margin-top:var(--sp-3)">
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <i class="ph ph-users" style="font-size:18px;color:var(--fg-muted)"></i>
+                        <div style="flex:1">
+                          <div class="uwq-vc-label">Number of Additional Insureds</div>
+                          <input class="uwq-vc-input" type="text" inputmode="decimal" data-uwq-field="addlInsCount" value="${q.addlInsCount ?? 1}"/>
+                        </div>
+                        <i class="ph ph-question" style="font-size:14px;color:var(--fg-muted)"></i>
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+                <div class="uwq-block">
+                  <div class="uwq-block-q">Hired Auto and Nonowned Auto Liability <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></div>
+                  ${yn('hnoa', hnoa)}
+                </div>
+                <div class="uwq-value-card">
+                  <div class="uwq-vc-label">Name and Address of Additional Insured (1)</div>
+                  <input class="uwq-vc-input uwq-vc-input--text" type="text" data-uwq-field="addlInsName"
+                    value="${(q.addlInsName || 'Bank of America, N.A. Insurance Group NC1-026-06-07, Charlotte, NC 28255').replace(/"/g,'&quot;')}"/>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+        </div>`;
+    }
+
     function renderDetail() {
       const rec = RECORDS[State.currentId] || BDE;
       let body = '';
       if      (State.tab === 'indication') body = renderIndicationTab(rec);
       else if (State.tab === 'loss-run')   body = renderLossRunTab(rec);
+      else if (State.tab === 'exposures')  body = renderExposuresTab(rec);
+      else if (State.tab === 'uwq')        body = renderUWQuestionsTab(rec);
       else                                  body = renderQuoteTab(rec);
       // Activity drawer is rendered alongside main content so it can sit on the right.
       const drawer = State.activityOpen ? renderActivityDrawer(rec) : '';
@@ -4761,6 +5076,21 @@
           bdeRerenderPreservingFocus();
         };
       });
+      // Exposure table — editable cells
+      const EXP_NUM_FIELDS = new Set(['sales','sqft','emp','prem']);
+      $$('input.cell-input[data-exp-row]').forEach(inp => {
+        inp.oninput = () => {
+          const i = Number(inp.dataset.expRow);
+          const f = inp.dataset.expField;
+          if (EXP_NUM_FIELDS.has(f)) {
+            const n = inp.value === '' ? 0 : Number(inp.value);
+            EXPOSURE_ROWS[i][f] = isNaN(n) ? 0 : n;
+          } else {
+            EXPOSURE_ROWS[i][f === 'location' ? 'addr' : f] = inp.value;
+          }
+        };
+      });
+
       // Delete a single claim row
       // Per-row checkboxes
       $$('[data-bde-chk-claim]').forEach(chk => chk.onchange = () => {
@@ -5033,6 +5363,60 @@
       // Tab switches inside detail
       $$('.tab[data-tab]').forEach(t => {
         t.onclick = () => { State.tab = t.dataset.tab; State.selectedClaims.clear(); State.repDropdown = null; State.needByEditing = false; render(); };
+      });
+      // Exposures sub-tab
+      $$('[data-exp-tab]').forEach(b => {
+        b.onclick = () => { State.exposuresSubTab = b.dataset.expTab; render(); };
+      });
+      // UW Questions — text inputs
+      $$('[data-uwq-field]').forEach(el => {
+        el.oninput = () => {
+          const rec = RECORDS[State.currentId] || BDE;
+          if (!rec.uwq) rec.uwq = {};
+          rec.uwq[el.dataset.uwqField] = el.value;
+        };
+      });
+      // UW Questions — Yes/No toggle buttons
+      $$('[data-uwq-yn]').forEach(btn => {
+        btn.onclick = () => {
+          const rec = RECORDS[State.currentId] || BDE;
+          if (!rec.uwq) rec.uwq = {};
+          rec.uwq[btn.dataset.uwqYn] = btn.dataset.uwqVal;
+          render();
+        };
+      });
+      // UW Questions — knockout checkboxes
+      $$('.uwq-knock-chk').forEach(chk => {
+        chk.onchange = () => {
+          const rec = RECORDS[State.currentId] || BDE;
+          if (!rec.uwq) rec.uwq = {};
+          const id = chk.dataset.uwqKnock;
+          let arr = rec.uwq.knockouts || [];
+          if (chk.checked) { if (!arr.includes(id)) arr = [...arr, id]; }
+          else              { arr = arr.filter(x => x !== id); }
+          rec.uwq.knockouts = arr;
+          rec.uwq.noneAbove = false;
+          render();
+        };
+      });
+      // UW Questions — "None of the above" radio
+      $$('.uwq-none-radio').forEach(radio => {
+        radio.onchange = () => {
+          const rec = RECORDS[State.currentId] || BDE;
+          if (!rec.uwq) rec.uwq = {};
+          rec.uwq.knockouts = [];
+          rec.uwq.noneAbove = true;
+          render();
+        };
+      });
+      // UW Questions — Optional Coverages toggle
+      $$('[data-uwq-opt-toggle]').forEach(btn => {
+        btn.onclick = () => {
+          const rec = RECORDS[State.currentId] || BDE;
+          if (!rec.uwq) rec.uwq = {};
+          rec.uwq.optOpen = !(rec.uwq.optOpen !== false);
+          render();
+        };
       });
 
       /* --- Growth: column filter / sort / chip wiring ---------------------- */
