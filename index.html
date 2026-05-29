@@ -1800,6 +1800,9 @@
       color: var(--fg);
     }
     .xtable td.cell-edit input.cell-input::placeholder { color: var(--fg-muted); font-style: italic; }
+    .xtable td.cell-edit.is-dollar { position: relative; }
+    .xtable td.cell-edit.is-dollar::before { content:'$'; position:absolute; left:var(--sp-2); top:50%; transform:translateY(-50%); color:var(--fg-muted); font-size:13px; pointer-events:none; }
+    .xtable td.cell-edit.is-dollar input.cell-input { padding-left:18px; }
     .xtable td.cell-edit.cell-invalid { background: var(--err-bg); }
     .xtable td.cell-edit.cell-invalid:hover { background: #f5d0ce; }
     .xtable td.cell-edit.cell-invalid:focus-within { background: var(--err-bg); box-shadow: inset 0 0 0 2px var(--err); }
@@ -4030,14 +4033,14 @@
         <tr>
           <td class="r">${r.mat}</td>
           <td>${r.yr}</td>
-          <td class="r">${fmtNum(r.sales)}</td>
-          <td class="r">${fmtNum(r.unlim)}</td>
-          <td class="r ${r.lim < r.unlim ? 'cap-hit' : ''}">${fmtNum(r.lim)}</td>
+          <td class="r">${fmtUSD(r.sales)}</td>
+          <td class="r">${fmtUSD(r.unlim)}</td>
+          <td class="r ${r.lim < r.unlim ? 'cap-hit' : ''}">${fmtUSD(r.lim)}</td>
           <td class="r">${r.ldf}</td>
           <td class="r">${r.pctU}</td>
-          <td class="r">${fmtNum(r.expL)}</td>
-          <td class="r">${fmtNum(r.uUn)}</td>
-          <td class="r">${fmtNum(r.uCa)}</td>
+          <td class="r">${fmtUSD(r.expL)}</td>
+          <td class="r">${fmtUSD(r.uUn)}</td>
+          <td class="r">${fmtUSD(r.uCa)}</td>
           <td class="r">${r.lcU}</td>
           <td class="r">${r.lcC}</td>
         </tr>
@@ -4074,13 +4077,13 @@
                 <tr class="total">
                   <td></td>
                   <td>Total</td>
-                  <td class="r">${fmtNum(tot.sales)}</td>
-                  <td class="r">${fmtNum(tot.unlim)}</td>
-                  <td class="r">${fmtNum(tot.lim)}</td>
+                  <td class="r">${fmtUSD(tot.sales)}</td>
+                  <td class="r">${fmtUSD(tot.unlim)}</td>
+                  <td class="r">${fmtUSD(tot.lim)}</td>
                   <td></td><td></td>
-                  <td class="r">${fmtNum(tot.expL)}</td>
-                  <td class="r">${fmtNum(tot.uUn)}</td>
-                  <td class="r">${fmtNum(tot.uCa)}</td>
+                  <td class="r">${fmtUSD(tot.expL)}</td>
+                  <td class="r">${fmtUSD(tot.uUn)}</td>
+                  <td class="r">${fmtUSD(tot.uCa)}</td>
                   <td class="r">${totLcU}</td>
                   <td class="r">${totLcC}</td>
                 </tr>
@@ -4231,11 +4234,11 @@
       const rowsHtml = rows.map(r => `
         <tr>
           <td>${r.ay}</td>
-          <td class="r">${fmtNum(r.gross)}</td>
-          <td class="r">${fmtNum(r.unlim)}</td>
-          <td class="r">${fmtNum(r.elim)}</td>
+          <td class="r">${fmtUSD(r.gross)}</td>
+          <td class="r">${fmtUSD(r.unlim)}</td>
+          <td class="r">${fmtUSD(r.elim)}</td>
           <td class="r">${fmtLER(r.ler)}</td>
-          <td class="r">${fmtNum(r.lim)}</td>
+          <td class="r">${fmtUSD(r.lim)}</td>
           <td style="color:${/Large loss/.test(r.note) ? 'var(--err)' : 'var(--fg-muted)'}">${r.note}</td>
         </tr>
       `).join('');
@@ -4257,11 +4260,11 @@
               ${rowsHtml}
               <tr class="total">
                 <td>Total (5Y)</td>
-                <td class="r">${fmtNum(totals.gross)}</td>
-                <td class="r">${fmtNum(totals.unlim)}</td>
-                <td class="r">${fmtNum(totals.elim)}</td>
+                <td class="r">${fmtUSD(totals.gross)}</td>
+                <td class="r">${fmtUSD(totals.unlim)}</td>
+                <td class="r">${fmtUSD(totals.elim)}</td>
                 <td class="r">${fmtLER(totals.ler)}</td>
-                <td class="r">${fmtNum(totals.lim)}</td>
+                <td class="r">${fmtUSD(totals.lim)}</td>
                 <td></td>
               </tr>
             </tbody>
@@ -4284,8 +4287,8 @@
           <input class="cell-input cell-text" id="bde-${field}-${i}" type="text" data-bde-claim="${i}" data-bde-field="${field}" value="${val == null ? '' : String(val).replace(/"/g,'&quot;')}" ${extra}/>
         </td>
       `;
-      const cellNum  = (i, field, val, extraClass = '') => `
-        <td class="r cell-edit ${extraClass}">
+      const cellNum  = (i, field, val, extraClass = '', dollar = false) => `
+        <td class="r cell-edit${dollar ? ' is-dollar' : ''} ${extraClass}">
           <input class="cell-input" id="bde-${field}-${i}" type="text" inputmode="decimal" data-bde-claim="${i}" data-bde-field="${field}" value="${val == null ? '' : val}"/>
         </td>
       `;
@@ -4301,9 +4304,9 @@
           ${cellNum (i, 'ay',      c.ay)}
           ${cellText(i, 'loc',     c.loc,     'placeholder="City, ST"')}
           ${cellText(i, 'ev',      c.ev,      'placeholder="Event description"')}
-          ${cellNum (i, 'gross',   c.gross)}
-          ${cellNum (i, 'netUnlim',c.netUnlim)}
-          ${cellNum (i, 'netCap',  c.netCap, c.netCap < c.netUnlim ? 'cap-hit' : '')}
+          ${cellNum (i, 'gross',   c.gross,    '', true)}
+          ${cellNum (i, 'netUnlim',c.netUnlim, '', true)}
+          ${cellNum (i, 'netCap',  c.netCap,   c.netCap < c.netUnlim ? 'cap-hit' : '', true)}
           ${cellText(i, 'src',     c.src,     'placeholder="source"')}
         </tr>
       `).join('');
@@ -4338,9 +4341,9 @@
                   <td class="gut"></td>
                   <td colspan="4"></td>
                   <td>${rec.claims.length} claims</td>
-                  <td class="r">${fmtNum(tot.gross)}</td>
-                  <td class="r">${fmtNum(tot.netUnlim)}</td>
-                  <td class="r">${fmtNum(tot.netCap)}</td>
+                  <td class="r">${fmtUSD(tot.gross)}</td>
+                  <td class="r">${fmtUSD(tot.netUnlim)}</td>
+                  <td class="r">${fmtUSD(tot.netCap)}</td>
                   <td></td>
                 </tr>
               </tbody>
@@ -4641,8 +4644,8 @@
           <input class="cell-input cell-text" type="text" data-exp-row="${i}" data-exp-field="${field}"
             value="${val == null ? '' : String(val).replace(/"/g, '&quot;')}" placeholder="${ph}"/>
         </td>`;
-      const cNum = (i, field, val) => `
-        <td class="r cell-edit">
+      const cNum = (i, field, val, dollar = false) => `
+        <td class="r cell-edit${dollar ? ' is-dollar' : ''}">
           <input class="cell-input" type="text" inputmode="decimal" data-exp-row="${i}" data-exp-field="${field}"
             value="${val == null ? '' : val}"/>
         </td>`;
@@ -4691,11 +4694,11 @@
                   <td class="gut"><input type="checkbox" class="row-chk exp-row-chk" data-exp-chk="${i}"></td>
                   <td style="text-align:center;color:var(--fg-muted)">${i + 1}</td>
                   ${cLoc(i, `${r.addr}, ${r.city}, ${r.st} ${r.zip}`)}
-                  ${cNum (i, 'sales', r.sales)}
+                  ${cNum (i, 'sales', r.sales, true)}
                   ${cNum (i, 'sqft',  r.sqft)}
                   ${cNum (i, 'emp',   r.emp)}
                   ${cText(i, 'cov',   r.cov)}
-                  ${cNum (i, 'prem',  r.prem)}
+                  ${cNum (i, 'prem',  r.prem, true)}
                 </tr>`).join('')}
             </tbody>
           </table>
