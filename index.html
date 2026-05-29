@@ -4530,12 +4530,6 @@
               ${quoteSection('basic',     'user-circle',   'Basic Info',
                   basicInfoBody,
                   phoneMissing ? { type:'missing', count: 1 } : null)}
-              ${quoteSection('location',  'map-pin',       'Business Location',
-                  renderLocationCards(),
-                  (() => {
-                    const bad = (BDE.quote.locations || []).filter(l => !quoteAddressIsValid(l.address)).length;
-                    return bad > 0 ? { type:'error', count: bad } : null;
-                  })())}
             </div>
           </div>
 
