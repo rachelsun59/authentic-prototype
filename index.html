@@ -4722,7 +4722,7 @@
                 <i class="ph ph-map-pin" style="font-size:16px"></i>
                 <span class="title">${stateName}</span>
                 <span style="font-size:11px;color:var(--fg-muted);font-weight:400">${stateRows.length} location${stateRows.length !== 1 ? 's' : ''}</span>
-                ${lraroRate != null ? `<span style="font-size:11px;color:var(--fg-muted);font-weight:400">· LRARO ${lraroRate.toFixed(2)}</span>` : ''}
+                ${lraroRate != null && st !== 'NY' ? `<span style="font-size:11px;color:var(--fg-muted);font-weight:400">· LRARO ${lraroRate.toFixed(2)}</span>` : ''}
                 <span style="font-size:11px;color:var(--fg-muted);font-weight:400">· $${totalPrem.toLocaleString('en-US')} premium</span>
               </span>
               <span class="toggle-ico" aria-hidden="true">${open ? '−' : '+'}</span>
