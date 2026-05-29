@@ -2550,8 +2550,8 @@
     // Home queue — sorted by urgency (Today first), per Figma 2:1829.
     // "needBy: 'Today'" renders in red; ISO dates render in muted grey.
     const HOME_QUEUE = [
-      { name:'BDE Florida',           status:'New',         statusKind:'purple', premium:198000, needBy:'Today',      id:'bde' },
-      { name:'Iron & Oak Crossfit',   status:'New',         statusKind:'purple', premium:68000,  needBy:'Today' },
+      { name:'BDE Florida',           status:'Created',         statusKind:'purple', premium:198000, needBy:'Today',      id:'bde' },
+      { name:'Iron & Oak Crossfit',   status:'Created',         statusKind:'purple', premium:68000,  needBy:'Today' },
       { name:'Hibachi Holdings LLC',  status:'Need Review', statusKind:'info', premium:200000, needBy:'2026-06-12', id:'hibachi' },
       { name:'Dance Studio LLC',      status:'Need Review', statusKind:'info', premium:400000, needBy:'2026-07-12' },
       { name:'Pulse Fitness Co.',     status:'Need Review', statusKind:'info', premium:130000, needBy:'2026-08-01' },
@@ -2575,7 +2575,7 @@
     ];
 
     const GROWTH_ROWS = [
-      { type:'Sub', product:'GL', name:'BDE Florida, LLC',       sub:'27 Taco Bell locations · FL',  status:'New',       kind:'purple',  owner:'Hunt Carroll', ownerAv:'orange', premium:290000, broker:'HUB International', eff:'2026-06-29', recv:'2026-05-22', needBy:'Today',      id:'bde',    createdBy:'h.carroll@authentic.com' },
+      { type:'Sub', product:'GL', name:'BDE Florida, LLC',       sub:'27 Taco Bell locations · FL',  status:'Created',       kind:'purple',  owner:'Hunt Carroll', ownerAv:'orange', premium:290000, broker:'HUB International', eff:'2026-06-29', recv:'2026-05-22', needBy:'Today',      id:'bde',    createdBy:'h.carroll@authentic.com' },
       { type:'Sub', product:'GL', name:'Borg Restaurant Group',  sub:'Jacko@gmail.com',  status:'Reviewing',  kind:'info',    owner:'Hunt Carroll', ownerAv:'orange', premium:184500, broker:'HUBCA',        eff:'2026-07-01', recv:'2026-05-01', needBy:'2026-06-15', id:'borg',    createdBy:'jacko@hubca.com' },
       { type:'Sub', product:'GL', name:'Hibachi Holdings LLC',   sub:'Jacko@gmail.com',  status:'Parsing',    kind:'warn',    owner:'Hunt Carroll', ownerAv:'orange', premium:184500, broker:'Borg',         eff:'2026-07-15', recv:'2026-05-15', needBy:'2026-07-01', id:'hibachi', createdBy:'jacko@hubca.com' },
       { type:'Sub', product:'GL', name:'Pulse Fitness Co.',      sub:'Description',      status:'Needs Info', kind:'warn',    owner:'Hunt Carroll', ownerAv:'orange', premium:212500, broker:'IMA-RRMA',     eff:'2026-06-15', recv:'2026-04-15', needBy:'2026-06-01',              createdBy:'r.chen@imarra.com' },
@@ -2583,9 +2583,9 @@
       { type:'Sub', product:'GL', name:'Sunrise Yoga Studio LLC',sub:'Description',      status:'Bound',      kind:'success', owner:'Peter Han',    ownerAv:'blue',   premium:75500,  broker:'Mindbody',     eff:'2026-05-20', recv:'2026-03-20', needBy:'2026-05-20',              createdBy:'p.han@authentic.com' },
       { type:'APP', product:'GL', name:'Greenline Logistic INC', sub:'Description',      status:'Declined',   kind:'error',   owner:'Hunt Carroll', ownerAv:'orange', premium:3200,   broker:'Mindbody',     eff:'2026-05-24', recv:'2026-04-24', needBy:'2026-05-24',              createdBy:'h.carroll@authentic.com' },
       { type:'APP', product:'GL', name:'Iron & Oak Crossfit',    sub:'Description',      status:'Quoted',     kind:'success', owner:'Hunt Carroll', ownerAv:'orange', premium:12200,  broker:'PushPress',    eff:'2026-06-01', recv:'2026-04-01', needBy:'2026-06-01',              createdBy:'pushpress-api' },
-      { type:'APP', product:'GL',       name:'Bellwether Bistro',      sub:'Description',      status:'New',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:8600,   broker:'Unleashed',    eff:'2026-06-10', recv:'2026-03-10', needBy:'2026-06-10',        createdBy:'k.babirad@authentic.com' },
-      { type:'APP', product:'Umbrella', name:'Maplewood Pilates',      sub:'Description',      status:'New',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:8600,   broker:'WithCoverage', eff:'2026-04-15', recv:'2026-02-15', needBy:'2026-04-15',        createdBy:'k.babirad@authentic.com' },
-      { type:'APP', product:'GL',       name:'Caliber Climbing Gym',   sub:'Description',      status:'New',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:4200,   broker:'PushPress',    eff:'—',          recv:'2026-02-15', needBy:'2026-04-15',        createdBy:'k.babirad@authentic.com' },
+      { type:'APP', product:'GL',       name:'Bellwether Bistro',      sub:'Description',      status:'Created',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:8600,   broker:'Unleashed',    eff:'2026-06-10', recv:'2026-03-10', needBy:'2026-06-10',        createdBy:'k.babirad@authentic.com' },
+      { type:'APP', product:'Umbrella', name:'Maplewood Pilates',      sub:'Description',      status:'Created',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:8600,   broker:'WithCoverage', eff:'2026-04-15', recv:'2026-02-15', needBy:'2026-04-15',        createdBy:'k.babirad@authentic.com' },
+      { type:'APP', product:'GL',       name:'Caliber Climbing Gym',   sub:'Description',      status:'Created',        kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:4200,   broker:'PushPress',    eff:'—',          recv:'2026-02-15', needBy:'2026-04-15',        createdBy:'k.babirad@authentic.com' },
     ];
 
     // (Hibachi previously hand-coded here — now generated by the BDE-shape
@@ -2612,7 +2612,7 @@
       salesRep:[ { name:'Bobby Vo',    av:'blue',   initials:'BV' } ],
       uwRep:   [ { name:'Hunt Caroll', av:'orange', initials:'HC' } ],
       needBy: 'Today',
-      status:'New', statusKind:'purple',
+      status:'Created', statusKind:'purple',
       // Per Figma 36:7724 — BDE shows 4 stat cells (no "vs Target premium").
       stats: [
         { label:'Calculated (Selected Premium)', value:'$290,000', kind:'ok'   },
@@ -3643,7 +3643,7 @@
       const pipelinePremium = filtered.reduce((sum, r) => sum + (r.premium || 0), 0);
       const uwReviewCount   = filtered.filter(r => r.status === 'Reviewing').length;
       const quotedCount     = filtered.filter(r => r.status === 'Quoted').length;
-      const newCount        = filtered.filter(r => r.status === 'New').length;
+      const newCount        = filtered.filter(r => r.status === 'Created').length;
       const rows = filtered.map(r => `
         <tr data-open-rec="${r.id || ''}">
           <td><span class="type-tag ${r.type === 'Sub' ? 'sub' : 'app'}">${r.type}</span></td>
@@ -5072,7 +5072,7 @@
       // navigation continues to work since we only flip State.newSub.open.
       $$('.btn-primary').forEach(b => {
         const text = (b.textContent || '').trim();
-        if (text === 'New' && !b.dataset.nsWired) {
+        if (text === 'Created' && !b.dataset.nsWired) {
           b.dataset.nsWired = '1';
           b.addEventListener('click', (e) => { e.stopPropagation(); openNewSubmission(); });
         }
@@ -5124,7 +5124,7 @@
           type:'Sub', product:'GL',
           name: f.businessName || 'New Submission',
           sub: f.notes ? f.notes.slice(0, 60) : 'Pending review',
-          status:'New', kind:'purple',
+          status:'Created', kind:'purple',
           owner:'Hunt Carroll', ownerAv:'orange',
           premium: Number(String(f.targetPremium).replace(/[^0-9.]/g, '')) || 0,
           broker:'—',
