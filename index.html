@@ -1800,9 +1800,9 @@
       color: var(--fg);
     }
     .xtable td.cell-edit input.cell-input::placeholder { color: var(--fg-muted); font-style: italic; }
-    .xtable td.cell-edit.is-dollar { position: relative; }
-    .xtable td.cell-edit.is-dollar::before { content:'$'; position:absolute; left:var(--sp-2); top:50%; transform:translateY(-50%); color:var(--fg-muted); font-size:13px; pointer-events:none; }
-    .xtable td.cell-edit.is-dollar input.cell-input { padding-left:18px; }
+    .xtable td.cell-edit.is-dollar .cell-money-wrap { display:flex; align-items:center; justify-content:flex-end; height:100%; padding:0 var(--sp-3); gap:1px; }
+    .xtable td.cell-edit.is-dollar .cell-money-pfx { color:var(--fg-muted); font-size:13px; flex-shrink:0; user-select:none; }
+    .xtable td.cell-edit.is-dollar input.cell-input { width:85px; height:auto; padding:var(--sp-2) 0; flex:none; }
     .xtable td.cell-edit.cell-invalid { background: var(--err-bg); }
     .xtable td.cell-edit.cell-invalid:hover { background: #f5d0ce; }
     .xtable td.cell-edit.cell-invalid:focus-within { background: var(--err-bg); box-shadow: inset 0 0 0 2px var(--err); }
@@ -4287,8 +4287,11 @@
           <input class="cell-input cell-text" id="bde-${field}-${i}" type="text" data-bde-claim="${i}" data-bde-field="${field}" value="${val == null ? '' : String(val).replace(/"/g,'&quot;')}" ${extra}/>
         </td>
       `;
-      const cellNum  = (i, field, val, extraClass = '', dollar = false) => `
-        <td class="r cell-edit${dollar ? ' is-dollar' : ''} ${extraClass}">
+      const cellNum  = (i, field, val, extraClass = '', dollar = false) => dollar ? `
+        <td class="r cell-edit is-dollar ${extraClass}">
+          <div class="cell-money-wrap"><span class="cell-money-pfx">$</span><input class="cell-input" id="bde-${field}-${i}" type="text" inputmode="decimal" data-bde-claim="${i}" data-bde-field="${field}" value="${val == null ? '' : val}"/></div>
+        </td>` : `
+        <td class="r cell-edit ${extraClass}">
           <input class="cell-input" id="bde-${field}-${i}" type="text" inputmode="decimal" data-bde-claim="${i}" data-bde-field="${field}" value="${val == null ? '' : val}"/>
         </td>
       `;
@@ -4644,8 +4647,11 @@
           <input class="cell-input cell-text" type="text" data-exp-row="${i}" data-exp-field="${field}"
             value="${val == null ? '' : String(val).replace(/"/g, '&quot;')}" placeholder="${ph}"/>
         </td>`;
-      const cNum = (i, field, val, dollar = false) => `
-        <td class="r cell-edit${dollar ? ' is-dollar' : ''}">
+      const cNum = (i, field, val, dollar = false) => dollar ? `
+        <td class="r cell-edit is-dollar">
+          <div class="cell-money-wrap"><span class="cell-money-pfx">$</span><input class="cell-input" type="text" inputmode="decimal" data-exp-row="${i}" data-exp-field="${field}" value="${val == null ? '' : val}"/></div>
+        </td>` : `
+        <td class="r cell-edit">
           <input class="cell-input" type="text" inputmode="decimal" data-exp-row="${i}" data-exp-field="${field}"
             value="${val == null ? '' : val}"/>
         </td>`;
