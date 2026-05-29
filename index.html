@@ -2554,9 +2554,9 @@
       { name:'Iron & Oak Crossfit',   status:'Created',   statusKind:'purple', premium:68000,  needBy:'Today' },
       { name:'Hibachi Holdings LLC',  status:'Created',   statusKind:'purple', premium:200000, needBy:'2026-06-12', id:'hibachi' },
       { name:'Dance Studio LLC',      status:'Created',   statusKind:'purple', premium:400000, needBy:'2026-07-12' },
-      { name:'Pulse Fitness Co.',     status:'Quoted',    statusKind:'success', premium:130000, needBy:'2026-08-01' },
-      { name:'Bellwether Bistro',     status:'Quoted',    statusKind:'success', premium:50000,  needBy:'2026-09-01' },
-      { name:'Lighthouse Hospitality',status:'Completed', statusKind:'success', premium:128000, needBy:'2026-10-01' },
+      { name:'Pulse Fitness Co.',     status:'Quoted',    statusKind:'info',    premium:130000, needBy:'2026-08-01' },
+      { name:'Bellwether Bistro',     status:'Quoted',    statusKind:'info',    premium:50000,  needBy:'2026-09-01' },
+      { name:'Lighthouse Hospitality',status:'Completed', statusKind:'neutral', premium:128000, needBy:'2026-10-01' },
     ];
 
     const HOME_THREADS = [
@@ -2566,10 +2566,10 @@
     ];
 
     const HOME_WATCH = [
-      { name:'Iron & Oak Crossfit',   status:'Completed', kind:'success', premium:68000,  id:'iron-oak-crossfit' },
-      { name:'Lighthouse Hospitality',status:'Quoted',    kind:'success', premium:68000  },
-      { name:'Hibachi Holdings LLC',  status:'Quoted',    kind:'success', premium:128000, id:'hibachi' },
-      { name:'Dance Studio LLC',      status:'Quoted',    kind:'success', premium:128000 },
+      { name:'Iron & Oak Crossfit',   status:'Completed', kind:'neutral', premium:68000,  id:'iron-oak-crossfit' },
+      { name:'Lighthouse Hospitality',status:'Quoted',    kind:'info',    premium:68000  },
+      { name:'Hibachi Holdings LLC',  status:'Quoted',    kind:'info',    premium:128000, id:'hibachi' },
+      { name:'Dance Studio LLC',      status:'Quoted',    kind:'info',    premium:128000 },
       { name:'Pulse Fitness Co.',     status:'Bound',     kind:'success', premium:128000, id:'pulse-fitness-co' },
       { name:'Bellwether Bistro',     status:'Bound',     kind:'success', premium:128000, id:'sub-bellwether-bistro' },
     ];
@@ -2579,10 +2579,10 @@
       { type:'Sub', product:'GL', name:'Borg Restaurant Group',  sub:'Jacko@gmail.com',  status:'Created',   kind:'purple',  owner:'Hunt Carroll', ownerAv:'orange', premium:184500, broker:'HUBCA',        eff:'2026-07-01', recv:'2026-05-01', needBy:'2026-06-15', id:'borg',    createdBy:'jacko@hubca.com' },
       { type:'Sub', product:'GL', name:'Hibachi Holdings LLC',   sub:'Jacko@gmail.com',  status:'Created',   kind:'purple',  owner:'Hunt Carroll', ownerAv:'orange', premium:184500, broker:'Borg',         eff:'2026-07-15', recv:'2026-05-15', needBy:'2026-07-01', id:'hibachi', createdBy:'jacko@hubca.com' },
       { type:'Sub', product:'GL', name:'Pulse Fitness Co.',      sub:'Description',      status:'Created',   kind:'purple',  owner:'Hunt Carroll', ownerAv:'orange', premium:212500, broker:'IMA-RRMA',     eff:'2026-06-15', recv:'2026-04-15', needBy:'2026-06-01',              createdBy:'r.chen@imarra.com' },
-      { type:'Sub', product:'GL', name:'Bellwether Bistro',      sub:'Description',      status:'Quoted',    kind:'success', owner:'Peter Han',    ownerAv:'blue',   premium:75500,  broker:'Hilb Grocery', eff:'2026-08-01', recv:'2026-05-01', needBy:'2026-07-15',              createdBy:'p.han@authentic.com' },
+      { type:'Sub', product:'GL', name:'Bellwether Bistro',      sub:'Description',      status:'Quoted',    kind:'info',    owner:'Peter Han',    ownerAv:'blue',   premium:75500,  broker:'Hilb Grocery', eff:'2026-08-01', recv:'2026-05-01', needBy:'2026-07-15',              createdBy:'p.han@authentic.com' },
       { type:'Sub', product:'GL', name:'Sunrise Yoga Studio LLC',sub:'Description',      status:'Bound',     kind:'success', owner:'Peter Han',    ownerAv:'blue',   premium:75500,  broker:'Mindbody',     eff:'2026-05-20', recv:'2026-03-20', needBy:'2026-05-20',              createdBy:'p.han@authentic.com' },
-      { type:'APP', product:'GL', name:'Greenline Logistic INC', sub:'Description',      status:'Completed', kind:'success', owner:'Hunt Carroll', ownerAv:'orange', premium:3200,   broker:'Mindbody',     eff:'2026-05-24', recv:'2026-04-24', needBy:'2026-05-24',              createdBy:'h.carroll@authentic.com' },
-      { type:'APP', product:'GL', name:'Iron & Oak Crossfit',    sub:'Description',      status:'Quoted',    kind:'success', owner:'Hunt Carroll', ownerAv:'orange', premium:12200,  broker:'PushPress',    eff:'2026-06-01', recv:'2026-04-01', needBy:'2026-06-01',              createdBy:'pushpress-api' },
+      { type:'APP', product:'GL', name:'Greenline Logistic INC', sub:'Description',      status:'Completed', kind:'neutral', owner:'Hunt Carroll', ownerAv:'orange', premium:3200,   broker:'Mindbody',     eff:'2026-05-24', recv:'2026-04-24', needBy:'2026-05-24',              createdBy:'h.carroll@authentic.com' },
+      { type:'APP', product:'GL', name:'Iron & Oak Crossfit',    sub:'Description',      status:'Quoted',    kind:'info',    owner:'Hunt Carroll', ownerAv:'orange', premium:12200,  broker:'PushPress',    eff:'2026-06-01', recv:'2026-04-01', needBy:'2026-06-01',              createdBy:'pushpress-api' },
       { type:'APP', product:'GL',       name:'Bellwether Bistro',      sub:'Description', status:'Created',   kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:8600,   broker:'Unleashed',    eff:'2026-06-10', recv:'2026-03-10', needBy:'2026-06-10',        createdBy:'k.babirad@authentic.com' },
       { type:'APP', product:'Umbrella', name:'Maplewood Pilates',      sub:'Description', status:'Created',   kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:8600,   broker:'WithCoverage', eff:'2026-04-15', recv:'2026-02-15', needBy:'2026-04-15',        createdBy:'k.babirad@authentic.com' },
       { type:'APP', product:'GL',       name:'Caliber Climbing Gym',   sub:'Description', status:'Created',   kind:'purple',  owner:'Kyle Babirad', ownerAv:'green',  premium:4200,   broker:'PushPress',    eff:'—',          recv:'2026-02-15', needBy:'2026-04-15',        createdBy:'k.babirad@authentic.com' },
@@ -2700,10 +2700,10 @@
           },
         },
         { kind:'assigned', who:'Hunt Carroll', av:'orange', initials:'HC', when:'10 mins ago', from:'Auto assigned to' },
-        { kind:'status-change', who:'Hunt Carroll', av:'orange', initials:'HC', when:'10 mins ago', to:'Completed', toKind:'success' },
+        { kind:'status-change', who:'Hunt Carroll', av:'orange', initials:'HC', when:'10 mins ago', to:'Completed', toKind:'neutral' },
         { kind:'comment', who:'Hunt Carroll', av:'orange', initials:'HC', when:'2 mins ago',
           body:'Large shock losses, don\'t know details but somewhat outsized impact on premium. $189K strikes me as a reach even if we get favorable information around those losses. <span style="color:var(--info)">@Bobby Vo</span>' },
-        { kind:'status-change', who:'Hunt Carroll', av:'orange', initials:'HC', when:'1 min ago', to:'Quoted', toKind:'success' },
+        { kind:'status-change', who:'Hunt Carroll', av:'orange', initials:'HC', when:'1 min ago', to:'Quoted', toKind:'info' },
       ],
     };
 
@@ -3726,8 +3726,8 @@
     // Status options shown in the dropdown (Figma 38:19318)
     const STATUS_OPTIONS = [
       { v:'Created',   k:'purple'  },
-      { v:'Completed', k:'success' },
-      { v:'Quoted',    k:'success' },
+      { v:'Quoted',    k:'info'    },
+      { v:'Completed', k:'neutral' },
       { v:'Bound',     k:'success' },
     ];
 
@@ -5031,7 +5031,7 @@
         } else if (d.mode === 'needInfo') {
           rec.status = 'Needs Info'; rec.statusKind = 'warn';
         } else {
-          rec.status = 'Quoted'; rec.statusKind = 'success';
+          rec.status = 'Quoted'; rec.statusKind = 'info';
         }
         closeUwDecision();
       };
