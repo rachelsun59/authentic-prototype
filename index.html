@@ -4826,27 +4826,6 @@
             ${yn('delivery', delivery)}
           </div>
 
-          <!-- LRARO Rate Multiplier -->
-          ${(() => {
-            const stateRates = [...new Map(
-              EXPOSURE_ROWS.filter(r => LRARO_RATES[r.st]).map(r => [r.st, LRARO_RATES[r.st]])
-            )];
-            const mult = calcLraroMult();
-            const multiState = stateRates.length > 1;
-            return `
-            <div class="uwq-value-card">
-              <div class="uwq-vc-label">LRARO Rate Multiplier</div>
-              <div style="display:flex;align-items:baseline;gap:var(--sp-2)">
-                <span style="font-size:15px;font-weight:600;color:var(--fg)">${mult.toFixed(2)}</span>
-                ${multiState ? `<span style="font-size:11px;color:var(--fg-muted)">(sales-weighted avg)</span>` : `<span style="font-size:11px;color:var(--fg-muted)">${stateRates[0]?.[0] ?? ''} rate</span>`}
-              </div>
-              ${stateRates.length > 0 ? `
-              <div style="display:flex;gap:var(--sp-2);margin-top:6px;flex-wrap:wrap">
-                ${stateRates.map(([st, rate]) => `<span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--fg-muted)">${st} ${rate.toFixed(2)}</span>`).join('')}
-              </div>` : ''}
-            </div>`;
-          })()}
-
           <!-- Annual Alcohol Sales % -->
           <div class="uwq-block">
             <div class="uwq-block-q">Annual Alcohol Sales Percentage</div>
