@@ -2550,13 +2550,13 @@
     // Home queue — sorted by urgency (Today first), per Figma 2:1829.
     // "needBy: 'Today'" renders in red; ISO dates render in muted grey.
     const HOME_QUEUE = [
-      { name:'BDE Florida',           status:'Created',         statusKind:'purple', premium:198000, needBy:'Today',      id:'bde' },
-      { name:'Iron & Oak Crossfit',   status:'Created',         statusKind:'purple', premium:68000,  needBy:'Today' },
-      { name:'Hibachi Holdings LLC',  status:'Need Review', statusKind:'info', premium:200000, needBy:'2026-06-12', id:'hibachi' },
-      { name:'Dance Studio LLC',      status:'Need Review', statusKind:'info', premium:400000, needBy:'2026-07-12' },
-      { name:'Pulse Fitness Co.',     status:'Need Review', statusKind:'info', premium:130000, needBy:'2026-08-01' },
-      { name:'Bellwether Bistro',     status:'Need Review', statusKind:'info', premium:50000,  needBy:'2026-09-01' },
-      { name:'Lighthouse Hospitality',status:'Need Info',   statusKind:'warn', premium:128000, needBy:'2026-10-01' },
+      { name:'BDE Florida',           status:'Created',   statusKind:'purple', premium:198000, needBy:'Today',      id:'bde' },
+      { name:'Iron & Oak Crossfit',   status:'Created',   statusKind:'purple', premium:68000,  needBy:'Today' },
+      { name:'Hibachi Holdings LLC',  status:'Created',   statusKind:'purple', premium:200000, needBy:'2026-06-12', id:'hibachi' },
+      { name:'Dance Studio LLC',      status:'Created',   statusKind:'purple', premium:400000, needBy:'2026-07-12' },
+      { name:'Pulse Fitness Co.',     status:'Quoted',    statusKind:'success', premium:130000, needBy:'2026-08-01' },
+      { name:'Bellwether Bistro',     status:'Quoted',    statusKind:'success', premium:50000,  needBy:'2026-09-01' },
+      { name:'Lighthouse Hospitality',status:'Completed', statusKind:'success', premium:128000, needBy:'2026-10-01' },
     ];
 
     const HOME_THREADS = [
@@ -2566,12 +2566,12 @@
     ];
 
     const HOME_WATCH = [
-      { name:'Iron & Oak Crossfit',   status:'Auto Renewing', kind:'purple',  premium:68000,  id:'iron-oak-crossfit' },
-      { name:'Lighthouse Hospitality',status:'Quoted',        kind:'success', premium:68000  },
-      { name:'Hibachi Holdings LLC',  status:'Quoted',        kind:'success', premium:128000, id:'hibachi' },
-      { name:'Dance Studio LLC',      status:'Quoted',        kind:'success', premium:128000 },
-      { name:'Pulse Fitness Co.',     status:'Bound',         kind:'success', premium:128000, id:'pulse-fitness-co' },
-      { name:'Bellwether Bistro',     status:'Bound',         kind:'success', premium:128000, id:'sub-bellwether-bistro' },
+      { name:'Iron & Oak Crossfit',   status:'Completed', kind:'success', premium:68000,  id:'iron-oak-crossfit' },
+      { name:'Lighthouse Hospitality',status:'Quoted',    kind:'success', premium:68000  },
+      { name:'Hibachi Holdings LLC',  status:'Quoted',    kind:'success', premium:128000, id:'hibachi' },
+      { name:'Dance Studio LLC',      status:'Quoted',    kind:'success', premium:128000 },
+      { name:'Pulse Fitness Co.',     status:'Bound',     kind:'success', premium:128000, id:'pulse-fitness-co' },
+      { name:'Bellwether Bistro',     status:'Bound',     kind:'success', premium:128000, id:'sub-bellwether-bistro' },
     ];
 
     const GROWTH_ROWS = [
