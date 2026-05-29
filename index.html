@@ -2618,7 +2618,6 @@
         { label:'Calculated (Selected Premium)', value:'$290,000', kind:'ok'   },
         { label:'Target Premium',                value:'$289,620', kind:''     },
         { label:'Expected Lost Ratio',           value:'59%',      kind:'ok'   },
-        { label:'Parsed Confident',              value:'60%',      kind:'warn' },
       ],
       indication: {
         glLimit:'$ 1,000,000/2,000,000', valDate:'04/03/2026',
@@ -2787,7 +2786,6 @@
         { label:'Selected Premium',    value: '$' + Math.round(targetPrem).toLocaleString('en-US'), kind:'ok'   },
         { label:'Target Premium',      value: '$' + Math.round(targetPrem).toLocaleString('en-US'), kind:''     },
         { label:'Expected Lost Ratio', value:'60%', kind:'ok'   },
-        { label:'Parsed Confident',    value:'60%', kind:'warn' },
       ];
       // Adjust the submission email subject so it reads correctly
       if (rec.timeline?.[0]?.email) {
