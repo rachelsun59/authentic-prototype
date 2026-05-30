@@ -5207,9 +5207,8 @@
       $$('[data-thread-go]').forEach(el => {
         el.onclick = () => {
           const id = el.dataset.threadGo;
-          if (!RECORDS[id]) return;
-          BDE = RECORDS[id];
-          State.currentId = id;
+          BDE = RECORDS[id] || RECORDS['bde'];
+          State.currentId = RECORDS[id] ? id : 'bde';
           State.page = 'detail';
           State.tab = 'indication';
           State.activityOpen = true;
@@ -5223,16 +5222,11 @@
       $$('[data-watch-go]').forEach(el => {
         el.onclick = () => {
           const id = el.dataset.watchGo;
-          if (id && RECORDS[id]) {
-            BDE = RECORDS[id];
-            State.currentId = id;
-            State.page = 'detail';
-            State.tab = 'indication';
-            State.activityOpen = false;
-          } else {
-            State.page = 'growth';
-            State.currentId = null;
-          }
+          BDE = RECORDS[id] || RECORDS['bde'];
+          State.currentId = RECORDS[id] ? id : 'bde';
+          State.page = 'detail';
+          State.tab = 'indication';
+          State.activityOpen = false;
           render();
         };
       });
@@ -5244,9 +5238,8 @@
         el.onclick = (e) => {
           e.preventDefault();
           const id = el.dataset.openRec || 'bde';
-          if (!RECORDS[id]) return;
-          State.currentId = id;
-          BDE = RECORDS[id];
+          BDE = RECORDS[id] || RECORDS['bde'];
+          State.currentId = RECORDS[id] ? id : 'bde';
           State.page = 'detail'; State.tab = 'indication';
           State.activityOpen = false;
           State.tlCollapsed = new Set();
