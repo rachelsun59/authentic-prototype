@@ -294,52 +294,10 @@
     }
     .stat-strip .sticky-actions .btn-primary { height: 32px; padding: 0 12px; font-size: 13px; }
     .surface.is-detail-scrolled .stat-strip {
-      display: grid;
-      grid-template-columns: 2.4fr 1fr auto;
       gap: var(--sp-3);
       align-items: center;
       padding: var(--sp-2) 4px;
       border-bottom: 1px solid var(--border-soft);
-    }
-    /* Drop the triggers' divider line in scrolled state (no longer below the metrics) */
-    .surface.is-detail-scrolled .stat-triggers { border-top: 0; padding-top: 0; }
-
-    /* When the available width gets tight, the scrolled sticky header
-       rewraps so the referral triggers move below the metrics rather than
-       getting squeezed.  Grid areas keep the Status actions anchored to
-       the right.  This fires for two conditions:
-         1) viewport ≤ 1280px (narrow window)
-         2) activity drawer open (always eats 400px on the right) */
-    @media (max-width: 1280px) {
-      .surface.is-detail-scrolled .stat-strip {
-        grid-template-columns: 1fr auto;
-        grid-template-areas:
-          "metrics  actions"
-          "triggers triggers";
-        row-gap: var(--sp-2);
-      }
-      .surface.is-detail-scrolled .stat-metrics    { grid-area: metrics; }
-      .surface.is-detail-scrolled .sticky-actions  { grid-area: actions; }
-      .surface.is-detail-scrolled .stat-triggers   {
-        grid-area: triggers;
-        border-top: 1px solid var(--border-soft);
-        padding-top: var(--sp-2);
-      }
-    }
-    /* When the drawer is open, apply the wrap layout regardless of viewport */
-    .surface.is-detail-scrolled .detail-shell.with-drawer .stat-strip {
-      grid-template-columns: 1fr auto;
-      grid-template-areas:
-        "metrics  actions"
-        "triggers triggers";
-      row-gap: var(--sp-2);
-    }
-    .surface.is-detail-scrolled .detail-shell.with-drawer .stat-metrics    { grid-area: metrics; }
-    .surface.is-detail-scrolled .detail-shell.with-drawer .sticky-actions  { grid-area: actions; }
-    .surface.is-detail-scrolled .detail-shell.with-drawer .stat-triggers   {
-      grid-area: triggers;
-      border-top: 1px solid var(--border-soft);
-      padding-top: var(--sp-2);
     }
     /* Strip the left/right padding from .detail-main when scrolled so the
        sticky band reaches the surface edges with no horizontal inset. */
@@ -350,11 +308,10 @@
       padding-left: var(--sp-5); padding-right: var(--sp-5);
     }
     .surface.is-detail-scrolled .stat-strip .sticky-actions { display: inline-flex; }
-    .surface.is-detail-scrolled .stat-cell .value { font-size: 18px; line-height: 22px; }
-    .surface.is-detail-scrolled .stat-cell .label { font-size: 10px; }
-    .surface.is-detail-scrolled .stat-cell { padding-left: var(--sp-2); gap: 2px; }
-    .surface.is-detail-scrolled .stat-triggers { gap: 2px var(--sp-3); }
-    .surface.is-detail-scrolled .stat-triggers .trig-row { font-size: 11px; padding: 2px 0; }
+    .surface.is-detail-scrolled .stat-cell .value { font-size: 16px; line-height: 20px; }
+    .surface.is-detail-scrolled .stat-cell { padding-left: var(--sp-2); gap: 1px; }
+    .surface.is-detail-scrolled .stat-cell-triggers { padding-left: var(--sp-2); gap: 1px; }
+    .surface.is-detail-scrolled .stat-cell-triggers .trig-row { font-size: 10px; padding: 1px 0; }
     /* Hide tabs in the sticky band when scrolled (they scroll with content) */
     .surface.is-detail-scrolled .detail-sticky .tabs { display: none; }
     .search-input {
@@ -1543,56 +1500,51 @@
        in a 2-col × 2-row grid below.  The scrolled state below switches to
        a compact single-row layout with sticky actions on the right. */
     .stat-strip {
-      display: flex; flex-direction: column;
+      display: flex; flex-direction: row; align-items: center;
       gap: var(--sp-3);
       margin: var(--sp-4) 0 var(--sp-3);
     }
     .stat-strip .stat-metrics {
       display: grid; grid-template-columns: repeat(4, 1fr);
       gap: var(--sp-3);
-    }
-    .stat-strip .stat-triggers {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 0 var(--sp-5);
-      border-top: 1px solid var(--border-soft);
-      padding-top: var(--sp-2);
-    }
-    .stat-strip .stat-triggers .trig-row {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: var(--sp-2);
-      padding: 6px 0;
-      font-size: 13px;
-      min-width: 195px;
-    }
-    .stat-strip .stat-triggers .trig-row .lbl {
-      color: var(--fg); display: inline-flex; align-items: center; gap: 4px;
-    }
-    .stat-strip .stat-triggers .trig-row .lbl .info-ico {
-      color: var(--fg-muted); font-size: 13px; cursor: help;
-    }
-    .stat-strip .stat-triggers .trig-row .pill-ok {
-      color: var(--ok); font-size: 14px; line-height: 1;
-    }
-    @media (max-width: 1100px) {
-      .stat-strip { grid-template-columns: 1fr; }
-      .stat-strip .stat-triggers { grid-template-columns: 1fr; }
+      flex: 1;
     }
     .stat-cell {
       display: flex; flex-direction: column; gap: 4px;
-      padding-left: var(--sp-3);
-      border-left: 2px solid var(--border-soft);
+      padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3);
+      border-left: 2px solid var(--ok);
     }
-    .stat-cell .label { font-size: 11px; color: var(--fg-muted); }
+    .stat-cell .label { font-size: 10px; line-height: 12px; color: var(--fg-muted); }
     .stat-cell .value {
       font-family: var(--font-display);
-      font-size: 32px; line-height: 36px;
+      font-size: 24px; line-height: 28px;
       font-weight: 400;
-      color: var(--fg);
+      color: var(--ok);
     }
-    .stat-cell.ok    .value { color: var(--ok); }
-    .stat-cell.ok    { border-left-color: var(--ok); }
+    .stat-cell .sub { font-size: 11px; line-height: 14px; color: var(--fg-muted); }
     .stat-cell.warn  .value { color: var(--warn); }
     .stat-cell.warn  { border-left-color: var(--warn); }
+    .stat-cell-triggers {
+      display: flex; flex-direction: column; justify-content: center;
+      gap: 2px;
+      padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3);
+      border-left: 2px solid var(--ok);
+    }
+    .stat-cell-triggers .trig-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--sp-2);
+      padding: 3px 0;
+      font-size: 11px; color: var(--fg-muted);
+    }
+    .stat-cell-triggers .trig-row .lbl {
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .stat-cell-triggers .trig-row .lbl .info-ico {
+      color: var(--fg-muted); font-size: 11px; cursor: help;
+    }
+    .stat-cell-triggers .trig-row .pill-ok {
+      color: var(--ok); font-size: 14px; line-height: 1; flex-shrink: 0;
+    }
 
     /* Tab strip — pill-style with rounded background */
     .tabs {
@@ -2786,9 +2738,8 @@
       });
       // Refresh stats text using scaled premium
       rec.stats = [
-        { label:'Selected Premium',    value: '$' + Math.round(targetPrem).toLocaleString('en-US'), kind:'ok'   },
-        { label:'Target Premium',      value: '$' + Math.round(targetPrem).toLocaleString('en-US'), kind:''     },
-        { label:'Expected Lost Ratio', value:'60%', kind:'ok'   },
+        { label:'Calculated (Selected Premium)', value: '$' + Math.round(targetPrem).toLocaleString('en-US'), sub: 'Target Premium $' + Math.round(targetPrem).toLocaleString('en-US'), kind:'ok' },
+        { label:'Expected Lost Ratio', value:'60%', kind:'ok' },
       ];
       // Adjust the submission email subject so it reads correctly
       if (rec.timeline?.[0]?.email) {
@@ -3740,9 +3691,8 @@
       // same derivation works whether it's BDE Florida or a synthesized row.
       const ind = getBDEIndication();
       rec.stats = [
-        { label:'Calculated (Selected Premium)', value: fmtUSD(ind.selected),       kind:'ok'   },
-        { label:'Target Premium',                value: fmtUSD(ind.premIndication), kind:''     },
-        { label:'Expected Lost Ratio',           value: ind.expectedLRPct,          kind:'ok'   },
+        { label:'Calculated (Selected Premium)', value: fmtUSD(ind.selected), sub: `Target Premium ${fmtUSD(ind.premIndication)}`, kind:'ok' },
+        { label:'Expected Lost Ratio',           value: ind.expectedLRPct,    kind:'ok' },
       ];
       const stats = rec.stats;
       const tlCount = (rec.timeline || []).length;
@@ -3866,14 +3816,17 @@
                 <div class="stat-cell ${c.kind || ''}">
                   <span class="label">${c.label}</span>
                   <span class="value">${c.value}</span>
+                  ${c.sub ? `<span class="sub">${c.sub}</span>` : ''}
                 </div>
               `).join('')}
-            </div>
-            <div class="stat-triggers">
-              <div class="trig-row"><span class="lbl">Large Loss Influence <i class="ph ph-info info-ico" title="Refer to UW MGR if large losses have an outsized impact on the indication (uncapped vs. capped method more than 2x difference)."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
-              <div class="trig-row"><span class="lbl">Claim data Credibility <i class="ph ph-info info-ico" title="Refer when total reported claims are too few for the BF method to be credible (typically < 30 claims over 5y)."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
-              <div class="trig-row"><span class="lbl">Age of Loss Runs <i class="ph ph-info info-ico" title="Refer if the valuation date is more than 120 days stale; reserves may have developed materially."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
-              <div class="trig-row"><span class="lbl">Orphan Claims <i class="ph ph-info info-ico" title="Refer if any claim's accident year falls outside the 5-year matrix; investigate before binding."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+              <div class="stat-cell-triggers">
+                <div class="trig-row"><span class="lbl">Large Loss Influence <i class="ph ph-info info-ico" title="Refer to UW MGR if large losses have an outsized impact on the indication (uncapped vs. capped method more than 2x difference)."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+                <div class="trig-row"><span class="lbl">Age of Loss Runs <i class="ph ph-info info-ico" title="Refer if the valuation date is more than 120 days stale; reserves may have developed materially."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+              </div>
+              <div class="stat-cell-triggers">
+                <div class="trig-row"><span class="lbl">Claim data Credibility <i class="ph ph-info info-ico" title="Refer when total reported claims are too few for the BF method to be credible (typically < 30 claims over 5y)."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+                <div class="trig-row"><span class="lbl">Orphan Claims <i class="ph ph-info info-ico" title="Refer if any claim's accident year falls outside the 5-year matrix; investigate before binding."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+              </div>
             </div>
             <!-- Sticky-only actions: Status pill + comment count + Status Update.
                  Hidden until .is-detail-scrolled so the original detail-actions
