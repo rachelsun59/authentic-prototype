@@ -3887,7 +3887,7 @@
           </div>
 
           <div class="tabs">
-            <button class="tab ${State.tab==='indication'?'active':''}" data-tab="indication">Submission Details</button>
+            <button class="tab ${State.tab==='indication'?'active':''}" data-tab="indication">Indication</button>
             <button class="tab ${State.tab==='loss-run'?'active':''}" data-tab="loss-run">Claims</button>
             <button class="tab ${State.tab==='exposures'?'active':''}" data-tab="exposures">Exposures</button>
             <button class="tab ${State.tab==='uwq'?'active':''}" data-tab="uwq">UW Questions</button>
@@ -4209,56 +4209,6 @@
         </div>
       `;
       const subHead = (label) => `<div class="sub-head">${label}</div>`;
-
-      // Optional Coverages block (shared data with UW Questions tab)
-      const uwq      = rec.uwq || {};
-      const addlIns  = uwq.addlIns || 'yes';
-      const hnoa     = uwq.hnoa    || 'no';
-      const optOpen  = uwq.optOpen !== false;
-      const yn = (id, val) => `
-        <div class="uwq-yn-row">
-          <button class="yn-btn ${val==='yes'?'active':''}" data-uwq-field="${id}" data-uwq-val="yes">Yes</button>
-          <button class="yn-btn ${val==='no' ?'active':''}" data-uwq-field="${id}" data-uwq-val="no">No</button>
-        </div>`;
-      const optCovHtml = `
-        <div class="${optOpen ? 'acc-shell' : ''}" style="margin-top:var(--sp-4)">
-          <button class="acc-item" data-uwq-opt-toggle>
-            <span class="left">
-              <i class="ph ph-shield-plus" style="font-size:16px"></i>
-              <span class="title">Optional Coverages</span>
-            </span>
-            <span class="toggle-ico" aria-hidden="true">${optOpen ? '−' : '+'}</span>
-          </button>
-          ${optOpen ? `
-            <div class="acc-body">
-              <div class="uwq-block" style="padding-top:var(--sp-2)">
-                <div class="uwq-block-q">Add Additional Insureds to your General Liability policy (e.g. Landlord, Franchisor, Municipality, Venue) <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></div>
-                ${yn('addlIns', addlIns)}
-                ${addlIns === 'yes' ? `
-                  <div class="uwq-value-card" style="margin-top:var(--sp-3)">
-                    <div style="display:flex;align-items:center;gap:10px">
-                      <i class="ph ph-users" style="font-size:18px;color:var(--fg-muted)"></i>
-                      <div style="flex:1">
-                        <div class="uwq-vc-label">Number of Additional Insureds</div>
-                        <input class="uwq-vc-input" type="text" inputmode="decimal" data-uwq-field="addlInsCount" value="${uwq.addlInsCount ?? 1}"/>
-                      </div>
-                    </div>
-                  </div>
-                ` : ''}
-              </div>
-              <div class="uwq-block">
-                <div class="uwq-block-q">Hired Auto and Nonowned Auto Liability <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></div>
-                ${yn('hnoa', hnoa)}
-              </div>
-              <div class="uwq-value-card">
-                <div class="uwq-vc-label">Name and Address of Additional Insured (1)</div>
-                <input class="uwq-vc-input uwq-vc-input--text" type="text" data-uwq-field="addlInsName"
-                  value="${(uwq.addlInsName || 'Bank of America, N.A. Insurance Group NC1-026-06-07, Charlotte, NC 28255').replace(/"/g,'&quot;')}"/>
-              </div>
-            </div>
-          ` : ''}
-        </div>`;
-
       return `
         <div class="bde-sections">
           <div class="section-row">
@@ -4270,9 +4220,6 @@
           ${Number(BDE.indication.deductible) > 0
             ? bdeSection('deductible', 'Deductible Analysis', renderBDEDeductibleAnalysisBody())
             : ''}
-          <div class="sec" style="padding:var(--sp-4)">
-            ${optCovHtml}
-          </div>
         </div>
       `;
     }
@@ -4583,6 +4530,12 @@
               ${quoteSection('basic',     'user-circle',   'Basic Info',
                   basicInfoBody,
                   phoneMissing ? { type:'missing', count: 1 } : null)}
+              ${quoteSection('location',  'map-pin',       'Business Location',
+                  renderLocationCards(),
+                  (() => {
+                    const bad = (BDE.quote.locations || []).filter(l => !quoteAddressIsValid(l.address)).length;
+                    return bad > 0 ? { type:'error', count: bad } : null;
+                  })())}
             </div>
           </div>
 
@@ -5207,8 +5160,9 @@
       $$('[data-thread-go]').forEach(el => {
         el.onclick = () => {
           const id = el.dataset.threadGo;
-          BDE = RECORDS[id] || RECORDS['bde'];
-          State.currentId = RECORDS[id] ? id : 'bde';
+          if (!RECORDS[id]) return;
+          BDE = RECORDS[id];
+          State.currentId = id;
           State.page = 'detail';
           State.tab = 'indication';
           State.activityOpen = true;
@@ -5222,11 +5176,16 @@
       $$('[data-watch-go]').forEach(el => {
         el.onclick = () => {
           const id = el.dataset.watchGo;
-          BDE = RECORDS[id] || RECORDS['bde'];
-          State.currentId = RECORDS[id] ? id : 'bde';
-          State.page = 'detail';
-          State.tab = 'indication';
-          State.activityOpen = false;
+          if (id && RECORDS[id]) {
+            BDE = RECORDS[id];
+            State.currentId = id;
+            State.page = 'detail';
+            State.tab = 'indication';
+            State.activityOpen = false;
+          } else {
+            State.page = 'growth';
+            State.currentId = null;
+          }
           render();
         };
       });
@@ -5238,8 +5197,9 @@
         el.onclick = (e) => {
           e.preventDefault();
           const id = el.dataset.openRec || 'bde';
-          BDE = RECORDS[id] || RECORDS['bde'];
-          State.currentId = RECORDS[id] ? id : 'bde';
+          if (!RECORDS[id]) return;
+          State.currentId = id;
+          BDE = RECORDS[id];
           State.page = 'detail'; State.tab = 'indication';
           State.activityOpen = false;
           State.tlCollapsed = new Set();
