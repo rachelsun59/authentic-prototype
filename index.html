@@ -4119,6 +4119,10 @@
       const ind = getBDEIndication();
       const indSec = `
         <div class="form-row">
+          <span class="key">Premium Indication</span>
+          <span class="ctrl" style="background:var(--bg-accent);color:var(--fg-muted)"><span class="pfx" style="color:var(--fg-muted)">$</span><input type="text" value="${ind.premIndication.toLocaleString('en-US')}" disabled style="color:var(--fg-muted)"/></span>
+        </div>
+        <div class="form-row">
           <span class="key">Selected Premium</span>
           <span class="ctrl"><span class="pfx">$</span><input id="bde-selected-premium" type="text" value="${ind.selected.toLocaleString('en-US')}"/></span>
         </div>
