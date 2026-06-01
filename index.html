@@ -3736,7 +3736,7 @@
       // same derivation works whether it's BDE Florida or a synthesized row.
       const ind = getBDEIndication();
       rec.stats = [
-        { label:'Calculated', value: fmtUSD(ind.selected), sub: `Target Premium ${fmtUSD(ind.premIndication)}`, kind:'ok' },
+        { label:'Calculated', value: fmtUSD(ind.premIndication), sub: `Selected Premium ${fmtUSD(ind.selected)}`, kind:'ok' },
         { label:'Expected Lost Ratio',           value: ind.expectedLRPct,    kind:'ok' },
       ];
       const stats = rec.stats;
