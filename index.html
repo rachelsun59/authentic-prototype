@@ -307,6 +307,9 @@
     .surface.is-detail-scrolled .detail-main > :not(.detail-sticky) {
       padding-left: var(--sp-5); padding-right: var(--sp-5);
     }
+    /* UW Questions and Optional Coverages get 16px l/r padding when scrolled */
+    .surface.is-detail-scrolled .sec.uwq-page { padding-left: var(--sp-4) !important; padding-right: var(--sp-4) !important; }
+    .surface.is-detail-scrolled .opt-cov-section { padding-left: var(--sp-4); padding-right: var(--sp-4); }
     .surface.is-detail-scrolled .stat-strip .sticky-actions { display: inline-flex; }
     .surface.is-detail-scrolled .stat-cell .value { font-size: 16px; line-height: 20px; }
     .surface.is-detail-scrolled .stat-cell { padding-left: var(--sp-2); gap: 1px; }
@@ -4798,7 +4801,7 @@
           ${val === 'yes' ? 'Yes' : 'No'}
         </label>`;
       return `
-        <div class="form-section" style="margin-top:var(--sp-4)">
+        <div class="form-section opt-cov-section" style="margin-top:var(--sp-4)">
           <button type="button" class="head" style="pointer-events:none;cursor:default">
             <span>Optional Coverages</span>
           </button>
