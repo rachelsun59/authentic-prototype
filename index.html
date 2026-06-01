@@ -1588,6 +1588,46 @@
     /* UW Questions tab */
     /* UW Questions tab */
     .uwq-page { display: flex; flex-direction: column; gap: 0; }
+    /* Toggle switch */
+    .toggle-sw {
+      position: relative; flex-shrink: 0;
+      width: 40px; height: 22px;
+      background: var(--border); border: none;
+      border-radius: 11px; cursor: pointer;
+      transition: background 0.15s;
+      padding: 0;
+    }
+    .toggle-sw.is-on { background: var(--err); }
+    .toggle-sw::after {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; background: #fff;
+      border-radius: 50%; top: 3px; left: 3px;
+      transition: transform 0.15s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .toggle-sw.is-on::after { transform: translateX(18px); }
+    /* Optional coverages toggle row */
+    .opt-cov-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--sp-4); padding: var(--sp-3) var(--sp-4);
+      border-bottom: 1px solid var(--border-soft);
+      font-size: 13px; color: var(--fg); line-height: 1.5;
+    }
+    .opt-cov-input { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-soft); }
+    /* UJC 2-column key/value grid */
+    .ujc-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      padding: var(--sp-2) 0;
+    }
+    .ujc-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--sp-3) var(--sp-4);
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .ujc-row:nth-last-child(-n+2) { border-bottom: 0; }
+    .ujc-key { font-size: 13px; color: var(--fg-muted); display: inline-flex; align-items: center; gap: 4px; }
+    .ujc-val { font-size: 15px; font-weight: 500; color: var(--ok); }
+    .ujc-row.empty { border-bottom: 0; }
     .uwq-block {
       display: flex; flex-direction: column; gap: var(--sp-3);
       padding: 16px;
@@ -3723,9 +3763,6 @@
             <!-- Info row -->
             <div class="meta-row">
               <span class="meta-k app-id-tip" title="${rec.fullAppId || rec.appId}">${rec.appId}</span>
-              ${rec.quote?.basicInfo?.fullName ? `<span class="meta-vsep"></span><span class="meta-val">${rec.quote.basicInfo.fullName}</span>` : ''}
-              ${rec.quote?.basicInfo?.phone    ? `<span class="meta-vsep"></span><span class="meta-val">${rec.quote.basicInfo.phone}</span>` : ''}
-              ${rec.quote?.basicInfo?.mailingAddress ? `<span class="meta-vsep"></span><span class="meta-val">${rec.quote.basicInfo.mailingAddress}</span>` : ''}
               <span class="meta-vsep"></span>
               <span class="meta-pair rep-picker-wrap">
                 <span class="meta-k">Sales Rep:</span>
@@ -3782,6 +3819,11 @@
                     <i class="ph ph-pencil-simple" style="font-size:11px;color:var(--fg-muted);margin-left:2px"></i>
                   </button>
                 `}
+              </span>
+              <span class="meta-vsep"></span>
+              <span class="meta-pair">
+                <span class="meta-k">Valuation Date:</span>
+                <b>${BDE.indication.valDate || '04/03/2026'}</b>
               </span>
             </div>
           </div>
@@ -4045,6 +4087,7 @@
         </div>
 
         ${renderBDEIndicationSections()}
+        ${renderOptionalCoverages(rec.uwq || {})}
       `;
     }
 
@@ -4069,75 +4112,49 @@
     // the workbook's REFER / OK rules (Indication!F41–F44).
     function renderBDEIndicationSections() {
       const ind = getBDEIndication();
-      const indSec = `
-        <div class="form-row">
-          <span class="key">Premium Indication</span>
-          <span class="ctrl" style="background:var(--bg-accent);color:var(--fg-muted)"><span class="pfx" style="color:var(--fg-muted)">$</span><input type="text" value="${ind.premIndication.toLocaleString('en-US')}" disabled style="color:var(--fg-muted)"/></span>
-        </div>
-        <div class="form-row">
-          <span class="key">Selected Premium</span>
-          <span class="ctrl"><span class="pfx">$</span><input id="bde-selected-premium" type="text" value="${ind.selected.toLocaleString('en-US')}"/></span>
-        </div>
-      `;
       const curGL = (BDE.indication.glLimit || '1,000,000/2,000,000').replace(/^\$\s*/, '');
-      const polSec = `
-        <div class="form-row">
-          <span class="key">General Liability Limit</span>
-          <span class="ctrl select-ctrl"><span class="pfx">$</span><select id="bde-gl-limit">
-            ${BDE_GL_LIMIT_OPTS.map(v => `
-              <option value="${v}" ${curGL === v ? 'selected' : ''}>${v}</option>
-            `).join('')}
-          </select></span>
-        </div>
-        <div class="form-row">
-          <span class="key">Valuation date of loss runs</span>
-          <span class="ctrl"><i class="ph ph-calendar" style="font-size:14px;color:var(--fg-muted)"></i><input type="text" value="${BDE.indication.valDate || '04/03/2026'}"/></span>
-        </div>
-        <div class="form-row">
-          <span class="key">Prospective Year Annual Sales</span>
-          <span class="ctrl"><span class="pfx">$</span><input type="text" value="${(BDE.indication.prospectiveSales || 0).toLocaleString('en-US')}"/></span>
-        </div>
-        <div class="form-row">
-          <span class="key">Competing/Expiring Premium (per $1,000 Sales)</span>
-          <span class="ctrl"><span class="pfx">$</span><input type="text" value="${(BDE.indication.competing || 0).toLocaleString('en-US')}"/></span>
-        </div>
-        <div class="form-row">
-          <span class="key">Deductible per Occurrence ($)</span>
-          <span class="ctrl select-ctrl"><span class="pfx">$</span><select id="bde-deductible">
-            ${BDE_DEDUCTIBLE_OPTS.map(v => `
-              <option value="${v}" ${Number(BDE.indication.deductible) === v ? 'selected' : ''}>${v.toLocaleString('en-US')}</option>
-            `).join('')}
-          </select></span>
-        </div>
-      `;
-      const ujcSec = `
-        <div class="form-row slider">
-          <span class="key">Capped / Uncapped Loss Weighting</span>
-          <span class="slider-val">50%</span>
-        </div>
-        <div class="form-row slider">
-          <span class="key">Target Loss Ratio</span>
-          <span class="slider-val">60%</span>
+      const polInfoSec = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3)">
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+            <div class="stack"><span class="label">Selected Premium</span>
+              <input id="bde-selected-premium" type="text" value="${ind.selected.toLocaleString('en-US')}"/>
+            </div>
+          </div>
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+            <div class="stack"><span class="label">General Liability Limit</span>
+              <select id="bde-gl-limit" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%">
+                ${BDE_GL_LIMIT_OPTS.map(v => `<option value="${v}" ${curGL === v ? 'selected' : ''}>${v}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+            <div class="stack"><span class="label">Prospective Year Annual Sales</span>
+              <input type="text" value="${(BDE.indication.prospectiveSales || 0).toLocaleString('en-US')}"/>
+            </div>
+          </div>
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+            <div class="stack"><span class="label">Competing/Expiring Premium</span>
+              <input type="text" value="${(BDE.indication.competing || 0).toLocaleString('en-US')}"/>
+            </div>
+          </div>
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+            <div class="stack"><span class="label">Deductible per Occurrence</span>
+              <select id="bde-deductible" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%">
+                ${BDE_DEDUCTIBLE_OPTS.map(v => `<option value="${v}" ${Number(BDE.indication.deductible) === v ? 'selected' : ''}>${v.toLocaleString('en-US')}</option>`).join('')}
+              </select>
+            </div>
+          </div>
         </div>
       `;
-      // Pricing Assumptions — Setup B29 (trend), B30 (target LR), B31 (competing
-      // loss cost), B32 (BF a-priori loss cost from Indication template).
-      const priceSec = `
-        <div class="form-row slider">
-          <span class="key">Annual Loss Trend Rate <i class="ph ph-info info-ico" title="Annual loss inflation applied to trend each AY's losses forward to the prospective period. Set to 0% when book-level trends already reflect mix shifts."></i></span>
-          <span class="num-val">0</span>
-        </div>
-        <div class="form-row slider">
-          <span class="key">Target Loss Ratio <i class="ph ph-info info-ico" title="Target loss ratio used to convert ultimate losses to premium. Lower = more conservative pricing."></i></span>
-          <span class="num-val">60%</span>
-        </div>
-        <div class="form-row slider">
-          <span class="key">Competing Loss Cost  (per $1,000 Sales) <i class="ph ph-info info-ico" title="Competing premium × target LR ÷ sales × 1,000. Reference benchmark against incumbent carrier."></i></span>
-          <span class="num-val">2.53</span>
-        </div>
-        <div class="form-row slider">
-          <span class="key">BF A-priori Loss Cost  (per $1,000 Sales) <i class="ph ph-info info-ico" title="Bornhuetter-Ferguson prior expected loss cost. Drives the a-priori component when claim experience is immature."></i></span>
-          <span class="num-val">2.5332</span>
+      // UJC 2-column grid matching Figma 166:35158
+      const ujcBody = `
+        <div class="ujc-grid">
+          <div class="ujc-row"><span class="ujc-key">Annual Loss Trend Rate <i class="ph ph-info info-ico" title="Annual loss inflation applied to trend each AY's losses forward to the prospective period."></i></span><span class="ujc-val">0</span></div>
+          <div class="ujc-row"><span class="ujc-key">BF A-priori Loss Cost <i class="ph ph-info info-ico" title="Bornhuetter-Ferguson prior expected loss cost."></i></span><span class="ujc-val">2.5332</span></div>
+          <div class="ujc-row"><span class="ujc-key">Target Loss Ratio <i class="ph ph-info info-ico" title="Target loss ratio used to convert ultimate losses to premium."></i></span><span class="ujc-val">60%</span></div>
+          <div class="ujc-row"><span class="ujc-key">Capped / Uncapped Loss Weighting <i class="ph ph-info info-ico" title="Weight between capped and uncapped ultimate loss methods."></i></span><span class="ujc-val">50%</span></div>
+          <div class="ujc-row"><span class="ujc-key">Competing Loss Cost <i class="ph ph-info info-ico" title="Competing premium × target LR ÷ sales × 1,000."></i></span><span class="ujc-val">2.53</span></div>
+          <div class="ujc-row empty"></div>
         </div>
       `;
       // Referral Triggers — workbook formulas (Indication!F41:F44).  For the
@@ -4206,12 +4223,10 @@
 
       return `
         <div class="bde-sections">
-          ${bdeSection('ujc', 'Underwriting Judgment & Price Assumptions',
-              subHead('Underwriting Judgment') + ujcSec + subHead('Price Assumptions') + priceSec)}
+          ${bdeSection('ujc', 'Underwriting Judgment & Price Assumption', ujcBody)}
           <div class="section-row">
             ${bdeSection('basic-info', 'Basic Information', basicInfoSec)}
-            ${bdeSection('indication', 'Policy Information',
-                subHead('Indication') + indSec + subHead('Policy Information') + polSec)}
+            ${bdeSection('indication', 'Policy Information', polInfoSec)}
           </div>
           ${bdeSection('deductible', 'Deductible Analysis', renderBDEDeductibleAnalysisBody())}
         </div>
@@ -4769,6 +4784,43 @@
       { id:'felony',     text:'Me or my partners have been convicted of a felony in the last 5 years' },
     ];
 
+    function renderOptionalCoverages(q) {
+      const addlIns = q.addlIns || 'yes';
+      const hnoa    = q.hnoa    || 'no';
+      return `
+        <div class="form-section" style="margin-top:var(--sp-4)">
+          <button type="button" class="head" data-section-toggle="opt-cov" style="pointer-events:none;cursor:default">
+            <span>Optional Coverages</span>
+          </button>
+          <div class="form-section-body">
+            <div class="opt-cov-row">
+              <span>Add Additional Insureds to your General Liability policy (e.g. Landlord, Franchisor, Municipality, Venue) <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></span>
+              <button class="toggle-sw${addlIns === 'yes' ? ' is-on' : ''}" data-uwq-toggle="addlIns" title="Toggle"></button>
+            </div>
+            ${addlIns === 'yes' ? `
+            <div class="opt-cov-input">
+              <div class="qf-field"><i class="ph ph-users ico"></i>
+                <div class="stack"><span class="label">Number of Additional Insured</span>
+                  <input type="text" inputmode="decimal" data-uwq-field="addlInsCount" value="${q.addlInsCount ?? 1}"/>
+                </div>
+              </div>
+            </div>` : ''}
+            <div class="opt-cov-row">
+              <span>Hired Auto and Nonowned Auto Liability <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></span>
+              <button class="toggle-sw${hnoa === 'yes' ? ' is-on' : ''}" data-uwq-toggle="hnoa" title="Toggle"></button>
+            </div>
+            <div class="opt-cov-input" style="border-bottom:0">
+              <div class="qf-field"><i class="ph ph-map-pin ico"></i>
+                <div class="stack"><span class="label">Name and Address of Additional Insured (1)</span>
+                  <input class="uwq-vc-input--text" type="text" data-uwq-field="addlInsName" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%"
+                    value="${(q.addlInsName || 'Bank of America, N.A. Insurance Group NC1-026-06-07, Charlotte, NC 28255').replace(/"/g,'&quot;')}"/>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
     function renderUWQuestionsTab(rec) {
       if (!rec.uwq) rec.uwq = {};
       const q = rec.uwq;
@@ -4830,44 +4882,7 @@
           </div>
 
           <!-- Optional Coverages -->
-          <div class="${optOpen ? 'acc-shell' : ''}" style="margin-top:var(--sp-4)">
-            <button class="acc-item" data-uwq-opt-toggle>
-              <span class="left">
-                <i class="ph ph-shield-plus" style="font-size:16px"></i>
-                <span class="title">Optional Coverages</span>
-              </span>
-              <span class="toggle-ico" aria-hidden="true">${optOpen ? '−' : '+'}</span>
-            </button>
-            ${optOpen ? `
-              <div class="acc-body">
-                <div class="uwq-block" style="padding-top:var(--sp-2)">
-                  <div class="uwq-block-q">Add Additional Insureds to your General Liability policy (e.g. Landlord, Franchisor, Municipality, Venue) <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></div>
-                  ${yn('addlIns', addlIns)}
-                  ${addlIns === 'yes' ? `
-                    <div class="uwq-value-card" style="margin-top:var(--sp-3)">
-                      <div style="display:flex;align-items:center;gap:10px">
-                        <i class="ph ph-users" style="font-size:18px;color:var(--fg-muted)"></i>
-                        <div style="flex:1">
-                          <div class="uwq-vc-label">Number of Additional Insureds</div>
-                          <input class="uwq-vc-input" type="text" inputmode="decimal" data-uwq-field="addlInsCount" value="${q.addlInsCount ?? 1}"/>
-                        </div>
-                        <i class="ph ph-question" style="font-size:14px;color:var(--fg-muted)"></i>
-                      </div>
-                    </div>
-                  ` : ''}
-                </div>
-                <div class="uwq-block">
-                  <div class="uwq-block-q">Hired Auto and Nonowned Auto Liability <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></div>
-                  ${yn('hnoa', hnoa)}
-                </div>
-                <div class="uwq-value-card">
-                  <div class="uwq-vc-label">Name and Address of Additional Insured (1)</div>
-                  <input class="uwq-vc-input uwq-vc-input--text" type="text" data-uwq-field="addlInsName"
-                    value="${(q.addlInsName || 'Bank of America, N.A. Insurance Group NC1-026-06-07, Charlotte, NC 28255').replace(/"/g,'&quot;')}"/>
-                </div>
-              </div>
-            ` : ''}
-          </div>
+          ${renderOptionalCoverages(q)}
 
         </div>`;
     }
@@ -5614,12 +5629,13 @@
           render();
         };
       });
-      // UW Questions — Optional Coverages toggle
-      $$('[data-uwq-opt-toggle]').forEach(btn => {
+      // Optional Coverages toggle switches
+      $$('[data-uwq-toggle]').forEach(btn => {
         btn.onclick = () => {
           const rec = RECORDS[State.currentId] || BDE;
           if (!rec.uwq) rec.uwq = {};
-          rec.uwq.optOpen = !(rec.uwq.optOpen !== false);
+          const field = btn.dataset.uwqToggle;
+          rec.uwq[field] = (rec.uwq[field] || 'no') === 'yes' ? 'no' : 'yes';
           render();
         };
       });
