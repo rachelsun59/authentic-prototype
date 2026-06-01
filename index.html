@@ -4162,14 +4162,58 @@
         </div>
       `;
       const subHead = (label) => `<div class="sub-head">${label}</div>`;
+
+      const bi = BDE.quote?.basicInfo || {};
+      const phoneMissing = !bi.phone;
+      const basicInfoSec = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3)">
+          <div class="qf-field"><i class="ph ph-user ico"></i>
+            <div class="stack"><span class="label">Full name</span>
+              <input type="text" data-quote-field="fullName" value="${bi.fullName || ''}" placeholder="Full name"/>
+            </div>
+          </div>
+          <div>
+            <div class="qf-field ${phoneMissing ? 'is-error' : ''}"><i class="ph ph-phone ico"></i>
+              <div class="stack"><span class="label">Phone</span>
+                <input type="text" data-quote-field="phone" value="${bi.phone || ''}" placeholder="(000) 000-0000"/>
+              </div>
+            </div>
+            ${phoneMissing ? `<div class="qf-error-text">Missing required field</div>` : ''}
+          </div>
+          <div class="qf-row">
+            <div class="qf-field"><i class="ph ph-map-pin ico"></i>
+              <div class="stack"><span class="label">Mailing Address</span>
+                <input type="text" data-quote-field="mailingAddress" value="${bi.mailingAddress || ''}" placeholder="Street, City, ST ZIP"/>
+              </div>
+            </div>
+            <div class="qf-field unit">
+              <div class="stack"><span class="label">Unit #</span>
+                <input type="text" data-quote-field="unit" value="${bi.unit || ''}" placeholder="Suite"/>
+              </div>
+            </div>
+          </div>
+          <div class="qf-field"><i class="ph ph-buildings ico"></i>
+            <div class="stack"><span class="label">Business name</span>
+              <input type="text" data-quote-field="businessName" value="${bi.businessName || ''}"/>
+            </div>
+          </div>
+          <div class="qf-field"><i class="ph ph-storefront ico"></i>
+            <div class="stack"><span class="label">Business type</span>
+              <input type="text" data-quote-field="businessType" value="${bi.businessType || ''}"/>
+            </div>
+          </div>
+        </div>
+      `;
+
       return `
         <div class="bde-sections">
           <div class="section-row">
-            ${bdeSection('indication', 'Indication & Policy Information',
-                subHead('Indication') + indSec + subHead('Policy Information') + polSec)}
+            ${bdeSection('basic-info', 'Basic Information', basicInfoSec)}
             ${bdeSection('ujc', 'Underwriting Judgment & Price Assumptions',
                 subHead('Underwriting Judgment') + ujcSec + subHead('Price Assumptions') + priceSec)}
           </div>
+          ${bdeSection('indication', 'Indication & Policy Information',
+              subHead('Indication') + indSec + subHead('Policy Information') + polSec)}
           ${Number(BDE.indication.deductible) > 0
             ? bdeSection('deductible', 'Deductible Analysis', renderBDEDeductibleAnalysisBody())
             : ''}
