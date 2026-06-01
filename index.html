@@ -3344,7 +3344,7 @@
     function renderUwDecision() {
       const d = State.uwDecision;
       if (!d.open) return '';
-      const amount     = (d.approveAmount || 0).toLocaleString('en-US');
+      const amount     = getBDEIndication().selected.toLocaleString('en-US');
       const isApprove  = d.mode === 'approve';
       const isNeedInfo = d.mode === 'needInfo';
       const isDecline  = d.mode === 'decline';
