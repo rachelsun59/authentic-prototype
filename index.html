@@ -1606,14 +1606,16 @@
       box-shadow: 0 1px 3px rgba(0,0,0,.2);
     }
     .toggle-sw.is-on::after { transform: translateX(18px); }
-    /* Optional coverages toggle row */
-    .opt-cov-row {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: var(--sp-4); padding: var(--sp-3) var(--sp-4);
-      border-bottom: 1px solid var(--border-soft);
-      font-size: 13px; color: var(--fg); line-height: 1.5;
-    }
-    .opt-cov-input { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-soft); }
+    /* Optional coverages radio rows */
+    .opt-cov-block { padding: var(--sp-4); border-bottom: 1px solid var(--border-soft); display: flex; flex-direction: column; gap: var(--sp-3); }
+    .opt-cov-block:last-child { border-bottom: 0; }
+    .opt-cov-q { font-size: 13px; color: var(--fg); line-height: 1.5; }
+    .opt-radio-group { display: flex; align-items: center; gap: var(--sp-5); }
+    .opt-radio-label { display: inline-flex; align-items: center; gap: var(--sp-2); cursor: pointer; font-size: 14px; color: var(--fg); }
+    .opt-radio-label input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+    .opt-radio-dot { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color 0.15s, background 0.15s; }
+    .opt-radio-label input[type="radio"]:checked + .opt-radio-dot { border-color: var(--tertiary); background: var(--tertiary); }
+    .opt-radio-label input[type="radio"]:checked + .opt-radio-dot::after { content:''; display:block; width:6px; height:6px; background:#fff; border-radius:50%; }
     /* UJC 2-column key/value grid */
     .ujc-grid {
       display: grid; grid-template-columns: 1fr 1fr;
@@ -4228,7 +4230,7 @@
             ${bdeSection('basic-info', 'Basic Information', basicInfoSec)}
             ${bdeSection('indication', 'Policy Information', polInfoSec)}
           </div>
-          ${bdeSection('deductible', 'Deductible Analysis', renderBDEDeductibleAnalysisBody())}
+          ${Number(BDE.indication.deductible) > 0 ? bdeSection('deductible', 'Deductible Analysis', renderBDEDeductibleAnalysisBody()) : ''}
         </div>
       `;
     }
@@ -4787,32 +4789,40 @@
     function renderOptionalCoverages(q) {
       const addlIns = q.addlIns || 'yes';
       const hnoa    = q.hnoa    || 'no';
+      const radio = (name, val, current) => `
+        <label class="opt-radio-label">
+          <input type="radio" name="${name}" data-uwq-radio="${name}" value="${val}" ${current === val ? 'checked' : ''}/>
+          <span class="opt-radio-dot"></span>
+          ${val === 'yes' ? 'Yes' : 'No'}
+        </label>`;
       return `
         <div class="form-section" style="margin-top:var(--sp-4)">
-          <button type="button" class="head" data-section-toggle="opt-cov" style="pointer-events:none;cursor:default">
+          <button type="button" class="head" style="pointer-events:none;cursor:default">
             <span>Optional Coverages</span>
           </button>
           <div class="form-section-body">
-            <div class="opt-cov-row">
-              <span>Add Additional Insureds to your General Liability policy (e.g. Landlord, Franchisor, Municipality, Venue) <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></span>
-              <button class="toggle-sw${addlIns === 'yes' ? ' is-on' : ''}" data-uwq-toggle="addlIns" title="Toggle"></button>
-            </div>
-            ${addlIns === 'yes' ? `
-            <div class="opt-cov-input">
+            <div class="opt-cov-block">
+              <div class="opt-cov-q">Add Additional Insureds to your General Liability policy (e.g. Landlord, Franchisor, Municipality, Venue) <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></div>
+              <div class="opt-radio-group">
+                ${radio('addlIns', 'yes', addlIns)}
+                ${radio('addlIns', 'no',  addlIns)}
+              </div>
+              ${addlIns === 'yes' ? `
               <div class="qf-field"><i class="ph ph-users ico"></i>
                 <div class="stack"><span class="label">Number of Additional Insured</span>
                   <input type="text" inputmode="decimal" data-uwq-field="addlInsCount" value="${q.addlInsCount ?? 1}"/>
                 </div>
-              </div>
-            </div>` : ''}
-            <div class="opt-cov-row">
-              <span>Hired Auto and Nonowned Auto Liability <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></span>
-              <button class="toggle-sw${hnoa === 'yes' ? ' is-on' : ''}" data-uwq-toggle="hnoa" title="Toggle"></button>
+              </div>` : ''}
             </div>
-            <div class="opt-cov-input" style="border-bottom:0">
+            <div class="opt-cov-block">
+              <div class="opt-cov-q">Hired Auto and Nonowned Auto Liability <i class="ph ph-question" style="font-size:13px;color:var(--fg-muted);vertical-align:middle"></i></div>
+              <div class="opt-radio-group">
+                ${radio('hnoa', 'yes', hnoa)}
+                ${radio('hnoa', 'no',  hnoa)}
+              </div>
               <div class="qf-field"><i class="ph ph-map-pin ico"></i>
                 <div class="stack"><span class="label">Name and Address of Additional Insured (1)</span>
-                  <input class="uwq-vc-input--text" type="text" data-uwq-field="addlInsName" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%"
+                  <input type="text" data-uwq-field="addlInsName" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%"
                     value="${(q.addlInsName || 'Bank of America, N.A. Insurance Group NC1-026-06-07, Charlotte, NC 28255').replace(/"/g,'&quot;')}"/>
                 </div>
               </div>
@@ -5629,13 +5639,12 @@
           render();
         };
       });
-      // Optional Coverages toggle switches
-      $$('[data-uwq-toggle]').forEach(btn => {
-        btn.onclick = () => {
+      // Optional Coverages radio buttons
+      $$('[data-uwq-radio]').forEach(input => {
+        input.onchange = () => {
           const rec = RECORDS[State.currentId] || BDE;
           if (!rec.uwq) rec.uwq = {};
-          const field = btn.dataset.uwqToggle;
-          rec.uwq[field] = (rec.uwq[field] || 'no') === 'yes' ? 'no' : 'yes';
+          rec.uwq[input.dataset.uwqRadio] = input.value;
           render();
         };
       });
