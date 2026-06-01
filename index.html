@@ -1716,6 +1716,9 @@
     .exp-subtab:hover { color: var(--fg); }
     .exp-subtab.active { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
     .exp-table thead th { white-space: nowrap; }
+    .exp-group-toggle { display:flex; gap:2px; background:var(--bg-accent); border-radius:var(--r-md); padding:2px; }
+    .exp-group-toggle button { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border:0; border-radius:calc(var(--r-md) - 2px); background:transparent; font-size:12px; color:var(--fg-muted); cursor:pointer; transition:background .15s,color .15s; white-space:nowrap; }
+    .exp-group-toggle button.active { background:var(--surface); color:var(--fg); box-shadow:0 1px 3px rgba(0,0,0,.08); }
     .exp-addr-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; }
     .exp-addr-row {
       display: flex; align-items: center; gap: var(--sp-3);
@@ -2536,6 +2539,8 @@
       tlCollapsed: new Set(),                    // indices of collapsed timeline items
       exposuresSubTab: 'perExposure',            // 'perExposure' | 'addresses'
       expStateOpen: new Set(['FL', 'NY']),       // expanded state accordions
+      expClassOpen: new Set(),                   // expanded class-code accordions
+      expGroupBy:   'state',                     // 'state' | 'cov'
       // Underwriter Decision modal — opened from the "Make Decision" button
       uwDecision: { open: false, mode: 'approve', declineReason: '', notes: '' },
       // "New Submission" modal flow — Figma 38:20599 / 38:21469 / 38:25386 /
@@ -4686,11 +4691,14 @@
         return loc.trim().length > 0 && !expLocIsValid(loc);
       }).length;
 
-      // Group rows by state, preserving global row index for data-exp-row
-      const byState = {};
+      const groupBy = State.expGroupBy || 'state';
+
+      // Group rows by state or class code, preserving global row index
+      const grouped = {};
       rows.forEach((r, i) => {
-        if (!byState[r.st]) byState[r.st] = [];
-        byState[r.st].push({ r, i });
+        const key = groupBy === 'cov' ? (r.cov || 'Unknown') : r.st;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push({ r, i });
       });
 
       const STATE_NAMES = { FL: 'Florida', NY: 'New York', CA: 'California', TX: 'Texas' };
@@ -4726,24 +4734,28 @@
           </table>
         </div>`;
 
-      const stateAccordions = Object.entries(byState).map(([st, stateRows]) => {
-        const open = State.expStateOpen.has(st);
-        const totalPrem = stateRows.reduce((s, { r }) => s + (r.prem || 0), 0);
-        const stateName = STATE_NAMES[st] || st;
-        const lraroRate = LRARO_RATES[st];
+      const accordions = Object.entries(grouped).map(([key, groupRows]) => {
+        const open = groupBy === 'cov'
+          ? State.expClassOpen.has(key)
+          : State.expStateOpen.has(key);
+        const totalPrem = groupRows.reduce((s, { r }) => s + (r.prem || 0), 0);
+        const label = groupBy === 'cov' ? key : (STATE_NAMES[key] || key);
+        const icon  = groupBy === 'cov' ? 'tag' : 'map-pin';
+        const lraroRate = groupBy === 'state' ? LRARO_RATES[key] : null;
+        const toggleAttr = groupBy === 'cov' ? `data-exp-class-toggle="${key}"` : `data-exp-state-toggle="${key}"`;
         return `
           <div class="${open ? 'acc-shell' : ''}" style="margin-bottom:var(--sp-3)">
-            <button class="acc-item" data-exp-state-toggle="${st}">
+            <button class="acc-item" ${toggleAttr}>
               <span class="left">
-                <i class="ph ph-map-pin" style="font-size:16px"></i>
-                <span class="title">${stateName}</span>
-                <span style="font-size:11px;color:var(--fg-muted);font-weight:400">${stateRows.length} location${stateRows.length !== 1 ? 's' : ''}</span>
-                ${lraroRate != null && st !== 'NY' ? `<span style="font-size:11px;color:var(--fg-muted);font-weight:400">· LRARO ${lraroRate.toFixed(2)}</span>` : ''}
+                <i class="ph ph-${icon}" style="font-size:16px"></i>
+                <span class="title">${label}</span>
+                <span style="font-size:11px;color:var(--fg-muted);font-weight:400">${groupRows.length} location${groupRows.length !== 1 ? 's' : ''}</span>
+                ${lraroRate != null && key !== 'NY' ? `<span style="font-size:11px;color:var(--fg-muted);font-weight:400">· LRARO ${lraroRate.toFixed(2)}</span>` : ''}
                 <span style="font-size:11px;color:var(--fg-muted);font-weight:400">· $${totalPrem.toLocaleString('en-US')} premium</span>
               </span>
               <span class="toggle-ico" aria-hidden="true">${open ? '−' : '+'}</span>
             </button>
-            ${open ? `<div class="acc-body" style="padding:0">${tableFor(stateRows)}</div>` : ''}
+            ${open ? `<div class="acc-body" style="padding:0">${tableFor(groupRows)}</div>` : ''}
           </div>`;
       }).join('');
 
@@ -4755,9 +4767,13 @@
               <span class="sub">${rows.length} locations · every cell editable</span>
               <span class="pill error exp-err-badge" style="font-size:11px${errCount === 0 ? ';display:none' : ''}"><i class="ph ph-warning" style="font-size:11px;margin-right:3px"></i>${errCount} invalid address${errCount > 1 ? 'es' : ''}</span>
             </div>
+            <div class="exp-group-toggle">
+              <button class="${groupBy === 'state' ? 'active' : ''}" data-exp-group="state"><i class="ph ph-map-pin" style="font-size:13px"></i> By State</button>
+              <button class="${groupBy === 'cov'   ? 'active' : ''}" data-exp-group="cov"><i class="ph ph-tag" style="font-size:13px"></i> By Class Code</button>
+            </div>
           </div>
           <div style="padding:var(--sp-3) var(--sp-3) 0">
-            ${stateAccordions}
+            ${accordions}
           </div>
         </div>`;
     }
@@ -5593,6 +5609,19 @@
           else State.expStateOpen.add(st);
           render();
         };
+      });
+      // Exposure class-code accordions
+      $$('[data-exp-class-toggle]').forEach(b => {
+        b.onclick = () => {
+          const k = b.dataset.expClassToggle;
+          if (State.expClassOpen.has(k)) State.expClassOpen.delete(k);
+          else State.expClassOpen.add(k);
+          render();
+        };
+      });
+      // Exposure group-by toggle
+      $$('[data-exp-group]').forEach(b => {
+        b.onclick = () => { State.expGroupBy = b.dataset.expGroup; render(); };
       });
       // UW Questions — text inputs
       $$('[data-uwq-field]').forEach(el => {
