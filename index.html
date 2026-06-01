@@ -827,38 +827,26 @@
     }
     /* Underwriter Decision modal */
     .uw-decision-header {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: var(--sp-3);
-    }
-    .uw-amount-badge {
-      display: inline-flex; align-items: center;
-      height: 32px; padding: 0 12px;
-      background: var(--ok-bg); color: var(--ok);
-      border-radius: var(--r-full);
-      font-size: 13px; font-weight: 600;
-      white-space: nowrap;
-    }
-    .uw-tabs {
-      display: flex; gap: 6px;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      overflow: hidden; margin-bottom: var(--sp-3);
     }
     .uw-tab {
-      height: 32px; padding: 0 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-md);
-      font-size: 13px; font-weight: 500;
-      color: var(--fg); cursor: pointer;
-      transition: border-color 120ms, background 120ms, color 120ms;
+      padding: 10px 14px; text-align: center;
+      background: var(--surface); border: none;
+      border-right: 1px solid var(--border);
+      font-size: 13px; font-weight: 500; color: var(--fg);
+      cursor: pointer; transition: background 120ms;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .uw-tab:hover { background: var(--bg); }
+    .uw-tab:last-child { border-right: none; }
+    .uw-tab:hover { background: var(--bg-accent); }
     .uw-tab.is-on {
-      border-color: var(--info);
-      background: #eff6ff; color: var(--info);
+      outline: 2px solid var(--tertiary); outline-offset: -2px;
+      background: var(--surface); color: var(--fg); font-weight: 600;
+      position: relative; z-index: 1;
     }
-    .uw-tab--decline.is-on {
-      border-color: var(--err);
-      background: var(--err-bg); color: var(--err);
-    }
+    .uw-tab--decline.is-on { outline-color: var(--err); }
     .uw-reasons {
       display: flex; flex-direction: column;
       margin-top: var(--sp-3);
@@ -3342,13 +3330,13 @@
 
     /* ---- Underwriter Decision modal ---- */
     const UW_DECLINE_REASONS = ['Loss history','Capacity','Outside appetite','Data quality','Other'];
+    const UW_DOCS = ['5 Years of Loss Runs','SOV','Expiring Premium','Other'];
     function openUwDecision() {
       const ind = getBDEIndication();
       State.uwDecision = {
         open: true, mode: 'approve',
-        declineReason: '',
-        notes: '',
-        approveAmount: ind.selected,
+        declineReason: '', documents: [],
+        notes: '', approveAmount: ind.selected,
       };
       render();
     }
@@ -3356,19 +3344,31 @@
     function renderUwDecision() {
       const d = State.uwDecision;
       if (!d.open) return '';
-      const amount = (d.approveAmount || 0).toLocaleString('en-US');
+      const amount     = (d.approveAmount || 0).toLocaleString('en-US');
+      const isApprove  = d.mode === 'approve';
       const isNeedInfo = d.mode === 'needInfo';
       const isDecline  = d.mode === 'decline';
-      const canConfirm = !isDecline || !!d.declineReason;
-      const reasonsHTML = UW_DECLINE_REASONS.map(r => {
+      const docs       = d.documents || [];
+      const canConfirm = isApprove || isNeedInfo || !!d.declineReason;
+      const ctaLabel   = isDecline ? 'Confirm Decline' : isNeedInfo ? 'Request' : 'Approve & Quote';
+      const ctaCls     = isDecline ? 'btn-primary-danger' : 'btn-primary';
+
+      const declineHTML = `<div class="uw-reasons">${UW_DECLINE_REASONS.map(r => {
         const sel = d.declineReason === r;
         return `<button class="uw-reason${sel ? ' is-selected' : ''}" data-uw-reason="${r}">
-          <span class="radio${sel ? ' is-on' : ''}"></span>
-          <span>${r}</span>
-        </button>`;
-      }).join('');
-      const ctaLabel = isDecline ? 'Confirm Decline' : isNeedInfo ? 'Request More Info' : 'Approve & Quote';
-      const ctaCls   = isDecline ? 'btn-primary-danger' : 'btn-primary';
+          <span class="radio${sel ? ' is-on' : ''}"></span><span>${r}</span></button>`;
+      }).join('')}</div>`;
+
+      const needInfoHTML = `
+        <div class="uw-reasons">
+          <div style="padding:10px 14px;font-size:12px;color:var(--fg-muted);font-weight:500;border-bottom:1px solid var(--border-soft)">Required Documents</div>
+          ${UW_DOCS.map(doc => {
+            const sel = docs.includes(doc);
+            return `<button class="uw-reason${sel ? ' is-selected' : ''}" data-uw-doc="${doc}">
+              <span class="radio${sel ? ' is-on' : ''}"></span><span>${doc}</span></button>`;
+          }).join('')}
+        </div>`;
+
       return `
         <div class="modal-overlay" id="uw-overlay">
           <div class="modal-card" style="max-width:560px" onclick="event.stopPropagation()">
@@ -3378,13 +3378,12 @@
             </div>
             <div class="modal-body" style="padding-bottom:var(--sp-3)">
               <div class="uw-decision-header">
-                <span class="uw-amount-badge">Approved $${amount}</span>
-                <div class="uw-tabs">
-                  <button class="uw-tab${isNeedInfo ? ' is-on' : ''}" data-uw-mode="needInfo">Need more info</button>
-                  <button class="uw-tab uw-tab--decline${isDecline ? ' is-on' : ''}" data-uw-mode="decline">Decline</button>
-                </div>
+                <button class="uw-tab${isApprove  ? ' is-on' : ''}" data-uw-mode="approve">Approved $${amount}</button>
+                <button class="uw-tab${isNeedInfo ? ' is-on' : ''}" data-uw-mode="needInfo">Need more info</button>
+                <button class="uw-tab uw-tab--decline${isDecline ? ' is-on' : ''}" data-uw-mode="decline">Decline</button>
               </div>
-              ${isDecline ? `<div class="uw-reasons">${reasonsHTML}</div>` : ''}
+              ${isDecline  ? declineHTML  : ''}
+              ${isNeedInfo ? needInfoHTML : ''}
               <div class="ns-textarea" style="margin-top:var(--sp-3)">
                 <textarea id="uw-notes" placeholder="Add Notes" maxlength="120" rows="4">${(d.notes || '').replace(/</g,'&lt;')}</textarea>
                 <span class="ns-counter">${(d.notes || '').length} / 120</span>
@@ -5020,19 +5019,22 @@
       $$('[data-uw-mode]').forEach(b => b.onclick = (e) => {
         e.stopPropagation();
         const clicked = b.dataset.uwMode;
-        // Clicking the active tab deactivates it (returns to approve)
-        if (State.uwDecision.mode === clicked) {
-          State.uwDecision.mode = 'approve';
-          State.uwDecision.declineReason = '';
-        } else {
-          State.uwDecision.mode = clicked;
-          if (clicked !== 'decline') State.uwDecision.declineReason = '';
-        }
+        State.uwDecision.mode = clicked;
+        if (clicked !== 'decline') State.uwDecision.declineReason = '';
         render();
       });
       $$('[data-uw-reason]').forEach(b => b.onclick = (e) => {
         e.stopPropagation();
         State.uwDecision.declineReason = b.dataset.uwReason;
+        render();
+      });
+      $$('[data-uw-doc]').forEach(b => b.onclick = (e) => {
+        e.stopPropagation();
+        const doc = b.dataset.uwDoc;
+        const docs = State.uwDecision.documents || [];
+        const idx = docs.indexOf(doc);
+        if (idx >= 0) docs.splice(idx, 1); else docs.push(doc);
+        State.uwDecision.documents = [...docs];
         render();
       });
       const uwNotes = $('#uw-notes');
