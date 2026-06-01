@@ -2622,7 +2622,7 @@
       status:'Created', statusKind:'purple',
       // Per Figma 36:7724 — BDE shows 4 stat cells (no "vs Target premium").
       stats: [
-        { label:'Calculated (Selected Premium)', value:'$290,000', kind:'ok'   },
+        { label:'Calculated', value:'$290,000', kind:'ok'   },
         { label:'Target Premium',                value:'$289,620', kind:''     },
         { label:'Expected Lost Ratio',           value:'59%',      kind:'ok'   },
       ],
@@ -2790,7 +2790,7 @@
       });
       // Refresh stats text using scaled premium
       rec.stats = [
-        { label:'Calculated (Selected Premium)', value: '$' + Math.round(targetPrem).toLocaleString('en-US'), sub: 'Target Premium $' + Math.round(targetPrem).toLocaleString('en-US'), kind:'ok' },
+        { label:'Calculated', value: '$' + Math.round(targetPrem).toLocaleString('en-US'), sub: 'Target Premium $' + Math.round(targetPrem).toLocaleString('en-US'), kind:'ok' },
         { label:'Expected Lost Ratio', value:'60%', kind:'ok' },
       ];
       // Adjust the submission email subject so it reads correctly
@@ -3737,7 +3737,7 @@
       // same derivation works whether it's BDE Florida or a synthesized row.
       const ind = getBDEIndication();
       rec.stats = [
-        { label:'Calculated (Selected Premium)', value: fmtUSD(ind.selected), sub: `Target Premium ${fmtUSD(ind.premIndication)}`, kind:'ok' },
+        { label:'Calculated', value: fmtUSD(ind.selected), sub: `Target Premium ${fmtUSD(ind.premIndication)}`, kind:'ok' },
         { label:'Expected Lost Ratio',           value: ind.expectedLRPct,    kind:'ok' },
       ];
       const stats = rec.stats;
