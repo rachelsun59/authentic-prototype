@@ -4206,16 +4206,14 @@
 
       return `
         <div class="bde-sections">
+          ${bdeSection('ujc', 'Underwriting Judgment & Price Assumptions',
+              subHead('Underwriting Judgment') + ujcSec + subHead('Price Assumptions') + priceSec)}
           <div class="section-row">
             ${bdeSection('basic-info', 'Basic Information', basicInfoSec)}
-            ${bdeSection('ujc', 'Underwriting Judgment & Price Assumptions',
-                subHead('Underwriting Judgment') + ujcSec + subHead('Price Assumptions') + priceSec)}
+            ${bdeSection('indication', 'Policy Information',
+                subHead('Indication') + indSec + subHead('Policy Information') + polSec)}
           </div>
-          ${bdeSection('indication', 'Indication & Policy Information',
-              subHead('Indication') + indSec + subHead('Policy Information') + polSec)}
-          ${Number(BDE.indication.deductible) > 0
-            ? bdeSection('deductible', 'Deductible Analysis', renderBDEDeductibleAnalysisBody())
-            : ''}
+          ${bdeSection('deductible', 'Deductible Analysis', renderBDEDeductibleAnalysisBody())}
         </div>
       `;
     }
