@@ -1614,8 +1614,10 @@
     .opt-radio-label { display: inline-flex; align-items: center; gap: var(--sp-2); cursor: pointer; font-size: 14px; color: var(--fg); }
     .opt-radio-label input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
     .opt-radio-dot { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color 0.15s, background 0.15s; }
-    .opt-radio-label input[type="radio"]:checked + .opt-radio-dot { border-color: var(--tertiary); background: var(--tertiary); }
-    .opt-radio-label input[type="radio"]:checked + .opt-radio-dot::after { content:''; display:block; width:6px; height:6px; background:#fff; border-radius:50%; }
+    .opt-radio-label input[type="radio"]:checked + .opt-radio-dot,
+    .opt-radio-label input[type="checkbox"]:checked + .opt-radio-dot { border-color: var(--tertiary); background: var(--tertiary); }
+    .opt-radio-label input[type="radio"]:checked + .opt-radio-dot::after,
+    .opt-radio-label input[type="checkbox"]:checked + .opt-radio-dot::after { content:''; display:block; width:6px; height:6px; background:#fff; border-radius:50%; }
     /* UJC 2-column key/value grid */
     .ujc-grid {
       display: grid; grid-template-columns: 1fr 1fr;
@@ -4835,64 +4837,56 @@
       if (!rec.uwq) rec.uwq = {};
       const q = rec.uwq;
       const knockouts  = q.knockouts  || [];
-      const noneAbove  = q.noneAbove  !== false;
-      const claims     = q.claims     || 'no';
-      const delivery   = q.delivery   || 'no';
-      const addlIns    = q.addlIns    || 'yes';
-      const hnoa       = q.hnoa       || 'no';
-      const optOpen    = q.optOpen    !== false;
+      const noneAbove = q.noneAbove !== false;
+      const claims    = q.claims    || 'no';
+      const delivery  = q.delivery  || 'no';
 
-      const yn = (id, val) => `
-        <div class="uwq-yn-btns">
-          <button class="uwq-yn-btn${val === 'yes' ? ' active' : ''}" data-uwq-yn="${id}" data-uwq-val="yes">Yes</button>
-          <button class="uwq-yn-btn${val === 'no'  ? ' active' : ''}" data-uwq-yn="${id}" data-uwq-val="no">No</button>
+      const radioYN = (name, val) => `
+        <div class="opt-radio-group">
+          <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="yes" ${val === 'yes' ? 'checked' : ''}/><span class="opt-radio-dot"></span>Yes</label>
+          <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="no"  ${val === 'no'  ? 'checked' : ''}/><span class="opt-radio-dot"></span>No</label>
         </div>`;
 
       return `
-        <div class="sec uwq-page" style="padding-bottom:var(--sp-6)">
+        <div class="sec uwq-page" style="padding:var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-5)">
 
           <!-- Knockout questions -->
-          <div class="uwq-block">
-            <div class="uwq-block-q">Are any of the following true about you or your business?</div>
-            <div class="uwq-knock-list">
-              ${UWQ_KNOCKOUTS.map(k => `
-                <label class="uwq-knock-item">
-                  <input type="checkbox" class="uwq-knock-chk" data-uwq-knock="${k.id}" ${knockouts.includes(k.id) ? 'checked' : ''}>
-                  <span class="uwq-circle"></span>
-                  <span class="uwq-knock-text">${k.text}</span>
-                </label>`).join('')}
-              <div class="uwq-knock-sep"></div>
-              <label class="uwq-knock-item">
-                <input type="radio" name="uwq-none" class="uwq-none-radio" ${noneAbove && !knockouts.length ? 'checked' : ''}>
-                <span class="uwq-circle"></span>
-                <span class="uwq-knock-text">None of the above</span>
-              </label>
-            </div>
+          <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+            <div style="font-size:14px;color:var(--fg)">Are any of the following true about you or your business?</div>
+            ${UWQ_KNOCKOUTS.map(k => `
+              <label class="opt-radio-label" style="align-items:flex-start">
+                <input type="checkbox" class="uwq-knock-chk" data-uwq-knock="${k.id}" ${knockouts.includes(k.id) ? 'checked' : ''} style="position:absolute;opacity:0;width:0;height:0"/>
+                <span class="opt-radio-dot" style="margin-top:2px;flex-shrink:0"></span>
+                <span style="font-size:14px;color:var(--fg)">${k.text}</span>
+              </label>`).join('')}
+            <div class="uwq-knock-sep"></div>
+            <label class="opt-radio-label">
+              <input type="radio" name="uwq-none" class="uwq-none-radio" ${noneAbove && !knockouts.length ? 'checked' : ''} style="position:absolute;opacity:0;width:0;height:0"/>
+              <span class="opt-radio-dot"></span>
+              <span style="font-size:14px;color:var(--fg)">None of the above</span>
+            </label>
           </div>
 
           <!-- Claims -->
-          <div class="uwq-block">
-            <div class="uwq-block-q">Has your business had any insurance claims in the past 3 years?</div>
-            ${yn('claims', claims)}
+          <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+            <div style="font-size:14px;color:var(--fg)">Has your business had any insurance claims in the past 3 years?</div>
+            ${radioYN('claims', claims)}
           </div>
 
           <!-- Delivery -->
-          <div class="uwq-block">
-            <div class="uwq-block-q">Does your restaurant offer delivery or off-site catering?</div>
-            ${yn('delivery', delivery)}
+          <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+            <div style="font-size:14px;color:var(--fg)">Does your restaurant offer delivery or off-site catering?</div>
+            ${radioYN('delivery', delivery)}
           </div>
 
           <!-- Annual Alcohol Sales % -->
-          <div class="uwq-block">
-            <div class="uwq-block-q">Annual Alcohol Sales Percentage</div>
+          <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+            <div style="font-size:14px;color:var(--fg)">Annual Alcohol Sales Percentage</div>
             <div class="uwq-pct-row">
               <input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct ?? 0}"/>
               <span class="uwq-pct-unit">%</span>
             </div>
           </div>
-
-          <!-- Optional Coverages -->
-          ${renderOptionalCoverages(q)}
 
         </div>`;
     }
@@ -5607,14 +5601,6 @@
         };
       });
       // UW Questions — Yes/No toggle buttons
-      $$('[data-uwq-yn]').forEach(btn => {
-        btn.onclick = () => {
-          const rec = RECORDS[State.currentId] || BDE;
-          if (!rec.uwq) rec.uwq = {};
-          rec.uwq[btn.dataset.uwqYn] = btn.dataset.uwqVal;
-          render();
-        };
-      });
       // UW Questions — knockout checkboxes
       $$('.uwq-knock-chk').forEach(chk => {
         chk.onchange = () => {
