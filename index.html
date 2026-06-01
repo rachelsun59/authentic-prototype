@@ -4684,10 +4684,11 @@
 
       const groupBy = State.expGroupBy || 'state';
 
-      // Group rows by state or class code, preserving global row index
+      // Group rows by state or class code (business type), preserving global row index
+      const classCode = BDE.quote?.basicInfo?.businessType || 'Restaurant - Fast Food or Quick Service';
       const grouped = {};
       rows.forEach((r, i) => {
-        const key = groupBy === 'cov' ? (r.cov || 'Unknown') : r.st;
+        const key = groupBy === 'cov' ? (r.classCode || classCode) : r.st;
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push({ r, i });
       });
