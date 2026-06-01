@@ -4709,6 +4709,8 @@
                 <th class="r" style="min-width:110px">Sqft</th>
                 <th class="r" style="min-width:90px">Employees</th>
                 <th style="min-width:100px">Coverage</th>
+                <th style="min-width:120px">Limits</th>
+                <th class="r" style="min-width:100px">Deductible ($)</th>
                 <th class="r" style="min-width:100px">Premium ($)</th>
               </tr>
             </thead>
@@ -4722,6 +4724,8 @@
                   ${cNum (i, 'sqft',  r.sqft)}
                   ${cNum (i, 'emp',   r.emp)}
                   ${cText(i, 'cov',   r.cov)}
+                  ${cText(i, 'lim1',  r.lim1 || '')}
+                  ${cNum (i, 'ded',   r.ded)}
                   ${cNum (i, 'prem',  r.prem, true)}
                 </tr>`).join('')}
             </tbody>
