@@ -4333,6 +4333,14 @@
           <div class="sec-head">
             <div class="left">
               <strong>Loss run detail</strong>
+              <span class="meta-vsep"></span>
+              <span class="sub">${rec.claims.length} claims</span>
+              <span class="meta-vsep"></span>
+              <span class="sub">${fmtUSD(tot.gross)}</span>
+              <span class="meta-vsep"></span>
+              <span class="sub">${fmtUSD(tot.netUnlim)}</span>
+              <span class="meta-vsep"></span>
+              <span class="sub">${fmtUSD(tot.netCap)}</span>
             </div>
           </div>
           <div style="overflow-x:auto">
@@ -4349,15 +4357,6 @@
                   <th class="r">Net Unlimited ($)<br>(after ded.)</th>
                   <th class="r">Net @$100K<br>(ded. + cap)</th>
                   <th>Source</th>
-                </tr>
-                <tr class="total">
-                  <td class="gut"></td>
-                  <td colspan="4"></td>
-                  <td>${rec.claims.length} claims</td>
-                  <td class="r">${fmtUSD(tot.gross)}</td>
-                  <td class="r">${fmtUSD(tot.netUnlim)}</td>
-                  <td class="r">${fmtUSD(tot.netCap)}</td>
-                  <td></td>
                 </tr>
               </thead>
               <tbody>
