@@ -4333,7 +4333,6 @@
           <div class="sec-head">
             <div class="left">
               <strong>Loss run detail</strong>
-              <span class="sub">${rec.claims.length} claims · valued 04/03/2026 · ${Number(BDE.indication.deductible) > 0 ? `net of $${Number(BDE.indication.deductible).toLocaleString('en-US')} per-occ deductible` : 'ground-up (no deductible)'} · every cell editable; edits flow to Indication</span>
             </div>
           </div>
           <div style="overflow-x:auto">
@@ -4351,9 +4350,6 @@
                   <th class="r">Net @$100K<br>(ded. + cap)</th>
                   <th>Source</th>
                 </tr>
-              </thead>
-              <tbody>
-                ${rows}
                 <tr class="total">
                   <td class="gut"></td>
                   <td colspan="4"></td>
@@ -4363,6 +4359,9 @@
                   <td class="r">${fmtUSD(tot.netCap)}</td>
                   <td></td>
                 </tr>
+              </thead>
+              <tbody>
+                ${rows}
               </tbody>
             </table>
           </div>
