@@ -1713,6 +1713,28 @@
     .ujc-key { font-size: 13px; color: var(--fg-muted); display: inline-flex; align-items: center; gap: 4px; }
     .ujc-val { font-size: 15px; font-weight: 500; color: var(--ok); }
     .ujc-row.empty { border-bottom: 0; }
+    /* Coverage tab layout */
+    .cov-shell { display:flex; gap:0; }
+    .cov-sidebar { width:188px; flex-shrink:0; border-right:1px solid var(--border-soft); padding:var(--sp-3); display:flex; flex-direction:column; gap:var(--sp-2); }
+    .cov-type-btn { display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-2) var(--sp-3); border:1px solid var(--border); border-radius:var(--r-md); background:var(--surface); font-size:13px; color:var(--fg); cursor:pointer; text-align:left; width:100%; transition:border-color .15s, background .15s; }
+    .cov-type-btn.is-on { border-color:var(--tertiary); background:var(--err-bg); }
+    .cov-type-btn .cov-chk { width:16px; height:16px; border:1.5px solid var(--border); border-radius:3px; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+    .cov-type-btn.is-on .cov-chk { background:var(--tertiary); border-color:var(--tertiary); }
+    .cov-main { flex:1; min-width:0; display:flex; flex-direction:column; padding:var(--sp-4); gap:var(--sp-4); }
+    .cov-progress { display:flex; align-items:flex-start; }
+    .cov-prog-step { display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .cov-prog-dot { width:14px; height:14px; border-radius:50%; border:2px solid var(--border); background:var(--surface); flex-shrink:0; transition:all .15s; }
+    .cov-prog-dot.done { background:var(--ok); border-color:var(--ok); }
+    .cov-prog-dot.active { border-color:var(--ok); }
+    .cov-prog-label { font-size:12px; color:var(--fg-muted); white-space:nowrap; }
+    .cov-prog-line { flex:1; height:2px; margin-top:6px; background:var(--border-soft); }
+    .cov-prog-line.done { background:var(--ok); }
+    .cov-opt-item { display:flex; align-items:center; gap:var(--sp-3); padding:var(--sp-3) var(--sp-4); border:1px solid var(--border-soft); border-radius:var(--r-md); }
+    .cov-opt-chk { width:18px; height:18px; border:1.5px solid var(--border); border-radius:4px; flex-shrink:0; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; }
+    .cov-opt-chk.is-on { background:var(--tertiary); border-color:var(--tertiary); }
+    .cov-opt-label { flex:1; font-size:14px; color:var(--fg); }
+    .cov-opt-add { width:28px; height:28px; border:1px solid var(--border); border-radius:var(--r-md); background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--fg-muted); flex-shrink:0; }
+    .cov-foot { display:flex; justify-content:flex-end; gap:var(--sp-2); padding-top:var(--sp-4); border-top:1px solid var(--border-soft); margin-top:auto; }
     .uwq-block {
       display: flex; flex-direction: column; gap: var(--sp-3);
       padding: 16px;
@@ -2645,6 +2667,9 @@
       },
       protoUser: 'hunt',
       userMenuOpen: false,
+      coverageStep: 'uwq',           // 'uwq' | 'optional'
+      coverageTypes: new Set(['gl']), // selected coverage types
+      optCovSelected: new Set(),      // selected optional coverages
       bindModal: { open: false, plan: 'annual', method: 'card' },
       brokerBindModal: { open: false },
       queueDone: new Set(),
@@ -5300,63 +5325,126 @@
         </div>`;
     }
 
+    const COV_TYPES = [
+      { id:'gl',  label:'General Liability' },
+      { id:'prop', label:'Property' },
+      { id:'epl',  label:'Employment Practices Liability' },
+      { id:'liq',  label:'Liquor Liability' },
+    ];
+    const OPT_COVERAGES = [
+      { id:'hnoa', label:'HNOA' },
+      { id:'sam1', label:'SAM' },
+      { id:'sam2', label:'SAM' },
+    ];
+
     function renderUWQuestionsTab(rec) {
       if (!rec.uwq) rec.uwq = {};
-      const q = rec.uwq;
-      const knockouts  = q.knockouts  || [];
+      const q         = rec.uwq;
+      const knockouts = q.knockouts || [];
       const noneAbove = q.noneAbove !== false;
       const claims    = q.claims    || 'no';
       const delivery  = q.delivery  || 'no';
+      const step      = State.coverageStep;
 
       const radioYN = (name, val) => `
         <div class="opt-radio-group">
-          <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="yes" ${val === 'yes' ? 'checked' : ''}/><span class="opt-radio-dot"></span>Yes</label>
-          <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="no"  ${val === 'no'  ? 'checked' : ''}/><span class="opt-radio-dot"></span>No</label>
+          <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="yes" ${val==='yes'?'checked':''}/><span class="opt-radio-dot"></span>Yes</label>
+          <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="no"  ${val==='no' ?'checked':''}/><span class="opt-radio-dot"></span>No</label>
         </div>`;
 
-      return `
-        <div class="sec uwq-page" style="padding:var(--sp-5);display:flex;flex-direction:column;gap:var(--sp-5)">
+      const sidebar = `
+        <div class="cov-sidebar">
+          ${COV_TYPES.map(t => {
+            const on = State.coverageTypes.has(t.id);
+            return `<button class="cov-type-btn${on?' is-on':''}" data-cov-type="${t.id}">
+              <span class="cov-chk">${on?'<i class="ph ph-check" style="font-size:10px;color:#fff"></i>':''}</span>
+              <span>${t.label}</span>
+            </button>`;
+          }).join('')}
+        </div>`;
 
-          <!-- Knockout questions -->
+      const progress = `
+        <div class="cov-progress">
+          <div class="cov-prog-step">
+            <div class="cov-prog-dot done"></div>
+            <div class="cov-prog-label">Underwriting Questions</div>
+          </div>
+          <div class="cov-prog-line${step==='optional'?' done':''}"></div>
+          <div class="cov-prog-step">
+            <div class="cov-prog-dot${step==='optional'?' active':''}"></div>
+            <div class="cov-prog-label">Optional Coverage</div>
+          </div>
+        </div>`;
+
+      const uwqContent = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-5)">
           <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-            <div style="font-size:14px;color:var(--fg)">Are any of the following true about you or your business?</div>
+            <div style="font-size:14px;color:var(--fg);display:flex;align-items:center;gap:var(--sp-2)">
+              <i class="ph ph-check-circle" style="font-size:18px;color:var(--ok)"></i>
+              Are any of the following true about you or your business?
+              <span style="margin-left:auto;color:var(--fg-muted);font-size:18px;cursor:pointer">−</span>
+            </div>
             ${UWQ_KNOCKOUTS.map(k => `
-              <label class="opt-radio-label" style="align-items:flex-start">
-                <input type="checkbox" class="uwq-knock-chk" data-uwq-knock="${k.id}" ${knockouts.includes(k.id) ? 'checked' : ''} style="position:absolute;opacity:0;width:0;height:0"/>
+              <label class="opt-radio-label" style="align-items:flex-start;padding-left:var(--sp-4)">
+                <input type="checkbox" class="uwq-knock-chk" data-uwq-knock="${k.id}" ${knockouts.includes(k.id)?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/>
                 <span class="opt-radio-dot" style="margin-top:2px;flex-shrink:0"></span>
                 <span style="font-size:14px;color:var(--fg)">${k.text}</span>
               </label>`).join('')}
-            <div class="uwq-knock-sep"></div>
-            <label class="opt-radio-label">
-              <input type="radio" name="uwq-none" class="uwq-none-radio" ${noneAbove && !knockouts.length ? 'checked' : ''} style="position:absolute;opacity:0;width:0;height:0"/>
+            <div class="uwq-knock-sep" style="margin-left:var(--sp-4)"></div>
+            <label class="opt-radio-label" style="padding-left:var(--sp-4)">
+              <input type="radio" name="uwq-none" class="uwq-none-radio" ${noneAbove&&!knockouts.length?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/>
               <span class="opt-radio-dot"></span>
               <span style="font-size:14px;color:var(--fg)">None of the above</span>
             </label>
           </div>
-
-          <!-- Claims -->
           <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
             <div style="font-size:14px;color:var(--fg)">Has your business had any insurance claims in the past 3 years?</div>
             ${radioYN('claims', claims)}
           </div>
-
-          <!-- Delivery -->
           <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
             <div style="font-size:14px;color:var(--fg)">Does your restaurant offer delivery or off-site catering?</div>
             ${radioYN('delivery', delivery)}
           </div>
-
-          <!-- Annual Alcohol Sales % -->
           <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
             <div style="font-size:14px;color:var(--fg)">Annual Alcohol Sales Percentage</div>
             <div class="uwq-pct-row">
-              <input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct ?? 0}"/>
+              <input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct??0}"/>
               <span class="uwq-pct-unit">%</span>
             </div>
           </div>
-
         </div>
-        ${renderOptionalCoverages(q)}`;
+        <div class="cov-foot">
+          <button class="btn btn-primary" id="cov-next">Next</button>
+        </div>`;
+
+      const optContent = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+          ${OPT_COVERAGES.map(oc => {
+            const on = State.optCovSelected.has(oc.id);
+            return `<div class="cov-opt-item">
+              <div class="cov-opt-chk${on?' is-on':''}" data-opt-cov="${oc.id}">
+                ${on?'<i class="ph ph-check" style="font-size:11px;color:#fff"></i>':''}
+              </div>
+              <span class="cov-opt-label">${oc.label}</span>
+              <div class="cov-opt-add"><i class="ph ph-plus" style="font-size:13px"></i></div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="cov-foot">
+          <button class="text-btn" id="cov-back">Back</button>
+          <button class="btn btn-primary" id="cov-save">Save</button>
+        </div>`;
+
+      return `
+        <div class="sec" style="padding:0">
+          <div class="cov-shell">
+            ${sidebar}
+            <div class="cov-main">
+              ${progress}
+              ${step === 'uwq' ? uwqContent : optContent}
+            </div>
+          </div>
+        </div>`;
     }
 
     function renderDetail() {
@@ -6207,6 +6295,28 @@
           if (!rec.uwq) rec.uwq = {};
           rec.uwq[el.dataset.uwqField] = el.value;
           triggerAutoSave();
+        };
+      });
+      // Coverage tab — coverage type selection
+      $$('[data-cov-type]').forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.dataset.covType;
+          if (State.coverageTypes.has(id)) State.coverageTypes.delete(id);
+          else State.coverageTypes.add(id);
+          render();
+        };
+      });
+      // Coverage tab — step navigation
+      const covNext = $('#cov-next'); if (covNext) covNext.onclick = () => { State.coverageStep = 'optional'; render(); };
+      const covBack = $('#cov-back'); if (covBack) covBack.onclick = () => { State.coverageStep = 'uwq'; render(); };
+      const covSave = $('#cov-save'); if (covSave) covSave.onclick = () => { State.coverageStep = 'uwq'; render(); };
+      // Coverage tab — optional coverage selection
+      $$('[data-opt-cov]').forEach(el => {
+        el.onclick = () => {
+          const id = el.dataset.optCov;
+          if (State.optCovSelected.has(id)) State.optCovSelected.delete(id);
+          else State.optCovSelected.add(id);
+          render();
         };
       });
       // UW Questions — Yes/No toggle buttons
