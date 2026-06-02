@@ -3466,117 +3466,183 @@
       const premium = ind.selected;
       const isAnnual = b.plan === 'annual';
       const isCard   = b.method === 'card';
-      const monthly  = Math.round(premium / 10 * 100) / 100;
-      const planRadio = (val, label, sub, extra) => `
-        <div class="checkout-plan-opt${b.plan === val ? ' is-selected' : ''}" data-bind-plan="${val}">
-          <div style="display:flex;align-items:center;gap:var(--sp-2)">
-            <span style="width:16px;height:16px;border-radius:50%;border:2px solid ${b.plan===val?'var(--tertiary)':'var(--border)'};background:${b.plan===val?'var(--tertiary)':'transparent'};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
-              ${b.plan===val?'<span style="width:6px;height:6px;background:#fff;border-radius:50%"></span>':''}
-            </span>
-            <div><div style="font-size:13px;font-weight:500;color:var(--fg)">${label}</div><div style="font-size:11px;color:var(--fg-muted)">${sub}</div></div>
-          </div>
-          ${extra ? `<span class="checkout-save">${extra}</span>` : ''}
-        </div>`;
+      const monthlyPmt = (premium / 10).toFixed(2);
+
+      const radio = (val, checked) => `
+        <span style="width:18px;height:18px;border-radius:50%;border:2px solid ${checked?'var(--tertiary)':'var(--border)'};background:${checked?'var(--tertiary)':'var(--surface)'};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">
+          ${checked?'<span style="width:6px;height:6px;background:#fff;border-radius:50%"></span>':''}
+        </span>`;
+
       return `
         <div class="modal-overlay" id="bind-overlay">
-          <div class="modal-card" style="max-width:900px;max-height:88vh" onclick="event.stopPropagation()">
-            <div class="modal-head" style="padding-bottom:var(--sp-3);border-bottom:1px solid var(--border-soft)">
-              <h2 style="font-size:18px;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:var(--sp-2)">
-                <i class="ph ph-lock-simple" style="font-size:18px;color:var(--fg-muted)"></i> Secure Checkout
-              </h2>
-              <button class="modal-close" id="bind-close"><i class="ph ph-x" style="font-size:18px"></i></button>
+          <div class="modal-card" style="max-width:960px;max-height:90vh;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+
+            <!-- Header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px 14px;border-bottom:1px solid var(--border-soft);flex-shrink:0">
+              <span style="font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--fg)">
+                <i class="ph ph-lock-simple" style="font-size:16px;color:var(--fg-muted)"></i> Secure Checkout
+              </span>
+              <button class="modal-close" id="bind-close"><i class="ph ph-x" style="font-size:16px"></i></button>
             </div>
-            <div class="checkout-grid" style="flex:1;min-height:0;overflow:hidden">
-              <!-- LEFT -->
-              <div class="checkout-left">
-                <div class="checkout-price" style="text-align:center">
-                  <div style="display:flex;justify-content:center;margin-bottom:var(--sp-3)">
-                    <div style="background:var(--bg-accent);border-radius:var(--r-md);padding:2px;display:inline-flex;gap:2px">
-                      <button class="exp-group-toggle" style="background:transparent;border:0;padding:0"><button style="padding:4px 12px;border-radius:var(--r-sm);background:${isAnnual?'var(--surface)':'transparent'};border:0;font-size:12px;font-weight:${isAnnual?'500':'400'};cursor:pointer" data-bind-plan="annual">Annual</button></button>
-                      <button style="padding:4px 12px;border-radius:var(--r-sm);background:${!isAnnual?'var(--surface)':'transparent'};border:0;font-size:12px;font-weight:${!isAnnual?'500':'400'};cursor:pointer" data-bind-plan="monthly">Monthly</button>
+
+            <!-- Body: two-column grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;flex:1;min-height:0;overflow:hidden">
+
+              <!-- LEFT PANEL -->
+              <div style="padding:24px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;border-right:1px solid var(--border-soft)">
+
+                <!-- Toggle + Price -->
+                <div style="text-align:center">
+                  <div style="display:inline-flex;background:var(--bg-accent);border-radius:20px;padding:3px;gap:2px;margin-bottom:16px">
+                    <button data-bind-plan="annual" style="padding:4px 16px;border-radius:16px;border:0;background:${isAnnual?'var(--surface)':'transparent'};font-size:12px;font-weight:${isAnnual?'500':'400'};color:var(--fg);cursor:pointer;box-shadow:${isAnnual?'0 1px 3px rgba(0,0,0,.1)':'none'}">Annual</button>
+                    <button data-bind-plan="monthly" style="padding:4px 16px;border-radius:16px;border:0;background:${!isAnnual?'var(--surface)':'transparent'};font-size:12px;font-weight:${!isAnnual?'500':'400'};color:var(--fg);cursor:pointer;box-shadow:${!isAnnual?'0 1px 3px rgba(0,0,0,.1)':'none'}">Annual</button>
+                  </div>
+                  <div style="font-family:var(--font-display);font-size:52px;line-height:1;color:var(--fg);letter-spacing:-.02em">
+                    $${premium.toLocaleString('en-US')} <span style="font-size:22px;color:var(--fg-muted);font-family:inherit">/ year</span>
+                  </div>
+                </div>
+
+                <!-- Policy start date -->
+                <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:8px">
+                  <i class="ph ph-calendar-blank" style="font-size:18px;color:var(--fg-muted);flex-shrink:0"></i>
+                  <div>
+                    <div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Policy start date</div>
+                    <div style="font-size:14px;font-weight:500;color:var(--fg)">June 01 2026</div>
+                  </div>
+                </div>
+
+                <!-- Legal -->
+                <div style="font-size:11px;color:var(--fg-muted);line-height:1.6">
+                  Please see our <a href="#" style="color:var(--info);text-decoration:underline">Notices and Warnings</a> and <a href="#" style="color:var(--info);text-decoration:underline">Terrorism Coverage Disclosure</a>. This quote includes a $5.52 annual terrorism premium. Agents must inform the insured of all terms and conditions when binding coverage.
+                </div>
+
+                <!-- Bundle + product -->
+                <div style="padding:20px;border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;gap:12px">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <span style="background:#fde8e8;color:var(--tertiary);font-size:12px;padding:3px 10px;border-radius:20px;font-weight:500">Gym Liability bundle</span>
+                    <span style="background:var(--ok-bg);color:var(--ok);font-size:12px;padding:3px 10px;border-radius:20px;font-weight:500">$${premium.toLocaleString('en-US')}/yr</span>
+                  </div>
+                  <div style="font-size:20px;font-weight:600;color:var(--fg)">General Liability</div>
+                  <div style="display:flex;gap:8px">
+                    <button style="padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:13px;color:var(--fg);cursor:pointer">Coverage details</button>
+                    <button style="padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:13px;color:var(--fg);cursor:pointer">View limits</button>
+                  </div>
+                </div>
+
+                <!-- Features -->
+                <div style="display:flex;flex-direction:column">
+                  ${[
+                    {ico:'ph-check-circle', title:'Switch hassle-free', desc:"We'll cancel your old policy and request a pro-rated refund for you."},
+                    {ico:'ph-star',         title:'4.4 out of 5',        desc:'Rated by businesses that switched.'},
+                    {ico:'ph-receipt',      title:'Fast claim payouts, always', desc:'94% customer satisfaction for customers who file claims.'},
+                  ].map(f=>`
+                  <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-top:1px solid var(--border-soft)">
+                    <i class="ph ${f.ico}" style="font-size:20px;color:var(--fg-muted);flex-shrink:0;margin-top:1px"></i>
+                    <div>
+                      <div style="font-size:13px;font-weight:500;color:var(--fg)">${f.title}</div>
+                      <div style="font-size:12px;color:var(--fg-muted);margin-top:2px">${f.desc}</div>
                     </div>
-                  </div>
-                  <div><span class="amount">$${premium.toLocaleString('en-US')}</span><span class="unit">/ year</span></div>
-                </div>
-                <div class="checkout-start">
-                  <i class="ph ph-calendar" style="font-size:18px;color:var(--fg-muted);flex-shrink:0"></i>
-                  <div><div class="lbl">Policy start date</div><div style="font-size:14px;font-weight:500">June 01 2026</div></div>
-                </div>
-                <div class="checkout-legal">
-                  Please see our <a href="#">Notices and Warnings</a> and <a href="#">Terrorism Coverage Disclosure</a>. This quote includes a $5.52 annual terrorism premium. Agents must inform the insured of all terms and conditions when binding coverage.
-                </div>
-                <div>
-                  <div class="checkout-bundle">
-                    <span class="checkout-bundle-tag">GL Liability bundle</span>
-                    <span class="checkout-bundle-price">$${premium.toLocaleString('en-US')}/yr</span>
-                  </div>
-                  <div style="font-size:18px;font-weight:600;margin-top:var(--sp-2)">General Liability</div>
-                  <div style="display:flex;gap:var(--sp-2);margin-top:var(--sp-2)">
-                    <button style="padding:5px 12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);font-size:12px;cursor:pointer">Coverage details</button>
-                    <button style="padding:5px 12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);font-size:12px;cursor:pointer">View limits</button>
-                  </div>
-                </div>
-                <div>
-                  <div class="checkout-feature"><i class="ph ph-check-circle ico"></i><div><div class="ft">Switch hassle-free</div><div class="fs">We'll cancel your old policy and request a pro-rated refund for you.</div></div></div>
-                  <div class="checkout-feature"><i class="ph ph-star ico"></i><div><div class="ft">4.4 out of 5</div><div class="fs">Rated by businesses that switched.</div></div></div>
-                  <div class="checkout-feature"><i class="ph ph-receipt ico"></i><div><div class="ft">Fast claim payouts, always</div><div class="fs">94% customer satisfaction for customers who file claims.</div></div></div>
+                  </div>`).join('')}
                 </div>
               </div>
-              <!-- RIGHT -->
-              <div class="checkout-right">
-                <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
-                  ${planRadio('annual',  'Annual',  'x1 $' + premium.toLocaleString('en-US') + ' (full payment)', 'Save 51.9%')}
-                  ${planRadio('monthly', 'Monthly', 'Form Description', '')}
-                </div>
-                <div>
-                  <div class="checkout-section-label" style="margin-bottom:var(--sp-2)">Payment method</div>
-                  <div class="checkout-method-row">
-                    <div class="checkout-method-opt${isCard?' is-selected':''}" data-bind-method="card">
-                      <i class="ph ph-credit-card" style="font-size:18px;color:var(--fg-muted)"></i> Credit/Debit card
+
+              <!-- RIGHT PANEL -->
+              <div style="padding:24px;display:flex;flex-direction:column;gap:20px;overflow-y:auto">
+
+                <!-- Plan options -->
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <div class="checkout-plan-opt${isAnnual?' is-selected':''}" data-bind-plan="annual" style="cursor:pointer">
+                    <div style="display:flex;align-items:center;gap:10px">
+                      ${radio('annual', isAnnual)}
+                      <div>
+                        <div style="font-size:14px;font-weight:500;color:var(--fg)">Annual</div>
+                        <div style="font-size:12px;color:var(--fg-muted)">x1 $${premium.toLocaleString('en-US')} (full payment)</div>
+                      </div>
                     </div>
-                    <div class="checkout-method-opt${!isCard?' is-selected':''}" data-bind-method="bank">
-                      <i class="ph ph-bank" style="font-size:18px;color:var(--fg-muted)"></i> Checking account
+                    <span class="checkout-save">Save 51.9%</span>
+                  </div>
+                  <div class="checkout-plan-opt${!isAnnual?' is-selected':''}" data-bind-plan="monthly" style="cursor:pointer">
+                    <div style="display:flex;align-items:center;gap:10px">
+                      ${radio('monthly', !isAnnual)}
+                      <div>
+                        <div style="font-size:14px;font-weight:500;color:var(--fg)">Monthly</div>
+                        <div style="font-size:12px;color:var(--fg-muted)">Form Description</div>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                <!-- Payment method -->
                 <div>
-                  <div class="checkout-section-label" style="margin-bottom:var(--sp-2)">Billed to</div>
-                  <input class="checkout-input" type="text" placeholder="Name"/>
+                  <div style="font-size:13px;font-weight:500;color:var(--fg);margin-bottom:8px">Payment method</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                    <div class="checkout-method-opt${isCard?' is-selected':''}" data-bind-method="card" style="cursor:pointer">
+                      <i class="ph ph-credit-card" style="font-size:18px;color:${isCard?'var(--tertiary)':'var(--fg-muted)'}"></i>
+                      <span style="font-size:13px">Credit/Debit card</span>
+                    </div>
+                    <div class="checkout-method-opt${!isCard?' is-selected':''}" data-bind-method="bank" style="cursor:pointer">
+                      <i class="ph ph-bank" style="font-size:18px;color:${!isCard?'var(--tertiary)':'var(--fg-muted)'}"></i>
+                      <span style="font-size:13px">Checking account</span>
+                    </div>
+                  </div>
                 </div>
+
+                <!-- Billed to -->
                 <div>
-                  <div class="checkout-section-label" style="margin-bottom:var(--sp-2)">Payment details</div>
-                  <input class="checkout-input" type="text" placeholder="Card number" style="margin-bottom:var(--sp-2)"/>
-                  <div class="checkout-input-row">
+                  <div style="font-size:13px;font-weight:500;color:var(--fg);margin-bottom:8px">Billed to</div>
+                  <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px">
+                    <i class="ph ph-user" style="font-size:16px;color:var(--fg-muted)"></i>
+                    <input style="border:0;outline:0;font:inherit;font-size:13px;color:var(--fg);background:transparent;width:100%" placeholder="Name" type="text"/>
+                  </div>
+                </div>
+
+                <!-- Payment details -->
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <div style="font-size:13px;font-weight:500;color:var(--fg)">Payment details</div>
+                  <input class="checkout-input" type="text" placeholder="Card number"/>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
                     <input class="checkout-input" type="text" placeholder="Billing Zip"/>
                     <input class="checkout-input" type="text" placeholder="Expiration"/>
                     <input class="checkout-input" type="text" placeholder="CVC"/>
                   </div>
-                  <div class="checkout-card-logos" style="margin-top:var(--sp-2)">
-                    <span class="checkout-card-logo" style="color:#1a1f71">VISA</span>
-                    <span class="checkout-card-logo" style="color:#2e77bc">AMEX</span>
-                    <span class="checkout-card-logo" style="color:#ff6600">DISC</span>
-                    <span class="checkout-card-logo" style="color:#eb001b">MC</span>
-                    <span class="checkout-card-logo" style="color:#003087">JCB</span>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    ${['VISA','AMEX','DISC','MC','JCB'].map(c=>`<span style="font-size:9px;font-weight:700;padding:2px 6px;border:1px solid var(--border-soft);border-radius:3px;color:var(--fg-muted)">${c}</span>`).join('')}
                   </div>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
-                  <div class="checkout-line"><span>x10 Monthly Payments</span><span>$${monthly.toLocaleString('en-US', {minimumFractionDigits:2})}</span></div>
-                  <div class="checkout-line"><span>Monthly Platform Fee</span><span>$12.02</span></div>
-                  <div class="checkout-line"><span>First Payment Date</span><span>6/7/2026</span></div>
-                </div>
-                <div>
-                  <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:500;color:var(--fg);cursor:pointer">
-                    <span>Review the terms of financing</span><i class="ph ph-plus" style="font-size:14px"></i>
+
+                <!-- Billing summary -->
+                <div style="display:flex;flex-direction:column;gap:0;border-top:1px solid var(--border-soft)">
+                  ${[
+                    ['x10 Monthly Payments', '$' + Number(monthlyPmt).toLocaleString('en-US',{minimumFractionDigits:2})],
+                    ['Monthly Platform Fee', '$12.02'],
+                    ['First Payment Date',   '6/7/2026'],
+                  ].map(([l,v])=>`
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:13px;color:var(--fg-muted);border-bottom:1px solid var(--border-soft)">
+                    <span>${l}</span><span>${v}</span>
+                  </div>`).join('')}
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:13px;color:var(--fg);border-bottom:1px solid var(--border-soft);cursor:pointer">
+                    <span style="font-weight:500">Review the terms of financing</span>
+                    <i class="ph ph-plus" style="font-size:14px"></i>
                   </div>
-                  <div style="margin-top:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-2)">
-                    <div class="checkout-line"><span>Down Payment</span><span>$683.53</span></div>
-                    <div class="checkout-line"><span>Platform Fee</span><span>$20</span></div>
+                  ${[
+                    ['Down Payment','$683.53'],
+                    ['Platform Fee','$20'],
+                  ].map(([l,v])=>`
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:13px;color:var(--fg-muted);border-bottom:1px solid var(--border-soft)">
+                    <span>${l}</span><span>${v}</span>
+                  </div>`).join('')}
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-size:16px;font-weight:700;color:var(--fg)">
+                    <span>Total Due Today</span>
+                    <span>$${premium.toLocaleString('en-US')}</span>
                   </div>
                 </div>
-                <div class="checkout-total"><span>Total Due Today</span><span>$${premium.toLocaleString('en-US')}</span></div>
-                <button class="btn btn-primary" id="bind-confirm" style="width:100%;height:44px;font-size:15px">Confirm Payment</button>
-                <div style="font-size:10px;color:var(--fg-muted);line-height:1.5;text-align:center">
-                  By clicking "Confirm payment" you agree to the <a href="#" style="color:var(--info)">Finance Agreement</a>, <a href="#" style="color:var(--info)">Payer Terms of Service</a>, and authorize Authentic and Honor Capital / ETI Financial to store and debit the payment method specified above for this amount and future payments.
+
+                <!-- CTA -->
+                <button class="btn btn-primary" id="bind-confirm" style="width:100%;height:46px;font-size:15px;border-radius:8px">
+                  Confirm Payment
+                </button>
+                <div style="font-size:10px;color:var(--fg-muted);line-height:1.6;text-align:center">
+                  By clicking "Confirm payment" you agree to the <a href="#" style="color:var(--info)">Finance Agreement</a>, <a href="#" style="color:var(--info)">Payer Terms of Service</a>, and authorize Authentic and Honor Capital / ETI Financial to store and debit the payment method specified above for this amount and future payments. This policy will automatically renew. Instalments for this policy and renewals are debited by Authentic. You may switch to automatic pay-in-full, cancel your policy, or opt out of renewal at any time through the Policy Hub or by contacting an Authentic Agent.
                 </div>
               </div>
             </div>
