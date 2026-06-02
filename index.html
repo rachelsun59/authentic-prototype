@@ -5223,16 +5223,7 @@
               </span>
               <span class="toggle-ico" aria-hidden="true">${open ? '−' : '+'}</span>
             </button>
-            ${open ? `
-              <div class="acc-body" style="padding:0">
-                ${groupSelected > 0 ? `
-                  <div style="display:flex;justify-content:flex-end;padding:var(--sp-2) var(--sp-3);border-bottom:1px solid var(--border-soft)">
-                    <button class="exp-hidden-btn is-active" data-edit-hidden="${key}">
-                      Edit Hidden Field (${groupSelected} selected)
-                    </button>
-                  </div>` : ''}
-                ${tableFor(groupRows)}
-              </div>` : ''}
+            ${open ? `<div class="acc-body" style="padding:0">${tableFor(groupRows)}</div>` : ''}
           </div>`;
       }).join('');
 
@@ -5244,9 +5235,15 @@
               <span class="sub">${rows.length} locations</span>
               <span class="pill error exp-err-badge" style="font-size:11px${errCount === 0 ? ';display:none' : ''}"><i class="ph ph-warning" style="font-size:11px;margin-right:3px"></i>${errCount} invalid address${errCount > 1 ? 'es' : ''}</span>
             </div>
-            <div class="exp-group-toggle">
-              <button class="${groupBy === 'state' ? 'active' : ''}" data-exp-group="state"><i class="ph ph-map-pin" style="font-size:13px"></i> By State</button>
-              <button class="${groupBy === 'cov'   ? 'active' : ''}" data-exp-group="cov"><i class="ph ph-tag" style="font-size:13px"></i> By Class Code</button>
+            <div style="display:flex;align-items:center;gap:var(--sp-3)">
+              ${State.expSelectedRows.size > 0 ? `
+                <button class="exp-hidden-btn is-active" data-edit-hidden="__all__">
+                  Edit Hidden Field (${State.expSelectedRows.size} selected)
+                </button>` : ''}
+              <div class="exp-group-toggle">
+                <button class="${groupBy === 'state' ? 'active' : ''}" data-exp-group="state"><i class="ph ph-map-pin" style="font-size:13px"></i> By State</button>
+                <button class="${groupBy === 'cov'   ? 'active' : ''}" data-exp-group="cov"><i class="ph ph-tag" style="font-size:13px"></i> By Class Code</button>
+              </div>
             </div>
           </div>
           <div style="padding:var(--sp-3) var(--sp-3) 0">
