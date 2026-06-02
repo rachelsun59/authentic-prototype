@@ -3482,21 +3482,11 @@
                (urgent today + truly new submissions), per Figma 2:1829. -->
           <div class="home-card">
             <div class="card-head">
-              <h3>In your queue <span class="badge">${HOME_QUEUE.filter(r => r.needBy === 'Today' || r.status === 'Need Info').length}</span></h3>
+              <h3>Assigned to you <span class="badge">${HOME_QUEUE.filter(r => r.needBy === 'Today' || r.status === 'Need Info').length}</span></h3>
             </div>
             ${q}
           </div>
-
-          <!-- Right: threads + watchlist -->
-          <div style="display:flex;flex-direction:column;gap:var(--sp-3);min-width:0;">
-            <div class="home-card">
-              <div class="card-head">
-                <h3>Threads waiting on you <span class="badge">${HOME_THREADS.length}</span></h3>
-              </div>
-              ${t}
-            </div>
-
-          </div>
+        </div>
         </div>
       `;
     }
