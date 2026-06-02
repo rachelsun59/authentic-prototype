@@ -4331,7 +4331,7 @@
         </tr>
       `).join('');
 
-      return State.protoUser !== 'hunt' ? '' : `
+      return `
         <div class="sec">
           <div class="sec-head">
             <div class="left">
@@ -4376,7 +4376,7 @@
           </div>
         </div>
 
-        ${State.protoUser === 'hunt' ? renderBDEIndicationSections() : renderBDEBasicOnly()}
+        ${renderBDEIndicationSections()}
         ${renderOptionalCoverages(rec.uwq || {})}
       `;
     }
@@ -5354,7 +5354,6 @@
           State.protoUser = btn.dataset.protoUser;
           State.userMenuOpen = false;
           // Reset to safe tab if current tab not available for new user
-          if (State.protoUser !== 'hunt' && State.tab === 'loss-run') State.tab = 'indication';
           if (State.protoUser === 'broker' && State.tab === 'uwq') State.tab = 'indication';
           render();
           renderUserChip();
