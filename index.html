@@ -3511,25 +3511,26 @@
             <div class="co-modal">
               <!-- LEFT -->
               <div class="co-panel co-panel--left">
-                <div class="co-price">
-                  <div style="display:flex;justify-content:center;margin-bottom:var(--sp-3)">
-                    <div class="co-toggle">
-                      <button class="co-toggle__btn${isAnnual?' is-on':''}" data-bind-plan="annual">Annual</button>
-                      <button class="co-toggle__btn${!isAnnual?' is-on':''}" data-bind-plan="monthly">Monthly</button>
+                <!-- Price card: toggle + amount + date + legal -->
+                <div style="border:1px solid var(--border);border-radius:var(--r-lg);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)">
+                  <div class="co-price">
+                    <div style="display:flex;justify-content:center;margin-bottom:var(--sp-3)">
+                      <div class="co-toggle">
+                        <button class="co-toggle__btn${isAnnual?' is-on':''}" data-bind-plan="annual">Annual</button>
+                        <button class="co-toggle__btn${!isAnnual?' is-on':''}" data-bind-plan="monthly">Annual</button>
+                      </div>
                     </div>
+                    <span class="co-price__amount">$${premium.toLocaleString('en-US')}</span>
+                    <span class="co-price__unit">/ year</span>
                   </div>
-                  <span class="co-price__amount">$${premium.toLocaleString('en-US')}</span>
-                  <span class="co-price__unit">/ year</span>
+                  <div class="co-date">
+                    <i class="ph ph-calendar-blank" style="font-size:18px;color:var(--fg-muted);flex-shrink:0"></i>
+                    <div><div class="co-date__lbl">Policy start date</div><div class="co-date__val">June 01 2026</div></div>
+                  </div>
+                  <p class="co-legal">
+                    Please see our <a href="#">Notices and Warnings</a> and <a href="#">Terrorism Coverage Disclosure</a>. This quote includes a $5.52 annual terrorism premium. Agents must inform the insured of all terms and conditions when binding coverage.
+                  </p>
                 </div>
-
-                <div class="co-date">
-                  <i class="ph ph-calendar-blank" style="font-size:18px;color:var(--fg-muted);flex-shrink:0"></i>
-                  <div><div class="co-date__lbl">Policy start date</div><div class="co-date__val">June 01 2026</div></div>
-                </div>
-
-                <p class="co-legal">
-                  Please see our <a href="#">Notices and Warnings</a> and <a href="#">Terrorism Coverage Disclosure</a>. This quote includes a $5.52 annual terrorism premium. Agents must inform the insured of all terms and conditions when binding coverage.
-                </p>
 
                 <div class="co-product">
                   <div style="display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap">
@@ -3561,7 +3562,7 @@
                 <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
                   <div class="co-plan${isAnnual?' is-on':''}" data-bind-plan="annual">
                     <div style="display:flex;align-items:center;gap:var(--sp-2)">${radioDot(isAnnual)}
-                      <div><div class="co-plan__label">Annual</div><div class="co-plan__sub">x1 $${premium.toLocaleString('en-US')} (full payment)</div></div>
+                      <div><div class="co-plan__label">Annual</div><div class="co-plan__sub">x1 $${(premium/12*10).toLocaleString('en-US',{maximumFractionDigits:2})} (full payment)</div></div>
                     </div>
                     <span class="co-save">Save 51.9%</span>
                   </div>
@@ -3596,9 +3597,9 @@
                   <div class="checkout-section-label">Payment details</div>
                   <input class="co-input" type="text" placeholder="Card number"/>
                   <div class="co-input-row">
-                    <input class="co-input" type="text" placeholder="Billing Zip"/>
-                    <input class="co-input" type="text" placeholder="Expiration"/>
-                    <input class="co-input" type="text" placeholder="CVC"/>
+                    <div class="co-input-icon"><i class="ph ph-map-pin" style="font-size:15px;color:var(--fg-muted);flex-shrink:0"></i><input type="text" placeholder="Billing Zip"/></div>
+                    <div class="co-input-icon"><i class="ph ph-calendar-blank" style="font-size:15px;color:var(--fg-muted);flex-shrink:0"></i><input type="text" placeholder="Expiration"/></div>
+                    <div class="co-input-icon"><i class="ph ph-credit-card" style="font-size:15px;color:var(--fg-muted);flex-shrink:0"></i><input type="text" placeholder="CVC"/></div>
                   </div>
                   <div class="co-logos">
                     ${['VISA','AMEX','DISC','MC','JCB'].map(c=>`<span class="co-logo">${c}</span>`).join('')}
