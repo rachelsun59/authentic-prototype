@@ -5227,7 +5227,7 @@
       // navigation continues to work since we only flip State.newSub.open.
       $$('.btn-primary').forEach(b => {
         const text = (b.textContent || '').trim();
-        if (text === 'Created' && !b.dataset.nsWired) {
+        if (text === 'New' && !b.dataset.nsWired) {
           b.dataset.nsWired = '1';
           b.addEventListener('click', (e) => { e.stopPropagation(); openNewSubmission(); });
         }
