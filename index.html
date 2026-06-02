@@ -4174,9 +4174,9 @@
 
           <div class="tabs">
             <button class="tab ${State.tab==='indication'?'active':''}" data-tab="indication">Submission Details</button>
-            ${State.protoUser === 'hunt' ? `<button class="tab ${State.tab==='loss-run'?'active':''}" data-tab="loss-run">Claims</button>` : ''}
+            <button class="tab ${State.tab==='loss-run'?'active':''}" data-tab="loss-run">Claims</button>
             <button class="tab ${State.tab==='exposures'?'active':''}" data-tab="exposures">Exposures</button>
-            ${State.protoUser !== 'broker' ? `<button class="tab ${State.tab==='uwq'?'active':''}" data-tab="uwq">UW Questions</button>` : ''}
+            <button class="tab ${State.tab==='uwq'?'active':''}" data-tab="uwq">UW Questions</button>
           </div>
         </div>
       `;
