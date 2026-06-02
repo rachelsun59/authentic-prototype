@@ -3466,7 +3466,7 @@
 
       return `
         <div class="home-action-row">
-          <h1 class="h1">Good morning, Hunt</h1>
+          <h1 class="h1">${State.protoUser === 'broker' ? 'Welcome' : 'Good morning'}, ${PROTO_USERS.find(p=>p.id===State.protoUser)?.name.split(' ')[0] || 'Hunt'}</h1>
           <button class="btn btn-primary"><i class="ph ph-plus"></i>New</button>
         </div>
 
@@ -3865,7 +3865,7 @@
               <span class="count">${commentCount}</span>
             </button>
             <div class="status-menu-wrap">
-              <button class="btn btn-primary" id="make-decision-btn"><span>Make Decision</span></button>
+              ${State.protoUser === 'hunt' ? `<button class="btn btn-primary" id="make-decision-btn"><span>Make Decision</span></button>` : ''}
               ${State.statusMenuOpen ? `
                 <div class="status-menu" onclick="event.stopPropagation()">
                   ${STATUS_OPTIONS.map(o => `
@@ -3887,6 +3887,7 @@
                   ${c.sub ? `<span class="sub">${c.sub}</span>` : ''}
                 </div>
               `).join('')}
+              ${State.protoUser === 'hunt' ? `
               <div class="stat-cell-triggers">
                 <div class="trig-row"><span class="lbl">Large Loss Influence <i class="ph ph-info info-ico" title="Refer to UW MGR if large losses have an outsized impact on the indication (uncapped vs. capped method more than 2x difference)."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
                 <div class="trig-row"><span class="lbl">Age of Loss Runs <i class="ph ph-info info-ico" title="Refer if the valuation date is more than 120 days stale; reserves may have developed materially."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
@@ -3894,7 +3895,7 @@
               <div class="stat-cell-triggers">
                 <div class="trig-row"><span class="lbl">Claim data Credibility <i class="ph ph-info info-ico" title="Refer when total reported claims are too few for the BF method to be credible (typically < 30 claims over 5y)."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
                 <div class="trig-row"><span class="lbl">Orphan Claims <i class="ph ph-info info-ico" title="Refer if any claim's accident year falls outside the 5-year matrix; investigate before binding."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
-              </div>
+              </div>` : ''}
             </div>
             <!-- Sticky-only actions: Status pill + comment count + Status Update.
                  Hidden until .is-detail-scrolled so the original detail-actions
@@ -3903,15 +3904,15 @@
               <span class="status-label">Status:</span>
               <span class="pill ${rec.statusKind}">${rec.status}</span>
               <button class="comment-btn"><i class="ph ph-chat-circle" style="font-size:16px"></i><span class="count">${commentCount}</span></button>
-              <button class="btn btn-primary" id="make-decision-btn-sticky"><span>Make Decision</span></button>
+              ${State.protoUser === 'hunt' ? `<button class="btn btn-primary" id="make-decision-btn-sticky"><span>Make Decision</span></button>` : ''}
             </div>
           </div>
 
           <div class="tabs">
             <button class="tab ${State.tab==='indication'?'active':''}" data-tab="indication">Submission Details</button>
-            <button class="tab ${State.tab==='loss-run'?'active':''}" data-tab="loss-run">Claims</button>
+            ${State.protoUser === 'hunt' ? `<button class="tab ${State.tab==='loss-run'?'active':''}" data-tab="loss-run">Claims</button>` : ''}
             <button class="tab ${State.tab==='exposures'?'active':''}" data-tab="exposures">Exposures</button>
-            <button class="tab ${State.tab==='uwq'?'active':''}" data-tab="uwq">UW Questions</button>
+            ${State.protoUser !== 'broker' ? `<button class="tab ${State.tab==='uwq'?'active':''}" data-tab="uwq">UW Questions</button>` : ''}
           </div>
         </div>
       `;
@@ -4066,7 +4067,7 @@
         </tr>
       `).join('');
 
-      return `
+      return State.protoUser !== 'hunt' ? '' : `
         <div class="sec">
           <div class="sec-head">
             <div class="left">
@@ -4111,9 +4112,76 @@
           </div>
         </div>
 
-        ${renderBDEIndicationSections()}
+        ${State.protoUser === 'hunt' ? renderBDEIndicationSections() : renderBDEBasicOnly()}
         ${renderOptionalCoverages(rec.uwq || {})}
       `;
+    }
+
+    function renderBDEBasicOnly() {
+      const ind = getBDEIndication();
+      const curGL = (BDE.indication.glLimit || '1,000,000/2,000,000').replace(/^\$\s*/, '');
+      const bi = BDE.quote?.basicInfo || {};
+      const phoneMissing = !bi.phone;
+      const basicInfoSec = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3)">
+          <div class="qf-field"><i class="ph ph-user ico"></i>
+            <div class="stack"><span class="label">Full name</span>
+              <input type="text" data-quote-field="fullName" value="${bi.fullName || ''}" placeholder="Full name"/>
+            </div>
+          </div>
+          <div>
+            <div class="qf-field ${phoneMissing ? 'is-error' : ''}"><i class="ph ph-phone ico"></i>
+              <div class="stack"><span class="label">Phone</span>
+                <input type="text" data-quote-field="phone" value="${bi.phone || ''}" placeholder="(000) 000-0000"/>
+              </div>
+            </div>
+            ${phoneMissing ? `<div class="qf-error-text">Missing required field</div>` : ''}
+          </div>
+          <div class="qf-row">
+            <div class="qf-field"><i class="ph ph-map-pin ico"></i>
+              <div class="stack"><span class="label">Mailing Address</span>
+                <input type="text" data-quote-field="mailingAddress" value="${bi.mailingAddress || ''}" placeholder="Street, City, ST ZIP"/>
+              </div>
+            </div>
+            <div class="qf-field unit">
+              <div class="stack"><span class="label">Unit #</span>
+                <input type="text" data-quote-field="unit" value="${bi.unit || ''}" placeholder="Suite"/>
+              </div>
+            </div>
+          </div>
+          <div class="qf-field"><i class="ph ph-buildings ico"></i>
+            <div class="stack"><span class="label">Business name</span>
+              <input type="text" data-quote-field="businessName" value="${bi.businessName || ''}"/>
+            </div>
+          </div>
+          <div class="qf-field"><i class="ph ph-storefront ico"></i>
+            <div class="stack"><span class="label">Business type</span>
+              <input type="text" data-quote-field="businessType" value="${bi.businessType || ''}"/>
+            </div>
+          </div>
+        </div>`;
+      const polInfoSec = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3)">
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+            <div class="stack"><span class="label">Selected Premium</span>
+              <input id="bde-selected-premium" type="text" value="${ind.selected.toLocaleString('en-US')}"/>
+            </div>
+          </div>
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+            <div class="stack"><span class="label">General Liability Limit</span>
+              <select id="bde-gl-limit" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%">
+                ${BDE_GL_LIMIT_OPTS.map(v => `<option value="${v}" ${curGL === v ? 'selected' : ''}>${v}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+        </div>`;
+      return `
+        <div class="bde-sections">
+          <div class="section-row">
+            ${bdeSection('basic-info', 'Basic Information', basicInfoSec)}
+            ${bdeSection('indication', 'Policy Information', polInfoSec)}
+          </div>
+        </div>`;
     }
 
     // BDE indication form — collapsible sections per Figma 73:21263.
@@ -5021,6 +5089,10 @@
           e.stopPropagation();
           State.protoUser = btn.dataset.protoUser;
           State.userMenuOpen = false;
+          // Reset to safe tab if current tab not available for new user
+          if (State.protoUser !== 'hunt' && State.tab === 'loss-run') State.tab = 'indication';
+          if (State.protoUser === 'broker' && State.tab === 'uwq') State.tab = 'indication';
+          render();
           renderUserChip();
         };
       });
