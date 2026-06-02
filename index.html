@@ -4177,7 +4177,7 @@
             <button class="tab ${State.tab==='indication'?'active':''}" data-tab="indication">Submission Details</button>
             <button class="tab ${State.tab==='loss-run'?'active':''}" data-tab="loss-run">Claims</button>
             <button class="tab ${State.tab==='exposures'?'active':''}" data-tab="exposures">Exposures</button>
-            <button class="tab ${State.tab==='uwq'?'active':''}" data-tab="uwq">UW Questions</button>
+            <button class="tab ${State.tab==='uwq'?'active':''}" data-tab="uwq">Coverage</button>
           </div>
         </div>
       `;
@@ -4378,7 +4378,6 @@
         </div>
 
         ${renderBDEIndicationSections()}
-        ${renderOptionalCoverages(rec.uwq || {})}
       `;
     }
 
@@ -5258,7 +5257,8 @@
             </div>
           </div>
 
-        </div>`;
+        </div>
+        ${renderOptionalCoverages(q)}`;
     }
 
     function renderDetail() {
