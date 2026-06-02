@@ -3478,10 +3478,10 @@
       const m = State.hiddenFieldModal;
       if (!m.open) return '';
       const n = State.expSelectedRows.size;
-      const yn = (name, defaultYes=true) => `
+      const yn = (name) => `
         <div class="hf-radio-row">
-          <label class="opt-radio-label"><input type="radio" name="${name}" value="yes" ${defaultYes?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/><span class="opt-radio-dot" style="border-color:${defaultYes?'var(--tertiary)':'var(--border)'};background:${defaultYes?'var(--tertiary)':'transparent'}">${defaultYes?'<span style="width:6px;height:6px;background:#fff;border-radius:50%;display:block"></span>':''}</span>Yes</label>
-          <label class="opt-radio-label"><input type="radio" name="${name}" value="no" ${!defaultYes?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/><span class="opt-radio-dot" style="border-color:${!defaultYes?'var(--tertiary)':'var(--border)'};background:${!defaultYes?'var(--tertiary)':'transparent'}">${!defaultYes?'<span style="width:6px;height:6px;background:#fff;border-radius:50%;display:block"></span>':''}</span>No</label>
+          <label class="opt-radio-label"><input type="radio" name="${name}" value="yes" style="position:absolute;opacity:0;width:0;height:0"/><span class="opt-radio-dot"></span>Yes</label>
+          <label class="opt-radio-label"><input type="radio" name="${name}" value="no"  style="position:absolute;opacity:0;width:0;height:0"/><span class="opt-radio-dot"></span>No</label>
         </div>`;
       return `
         <div class="modal-overlay" id="hf-overlay">
@@ -3501,7 +3501,7 @@
                 <div class="hf-label">What construction type is this building?</div>
                 <div class="hf-radio-3">
                   ${['Frame','Joisted Masonry','Non-Combustible'].map((v,i)=>`
-                  <label class="opt-radio-label"><input type="radio" name="hf-construction" value="${v}" ${i===0?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/><span class="opt-radio-dot" style="border-color:${i===0?'var(--tertiary)':'var(--border)'};background:${i===0?'var(--tertiary)':'transparent'}">${i===0?'<span style="width:6px;height:6px;background:#fff;border-radius:50%;display:block"></span>':''}</span>${v}</label>`).join('')}
+                  <label class="opt-radio-label"><input type="radio" name="hf-construction" value="${v}" style="position:absolute;opacity:0;width:0;height:0"/><span class="opt-radio-dot"></span>${v}</label>`).join('')}
                 </div>
               </div>
               <div class="hf-field">
