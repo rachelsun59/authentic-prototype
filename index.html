@@ -584,18 +584,29 @@
     /* Home queue / watchlist rows */
     .qrow {
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: 1fr auto auto auto;
       gap: var(--sp-3);
       align-items: center;
       padding: var(--sp-3) var(--sp-4);
       border-bottom: 1px solid var(--border-soft);
       width: 100%;
       text-align: left;
-      background: transparent; border-top: 0; border-left: 0; border-right: 0;
+      background: transparent; cursor: pointer;
+      transition: background var(--transition-base);
     }
     .qrow:last-child { border-bottom: 0; }
-    .qrow { transition: background var(--transition-base); }
-    .qrow:hover { background: var(--bg-accent); cursor: pointer; }
+    .qrow:hover { background: var(--bg-accent); }
+    .qrow.is-done { opacity: 0.45; }
+    .qrow.is-done .name b { text-decoration: line-through; }
+    .qrow-done-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: var(--r-md);
+      border: 1px solid var(--border); background: var(--surface);
+      font-size: 11px; color: var(--fg-muted); cursor: pointer;
+      white-space: nowrap; transition: background .15s, color .15s, border-color .15s;
+    }
+    .qrow-done-btn:hover { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+    .qrow.is-done .qrow-done-btn { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
     .qrow .name {
       display: flex; align-items: center; gap: var(--sp-2);
       font-size: 14px; line-height: 16px; color: var(--fg);
@@ -2561,6 +2572,7 @@
       },
       protoUser: 'hunt',
       userMenuOpen: false,
+      queueDone: new Set(),
     };
 
     // Home queue — sorted by urgency (Today first), per Figma 2:1829.
@@ -3425,20 +3437,24 @@
 
     function renderHome() {
       // Today = error red; future ISO date = muted grey
-      const q = HOME_QUEUE.map((r) => {
+      const q = HOME_QUEUE.map((r, idx) => {
         const isToday = r.needBy === 'Today';
+        const done = State.queueDone.has(idx);
         return `
-          <button class="qrow" data-open-rec="${r.id || ''}">
+          <div class="qrow${done ? ' is-done' : ''}" data-open-rec="${r.id || ''}">
             <span class="name">
               <b>${r.name}</b>
               <span class="pill ${r.statusKind} no-dot">${r.status}</span>
             </span>
             <span class="calc"><span style="color:var(--fg-muted)">Premium:</span> <strong>${fmtUSDk(r.premium)}</strong></span>
             <span class="when">
-              <span style="color:var(--fg-muted)">Need by</span>
+              <span style="color:var(--fg-muted)">Due date</span>
               <span style="color:${isToday ? 'var(--err)' : 'var(--fg-muted)'};font-weight:${isToday ? '500' : '400'};margin-left:4px">${r.needBy}</span>
             </span>
-          </button>
+            <button class="qrow-done-btn" data-queue-done="${idx}" title="${done ? 'Undo' : 'Mark as done'}">
+              <i class="ph ph-check" style="font-size:11px"></i>${done ? 'Done' : 'Mark as done'}
+            </button>
+          </div>
         `;
       }).join('');
 
@@ -5351,9 +5367,19 @@
       // Row clicks to open a detail page.  Repoint the BDE pointer at the
       // selected record so every helper that references BDE.* (claims,
       // indication, ayParams, originalClaims, etc.) operates on this row.
+      $$('[data-queue-done]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const idx = Number(btn.dataset.queueDone);
+          if (State.queueDone.has(idx)) State.queueDone.delete(idx);
+          else State.queueDone.add(idx);
+          render();
+        };
+      });
       $$('[data-open-rec]').forEach(el => {
         el.onclick = (e) => {
           e.preventDefault();
+          if (e.target.closest('[data-queue-done]')) return;
           const id = el.dataset.openRec || 'bde';
           if (!RECORDS[id]) return;
           State.currentId = id;
