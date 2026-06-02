@@ -1816,9 +1816,9 @@
     .exp-subtab:hover { color: var(--fg); }
     .exp-subtab.active { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
     .exp-table thead th { white-space: nowrap; }
-    .exp-hidden-btn { padding:0 var(--sp-3); height:36px; border:none; border-left:1px solid var(--border-soft); background:transparent; font-size:12px; color:var(--fg-muted); white-space:nowrap; cursor:not-allowed; flex-shrink:0; }
-    .exp-hidden-btn.is-active { color:var(--tertiary); cursor:pointer; font-weight:500; }
-    .exp-hidden-btn.is-active:hover { background:var(--err-bg); }
+    .exp-hidden-btn { padding:0 var(--sp-3); height:36px; border:none; background:transparent; font-size:13px; color:var(--fg-muted); white-space:nowrap; cursor:default; flex-shrink:0; }
+    .exp-hidden-btn.is-active { color:var(--fg); cursor:pointer; }
+    .exp-hidden-btn.is-active:hover { color:var(--tertiary); }
     /* Hidden fields modal */
     .hf-field { display:flex; flex-direction:column; gap:var(--sp-2); padding:var(--sp-3) 0; border-bottom:1px solid var(--border-soft); }
     .hf-field:first-child { padding-top:0; }
@@ -5224,8 +5224,8 @@
                 </span>
                 <span class="toggle-ico" aria-hidden="true">${open ? '−' : '+'}</span>
               </button>
-              <button class="exp-hidden-btn${groupSelected > 0 ? ' is-active' : ''}" data-edit-hidden="${key}" ${groupSelected === 0 ? 'disabled' : ''}>
-                <i class="ph ph-pencil-simple" style="font-size:12px;margin-right:4px"></i>Edit Hidden Fields${groupSelected > 0 ? ` (${groupSelected})` : ''}
+              <button class="exp-hidden-btn${groupSelected > 0 ? ' is-active' : ''}" data-edit-hidden="${key}">
+                Edit Hidden Field${groupSelected > 0 ? ` (${groupSelected} selected)` : ''}
               </button>
             </div>
             ${open ? `<div class="acc-body" style="padding:0">${tableFor(groupRows)}</div>` : ''}
