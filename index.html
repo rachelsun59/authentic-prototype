@@ -5213,22 +5213,26 @@
         const groupSelected = groupRows.filter(({i}) => State.expSelectedRows.has(i)).length;
         return `
           <div class="${open ? 'acc-shell' : ''}" style="margin-bottom:var(--sp-3)">
-            <div style="display:flex;align-items:center">
-              <button class="acc-item" ${toggleAttr} style="flex:1">
-                <span class="left">
-                  <i class="ph ph-${icon}" style="font-size:16px"></i>
-                  <span class="title">${label}</span>
-                  <span style="font-size:11px;color:var(--fg-muted);font-weight:400">${groupRows.length} location${groupRows.length !== 1 ? 's' : ''}</span>
-                  ${lraroRate != null && key !== 'NY' ? `<span style="font-size:11px;color:var(--fg-muted);font-weight:400">· LRARO ${lraroRate.toFixed(2)}</span>` : ''}
-                  <span style="font-size:11px;color:var(--fg-muted);font-weight:400">· $${totalPrem.toLocaleString('en-US')} premium</span>
-                </span>
-                <span class="toggle-ico" aria-hidden="true">${open ? '−' : '+'}</span>
-              </button>
-              <button class="exp-hidden-btn${groupSelected > 0 ? ' is-active' : ''}" data-edit-hidden="${key}">
-                Edit Hidden Field${groupSelected > 0 ? ` (${groupSelected} selected)` : ''}
-              </button>
-            </div>
-            ${open ? `<div class="acc-body" style="padding:0">${tableFor(groupRows)}</div>` : ''}
+            <button class="acc-item" ${toggleAttr}>
+              <span class="left">
+                <i class="ph ph-${icon}" style="font-size:16px"></i>
+                <span class="title">${label}</span>
+                <span style="font-size:11px;color:var(--fg-muted);font-weight:400">${groupRows.length} location${groupRows.length !== 1 ? 's' : ''}</span>
+                ${lraroRate != null && key !== 'NY' ? `<span style="font-size:11px;color:var(--fg-muted);font-weight:400">· LRARO ${lraroRate.toFixed(2)}</span>` : ''}
+                <span style="font-size:11px;color:var(--fg-muted);font-weight:400">· $${totalPrem.toLocaleString('en-US')} premium</span>
+              </span>
+              <span class="toggle-ico" aria-hidden="true">${open ? '−' : '+'}</span>
+            </button>
+            ${open ? `
+              <div class="acc-body" style="padding:0">
+                ${groupSelected > 0 ? `
+                  <div style="display:flex;justify-content:flex-end;padding:var(--sp-2) var(--sp-3);border-bottom:1px solid var(--border-soft)">
+                    <button class="exp-hidden-btn is-active" data-edit-hidden="${key}">
+                      Edit Hidden Field (${groupSelected} selected)
+                    </button>
+                  </div>` : ''}
+                ${tableFor(groupRows)}
+              </div>` : ''}
           </div>`;
       }).join('');
 
