@@ -4839,6 +4839,17 @@
               <tbody>
                 ${rows}
               </tbody>
+              <tfoot>
+                <tr class="total">
+                  <td class="gut"></td>
+                  <td colspan="4"></td>
+                  <td><strong>${rec.claims.length} claims</strong></td>
+                  <td class="r"><strong>${fmtUSD(tot.gross)}</strong></td>
+                  <td class="r"><strong>${fmtUSD(tot.netUnlim)}</strong></td>
+                  <td class="r"><strong>${fmtUSD(tot.netCap)}</strong></td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -5087,11 +5098,11 @@
     const EXPOSURE_ROWS = [
       { addr:'3401 5th Ave N',           city:'St. Petersburg', st:'FL', zip:'33713', sales:2102629, sqft:3112, emp:35, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:8210,  lararo:100000 },
       { addr:'2840 34th St N',           city:'St. Petersburg', st:'FL', zip:'33713', sales:1874500, sqft:2890, emp:28, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7540,  lararo:100000 },
-      { addr:'4625 Henderson Blvd',      city:'Tampa',          st:'FL', zip:'33629', sales:2340000, sqft:3240, emp:41, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:9180, lararo:100000 },
-      { addr:'1610 E Busch Blvd',        city:'Tampa',          st:'FL', zip:'33612', sales:2670000, sqft:3500, emp:44, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:9820, lararo:100000 },
+      { addr:'4625 Henderson Blvd',      city:'Tampa',          st:'FL', zip:'33629', sales:2340000, sqft:3240, emp:41, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / LL', prem:9180, lararo:100000 },
+      { addr:'1610 E Busch Blvd',        city:'Tampa',          st:'FL', zip:'33612', sales:2670000, sqft:3500, emp:44, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / LL', prem:9820, lararo:100000 },
       { addr:'8901 N Dale Mabry Hwy',    city:'Tampa',          st:'FL', zip:'33614', sales:1990000, sqft:2960, emp:32, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:7100,  lararo:100000 },
       { addr:'3105 W Hillsborough Ave',  city:'Tampa',          st:'FL', zip:'33614', sales:2215000, sqft:3050, emp:37, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7880,  lararo:100000 },
-      { addr:'1235 Bloomingdale Ave',    city:'Brandon',        st:'FL', zip:'33511', sales:2480000, sqft:3300, emp:39, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:9010, lararo:100000 },
+      { addr:'1235 Bloomingdale Ave',    city:'Brandon',        st:'FL', zip:'33511', sales:2480000, sqft:3300, emp:39, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / LL', prem:9010, lararo:100000 },
       { addr:'700 W Brandon Blvd',       city:'Brandon',        st:'FL', zip:'33511', sales:2105000, sqft:3080, emp:33, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:7420,  lararo:100000 },
       { addr:'10029 E Adamo Dr',         city:'Tampa',          st:'FL', zip:'33619', sales:1760000, sqft:2750, emp:26, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6660,  lararo:100000 },
       { addr:'4920 N Armenia Ave',       city:'Tampa',          st:'FL', zip:'33603', sales:1830000, sqft:2820, emp:29, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7050,  lararo:100000 },
@@ -5105,18 +5116,18 @@
       { addr:'7200 Park Blvd N',         city:'Pinellas Park',   st:'FL', zip:'33781', sales:1920000, sqft:2930, emp:30, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7310,  lararo:100000 },
       { addr:'1551 Main St',             city:'Dunedin',         st:'FL', zip:'34698', sales:1660000, sqft:2720, emp:23, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6350,  lararo:100000 },
       { addr:'802 McMullen Booth Rd',    city:'Safety Harbor',   st:'FL', zip:'34695', sales:1590000, sqft:2680, emp:22, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6100,  lararo:100000 },
-      { addr:'10112 Riverview Dr',       city:'Riverview',       st:'FL', zip:'33578', sales:2280000, sqft:3180, emp:38, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:8790, lararo:100000 },
+      { addr:'10112 Riverview Dr',       city:'Riverview',       st:'FL', zip:'33578', sales:2280000, sqft:3180, emp:38, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / LL', prem:8790, lararo:100000 },
       { addr:'3023 Lithia Pinecrest Rd', city:'Valrico',         st:'FL', zip:'33596', sales:1700000, sqft:2770, emp:25, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6490,  lararo:100000 },
       { addr:'1906 W Baker St',          city:'Plant City',      st:'FL', zip:'33563', sales:1640000, sqft:2700, emp:23, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6280,  lararo:100000 },
       { addr:'3210 US-98 N',             city:'Lakeland',        st:'FL', zip:'33805', sales:1980000, sqft:2980, emp:32, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7450,  lararo:100000 },
-      { addr:'27345 Wesley Chapel Blvd', city:'Wesley Chapel',   st:'FL', zip:'33544', sales:2420000, sqft:3260, emp:40, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:8960, lararo:100000 },
+      { addr:'27345 Wesley Chapel Blvd', city:'Wesley Chapel',   st:'FL', zip:'33544', sales:2420000, sqft:3260, emp:40, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / LL', prem:8960, lararo:100000 },
       { addr:'3030 Land O Lakes Blvd',   city:'Land O Lakes',    st:'FL', zip:'34639', sales:1750000, sqft:2810, emp:26, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',       prem:6640,  lararo:100000 },
       { addr:'18302 N Dale Mabry Hwy',   city:'Lutz',            st:'FL', zip:'33548', sales:1880000, sqft:2870, emp:29, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7180,  lararo:100000 },
       // New York locations
-      { addr:'250 W 34th St',            city:'New York',         st:'NY', zip:'10119', sales:2850000, sqft:3400, emp:48, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:12400, lararo:100000 },
+      { addr:'250 W 34th St',            city:'New York',         st:'NY', zip:'10119', sales:2850000, sqft:3400, emp:48, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / LL', prem:12400, lararo:100000 },
       { addr:'1500 Flatbush Ave',        city:'Brooklyn',         st:'NY', zip:'11210', sales:2210000, sqft:2980, emp:36, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL',        prem:10150, lararo:100000 },
-      { addr:'3601 Junction Blvd',       city:'Jackson Heights',  st:'NY', zip:'11372', sales:2430000, sqft:3100, emp:40, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:11200, lararo:100000 },
-      { addr:'2880 Broadway',            city:'New York',         st:'NY', zip:'10025', sales:3150000, sqft:3650, emp:52, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / HNOA', prem:13800, lararo:100000 },
+      { addr:'3601 Junction Blvd',       city:'Jackson Heights',  st:'NY', zip:'11372', sales:2430000, sqft:3100, emp:40, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / LL', prem:11200, lararo:100000 },
+      { addr:'2880 Broadway',            city:'New York',         st:'NY', zip:'10025', sales:3150000, sqft:3650, emp:52, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / LL', prem:13800, lararo:100000 },
       { addr:'782 Clarkson Ave',         city:'Brooklyn',         st:'NY', zip:'11203', sales:1940000, sqft:2760, emp:30, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',        prem:8900,  lararo:100000 },
       { addr:'147-38 Jamaica Ave',       city:'Jamaica',          st:'NY', zip:'11435', sales:2090000, sqft:2900, emp:33, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',        prem:9600,  lararo:100000 },
       { addr:'2560 Webster Ave',         city:'Bronx',            st:'NY', zip:'10458', sales:1870000, sqft:2720, emp:28, lim1:'1M / 2M', lim2:'—',        ded:1000, cov:'GL',        prem:8600,  lararo:100000 },
