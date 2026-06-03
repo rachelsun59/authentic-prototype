@@ -4789,9 +4789,10 @@
           <input class="cell-input cell-text" id="bde-${field}-${i}" type="text" data-bde-claim="${i}" data-bde-field="${field}" value="${val == null ? '' : String(val).replace(/"/g,'&quot;')}" ${extra}/>
         </td>
       `;
+      const fmtClaim = (v) => (v == null || v === 0) ? '' : Number(v).toLocaleString('en-US');
       const cellNum  = (i, field, val, extraClass = '', dollar = false) => dollar ? `
         <td class="r cell-edit is-dollar ${extraClass}">
-          <div class="cell-money-wrap"><span class="cell-money-pfx">$</span><input class="cell-input" id="bde-${field}-${i}" type="text" inputmode="decimal" data-bde-claim="${i}" data-bde-field="${field}" value="${val == null ? '' : val}"/></div>
+          <div class="cell-money-wrap"><span class="cell-money-pfx">$</span><input class="cell-input" id="bde-${field}-${i}" type="text" inputmode="decimal" data-bde-claim="${i}" data-bde-field="${field}" value="${fmtClaim(val)}"/></div>
         </td>` : `
         <td class="r cell-edit ${extraClass}">
           <input class="cell-input" id="bde-${field}-${i}" type="text" inputmode="decimal" data-bde-claim="${i}" data-bde-field="${field}" value="${val == null ? '' : val}"/>
@@ -5158,13 +5159,14 @@
           <input class="cell-input cell-text" type="text" data-exp-row="${i}" data-exp-field="${field}"
             value="${val == null ? '' : String(val).replace(/"/g, '&quot;')}" placeholder="${ph}"/>
         </td>`;
+      const fmtVal = (v) => (v == null || v === '' || v === 0) ? '' : Number(v).toLocaleString('en-US');
       const cNum = (i, field, val, dollar = false) => dollar ? `
         <td class="r cell-edit is-dollar">
-          <div class="cell-money-wrap"><span class="cell-money-pfx">$</span><input class="cell-input" type="text" inputmode="decimal" data-exp-row="${i}" data-exp-field="${field}" value="${val == null ? '' : val}"/></div>
+          <div class="cell-money-wrap"><span class="cell-money-pfx">$</span><input class="cell-input" type="text" inputmode="decimal" data-exp-row="${i}" data-exp-field="${field}" value="${fmtVal(val)}"/></div>
         </td>` : `
         <td class="r cell-edit">
           <input class="cell-input" type="text" inputmode="decimal" data-exp-row="${i}" data-exp-field="${field}"
-            value="${val == null ? '' : val}"/>
+            value="${fmtVal(val)}"/>
         </td>`;
       const cLoc = (i, val) => {
         const loc = val == null ? '' : String(val);
@@ -5962,33 +5964,45 @@
       // Per-field type coercion: monetary fields stay numeric, AY becomes an
       // integer, everything else is plain text.
       const NS_TEXT_FIELDS = new Set(['date','valDate','loc','ev','src']);
+      const BDE_MONEY_FIELDS = new Set(['gross','netUnlim','netCap']);
+      const applyCommaFormat = (inp, n) => {
+        if (isNaN(n) || n === 0) return;
+        const formatted = n.toLocaleString('en-US');
+        const cursor = inp.selectionStart;
+        const diff = formatted.length - inp.value.length;
+        inp.value = formatted;
+        inp.setSelectionRange(cursor + diff, cursor + diff);
+      };
       $$('input.cell-input[data-bde-claim]').forEach(inp => {
         inp.oninput = () => {
           const i   = Number(inp.dataset.bdeClaim);
           const f   = inp.dataset.bdeField;
-          const raw = inp.value;
+          const raw = inp.value.replace(/,/g, '');
           if (NS_TEXT_FIELDS.has(f)) {
-            BDE.claims[i][f] = raw;
+            BDE.claims[i][f] = inp.value;
           } else if (f === 'ay') {
             const n = parseInt(raw, 10);
             BDE.claims[i][f] = isNaN(n) ? '' : n;
           } else {
             const num = raw === '' || raw === '.' ? 0 : Number(raw);
             BDE.claims[i][f] = isNaN(num) ? 0 : num;
+            if (BDE_MONEY_FIELDS.has(f)) applyCommaFormat(inp, num);
           }
           triggerAutoSave();
           bdeRerenderPreservingFocus();
         };
       });
       // Exposure table — editable cells
-      const EXP_NUM_FIELDS = new Set(['sales','sqft','emp','prem']);
+      const EXP_NUM_FIELDS = new Set(['sales','sqft','emp','prem','ded']);
       $$('input.cell-input[data-exp-row]').forEach(inp => {
         inp.oninput = () => {
           const i = Number(inp.dataset.expRow);
           const f = inp.dataset.expField;
           if (EXP_NUM_FIELDS.has(f)) {
-            const n = inp.value === '' ? 0 : Number(inp.value);
+            const raw = inp.value.replace(/,/g, '').replace(/[^\d]/g, '');
+            const n = raw === '' ? 0 : Number(raw);
             EXPOSURE_ROWS[i][f] = isNaN(n) ? 0 : n;
+            if (raw !== '') applyCommaFormat(inp, n);
           } else {
             EXPOSURE_ROWS[i][f === 'location' ? 'addr' : f] = inp.value;
           }
