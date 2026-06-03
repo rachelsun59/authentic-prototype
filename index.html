@@ -5180,12 +5180,14 @@
 
       const STATE_NAMES = { FL: 'Florida', NY: 'New York', CA: 'California', TX: 'Texas' };
 
-      const tableFor = (stateRows) => `
+      const tableFor = (stateRows, groupKey) => {
+        const allChecked = stateRows.length > 0 && stateRows.every(({i}) => State.expSelectedRows.has(i));
+        return `
         <div style="overflow-x:auto">
           <table class="xtable excel-grid">
             <thead>
               <tr>
-                <th class="gut" style="width:32px"></th>
+                <th class="gut" style="width:32px"><input type="checkbox" class="exp-chk-all-group" data-group-key="${groupKey}" ${allChecked ? 'checked' : ''} title="Select all"/></th>
                 <th style="width:32px;text-align:center">#</th>
                 <th style="min-width:240px">Location</th>
                 <th class="r" style="min-width:120px">Annual Sales ($)</th>
@@ -5220,7 +5222,7 @@
                 </tr>`;}).join('')}
             </tbody>
           </table>
-        </div>`;
+        </div>`;};
 
       const accordions = Object.entries(grouped).map(([key, groupRows]) => {
         const open = groupBy === 'cov'
@@ -5244,7 +5246,7 @@
               </span>
               <span class="toggle-ico" aria-hidden="true">${open ? '−' : '+'}</span>
             </button>
-            ${open ? `<div class="acc-body" style="padding:0">${tableFor(groupRows)}</div>` : ''}
+            ${open ? `<div class="acc-body" style="padding:0">${tableFor(groupRows, key)}</div>` : ''}
           </div>`;
       }).join('');
 
@@ -5270,7 +5272,19 @@
           <div style="padding:var(--sp-3) var(--sp-3) 0">
             ${accordions}
           </div>
-        </div>`;
+        </div>
+        ${State.expSelectedRows.size > 0 ? `
+        <div class="claims-float-wrap">
+          <div class="claims-float-bar">
+            <span class="cfb-label">${State.expSelectedRows.size} row${State.expSelectedRows.size > 1 ? 's' : ''} selected</span>
+            <div class="cfb-divider"></div>
+            <div class="cfb-group">
+              <button class="cfb-btn cfb-btn--danger" id="exp-del-selected" title="Delete selected"><i class="ph ph-trash"></i></button>
+              <button class="cfb-btn" id="exp-clear-selection" title="Clear selection"><i class="ph ph-x"></i></button>
+              <button class="cfb-btn" title="Export selected"><i class="ph ph-arrow-line-down"></i></button>
+            </div>
+          </div>
+        </div>` : ''}`;
     }
 
     /* ---- UW Questions tab ---- */
@@ -6295,6 +6309,28 @@
           render();
         };
       });
+      // Exposure select-all per group
+      $$('.exp-chk-all-group').forEach(chk => {
+        chk.onchange = () => {
+          const key = chk.dataset.groupKey;
+          // Find all rows in this group
+          const groupBy = State.expGroupBy || 'state';
+          const classCode = BDE.quote?.basicInfo?.businessType || 'Restaurant - Fast Food or Quick Service';
+          EXPOSURE_ROWS.forEach((r, i) => {
+            const rowKey = groupBy === 'cov' ? (r.classCode || classCode) : r.st;
+            if (rowKey === key) {
+              if (chk.checked) State.expSelectedRows.add(i);
+              else State.expSelectedRows.delete(i);
+            }
+          });
+          render();
+        };
+      });
+      // Exposure toolbar
+      const expDel = $('#exp-del-selected');
+      if (expDel) expDel.onclick = () => { State.expSelectedRows.clear(); render(); };
+      const expClear = $('#exp-clear-selection');
+      if (expClear) expClear.onclick = () => { State.expSelectedRows.clear(); render(); };
       // Edit Hidden Fields button
       $$('[data-edit-hidden]').forEach(btn => {
         btn.onclick = (e) => {
