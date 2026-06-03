@@ -1823,6 +1823,20 @@
     .exp-subtab:hover { color: var(--fg); }
     .exp-subtab.active { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
     .exp-table thead th { white-space: nowrap; }
+    /* Exposure decline flag tooltip */
+    .exp-flag { position:relative; display:inline-flex; align-items:center; }
+    .exp-flag-ico { color:var(--warn); font-size:14px; cursor:default; line-height:1; }
+    .exp-flag-tip {
+      display:none; position:absolute; left:50%; transform:translateX(-50%);
+      bottom:calc(100% + 8px); z-index:200;
+      background:var(--surface); border-radius:var(--r-md);
+      box-shadow:0 4px 16px rgba(0,0,0,.14); border:1px solid var(--border-soft);
+      padding:var(--sp-2) var(--sp-3); white-space:nowrap; pointer-events:none;
+    }
+    .exp-flag-tip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--surface); }
+    .exp-flag-tip__title { font-size:13px; font-weight:500; color:var(--fg); }
+    .exp-flag-tip__sub   { font-size:12px; color:var(--fg-muted); margin-top:2px; }
+    .exp-flag:hover .exp-flag-tip { display:block; }
     .exp-hidden-btn { padding:0 var(--sp-3); height:36px; border:none; background:transparent; font-size:13px; color:var(--fg-muted); white-space:nowrap; cursor:default; flex-shrink:0; }
     .exp-hidden-btn.is-active { color:var(--fg); cursor:pointer; }
     .exp-hidden-btn.is-active:hover { color:var(--tertiary); }
@@ -5205,11 +5219,19 @@
                 const hasDeclineFlag = i === 2;
                 return `
                 <tr>
-                  <td class="gut" style="position:relative">
+                  <td class="gut">
                     <input type="checkbox" class="row-chk exp-row-chk" data-exp-chk="${i}" ${State.expSelectedRows.has(i) ? 'checked' : ''}>
-                    ${hasDeclineFlag ? `<span title="Decline reason: tier four wind zone for property" style="position:absolute;top:6px;right:2px;color:var(--err);font-size:12px;cursor:help;line-height:1"><i class="ph ph-warning-circle"></i></span>` : ''}
                   </td>
-                  <td style="text-align:center;color:var(--fg-muted)">${i + 1}</td>
+                  <td style="text-align:center;color:var(--fg-muted)">
+                    ${hasDeclineFlag ? `
+                    <span class="exp-flag">
+                      <i class="ph ph-warning exp-flag-ico"></i>
+                      <div class="exp-flag-tip">
+                        <div class="exp-flag-tip__title">Location Declined</div>
+                        <div class="exp-flag-tip__sub">tier four wind zone for property</div>
+                      </div>
+                    </span>` : i + 1}
+                  </td>
                   ${cLoc(i, `${r.addr}, ${r.city}, ${r.st} ${r.zip}`)}
                   ${cNum (i, 'sales', r.sales, true)}
                   ${cNum (i, 'sqft',  r.sqft)}
