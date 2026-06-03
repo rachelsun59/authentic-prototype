@@ -5106,7 +5106,7 @@
     }
 
     /* ---- Exposures tab ---- */
-    const EXPOSURE_ROWS = [
+    let EXPOSURE_ROWS = [
       { addr:'3401 5th Ave N',           city:'St. Petersburg', st:'FL', zip:'33713', sales:2102629, sqft:3112, emp:35, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:8210,  lararo:100000 },
       { addr:'2840 34th St N',           city:'St. Petersburg', st:'FL', zip:'33713', sales:1874500, sqft:2890, emp:28, lim1:'1M / 2M', lim2:'2M / 4M', ded:1000, cov:'GL',       prem:7540,  lararo:100000 },
       { addr:'4625 Henderson Blvd',      city:'Tampa',          st:'FL', zip:'33629', sales:2340000, sqft:3240, emp:41, lim1:'1M / 2M', lim2:'2M / 4M', ded:2500, cov:'GL / LL', prem:9180, lararo:100000 },
@@ -5212,6 +5212,7 @@
                 <th style="min-width:120px">Limits</th>
                 <th class="r" style="min-width:100px">Deductible ($)</th>
                 <th class="r" style="min-width:100px">Premium ($)</th>
+                <th style="width:36px"></th>
               </tr>
             </thead>
             <tbody>
@@ -5241,6 +5242,9 @@
                   ${cText(i, 'lim1',     r.lim1 || '')}
                   ${cNum (i, 'ded',   r.ded)}
                   ${cNum (i, 'prem',  r.prem, true)}
+                  <td style="text-align:center;padding:0 4px">
+                    <button class="icon-btn exp-del-row" data-exp-del="${i}" title="Delete location" style="width:28px;height:28px;color:var(--fg-muted)"><i class="ph ph-trash" style="font-size:14px"></i></button>
+                  </td>
                 </tr>`;}).join('')}
             </tbody>
           </table>
@@ -6348,9 +6352,25 @@
           render();
         };
       });
+      // Exposure: delete individual row
+      $$('.exp-del-row').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const i = Number(btn.dataset.expDel);
+          EXPOSURE_ROWS.splice(i, 1);
+          State.expSelectedRows.clear();
+          render();
+        };
+      });
       // Exposure toolbar
       const expDel = $('#exp-del-selected');
-      if (expDel) expDel.onclick = () => { State.expSelectedRows.clear(); render(); };
+      if (expDel) expDel.onclick = () => {
+        // Delete all selected rows (in reverse order to preserve indices)
+        const toDelete = [...State.expSelectedRows].sort((a,b) => b - a);
+        toDelete.forEach(i => EXPOSURE_ROWS.splice(i, 1));
+        State.expSelectedRows.clear();
+        render();
+      };
       const expClear = $('#exp-clear-selection');
       if (expClear) expClear.onclick = () => { State.expSelectedRows.clear(); render(); };
       // Edit Hidden Fields button
