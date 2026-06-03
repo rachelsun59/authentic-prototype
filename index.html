@@ -2688,8 +2688,9 @@
       },
       protoUser: 'hunt',
       userMenuOpen: false,
-      coverageStep: 'uwq',           // 'uwq' | 'optional'
+      coverageStep: 'uwq',           // 'uwq' | 'optional' | 'hidden'
       coverageTypes: new Set(['gl']), // selected coverage types
+      activeCovType: 'gl',           // currently viewed coverage type
       optCovSelected: new Set(),      // selected optional coverages
       uwqOpen: new Set(['knockouts','claims','delivery','alcohol']), // open question accordions
       bindModal: { open: false, plan: 'annual', method: 'card' },
@@ -5390,10 +5391,12 @@
     }
 
     const COV_TYPES = [
-      { id:'gl',  label:'General Liability' },
-      { id:'prop', label:'Property' },
-      { id:'epl',  label:'Employment Practices Liability' },
-      { id:'liq',  label:'Liquor Liability' },
+      { id:'gl',    label:'General Liability' },
+      { id:'prop',  label:'Property' },
+      { id:'epl',   label:'Employment Practices Liability' },
+      { id:'liq',   label:'Liquor Liability' },
+      { id:'excess',label:'Excess Liability' },
+      { id:'hidden',label:'Hidden Fields' },
     ];
     const OPT_COVERAGES = [
       { id:'hnoa', label:'HNOA' },
@@ -5408,7 +5411,7 @@
       const noneAbove = q.noneAbove !== false;
       const claims    = q.claims    || 'no';
       const delivery  = q.delivery  || 'no';
-      const step      = State.coverageStep;
+      const step      = State.coverageStep; // 'uwq' | 'optional' | 'hidden'
 
       const radioYN = (name, val) => `
         <div class="opt-radio-group">
@@ -5416,46 +5419,58 @@
           <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="no"  ${val==='no' ?'checked':''}/><span class="opt-radio-dot"></span>No</label>
         </div>`;
 
+      // Sidebar — selected types are nav items, unselected show as addable
       const sidebar = `
         <div class="cov-sidebar">
           ${COV_TYPES.map(t => {
-            const on = State.coverageTypes.has(t.id);
-            return `<button class="cov-type-btn${on?' is-on':''}" data-cov-type="${t.id}">
-              <span class="cov-chk">${on?'<i class="ph ph-check" style="font-size:10px;color:#fff"></i>':''}</span>
-              <span>${t.label}</span>
-            </button>`;
+            const added  = State.coverageTypes.has(t.id);
+            const active = State.activeCovType === t.id;
+            if (added) {
+              return `<button class="cov-type-btn is-on${active?' is-active':''}" data-cov-nav="${t.id}" style="justify-content:flex-start;gap:var(--sp-2);border-color:${active?'var(--tertiary)':'var(--border)'};background:${active?'var(--err-bg)':'var(--surface)'}">
+                <i class="ph ph-shield-check" style="font-size:16px;flex-shrink:0;color:var(--tertiary)"></i>
+                <span style="flex:1;text-align:left;font-weight:${active?'500':'400'}">${t.label}</span>
+                <span class="pill error" style="font-size:10px;padding:1px 5px;min-width:0">1</span>
+              </button>`;
+            } else {
+              return `<button class="cov-type-btn" data-cov-add="${t.id}" style="justify-content:flex-start;gap:var(--sp-2);color:var(--fg-muted)">
+                <i class="ph ph-plus-circle" style="font-size:16px;flex-shrink:0;color:var(--fg-muted)"></i>
+                <span style="flex:1;text-align:left">${t.label}</span>
+              </button>`;
+            }
           }).join('')}
         </div>`;
 
+      // 3-step progress bar
+      const steps = ['uwq','optional','hidden'];
+      const si = steps.indexOf(step);
       const progress = `
-        <div class="cov-progress">
+        <div class="cov-progress" style="margin-bottom:var(--sp-3)">
           <div class="cov-prog-step">
             <div class="cov-prog-dot done"></div>
             <div class="cov-prog-label">Underwriting Questions</div>
           </div>
-          <div class="cov-prog-line${step==='optional'?' done':''}"></div>
+          <div class="cov-prog-line${si>=1?' done':''}"></div>
           <div class="cov-prog-step">
-            <div class="cov-prog-dot${step==='optional'?' active':''}"></div>
-            <div class="cov-prog-label">Optional Coverage</div>
+            <div class="cov-prog-dot${si===1?' active':si>1?' done':''}"></div>
+            <div class="cov-prog-label">Optional Coverages</div>
+          </div>
+          <div class="cov-prog-line${si>=2?' done':''}"></div>
+          <div class="cov-prog-step">
+            <div class="cov-prog-dot${si===2?' active':''}"></div>
+            <div class="cov-prog-label">Hidden Fields</div>
           </div>
         </div>`;
 
-      const acc = (id, title, body) => {
-        const open = State.uwqOpen.has(id);
-        return `
-          <div class="uwq-acc">
-            <button class="uwq-acc-head" data-uwq-acc="${id}">
-              <i class="ph ph-check-circle uwq-acc-ico" style="color:var(--ok)"></i>
-              <span class="uwq-acc-title">${title}</span>
-              <span style="font-size:16px;color:var(--fg-muted)">${open ? '−' : '+'}</span>
-            </button>
-            ${open ? `<div class="uwq-acc-body">${body}</div>` : ''}
-          </div>`;
-      };
-
-      const uwqContent = `
-        <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-          ${acc('knockouts', 'Are any of the following true about you or your business?', `
+      // Knockout accordion (only this question uses accordion)
+      const knockOpen = State.uwqOpen.has('knockouts');
+      const knockoutAcc = `
+        <div class="uwq-acc">
+          <button class="uwq-acc-head" data-uwq-acc="knockouts">
+            <i class="ph ph-check-circle uwq-acc-ico" style="color:var(--ok)"></i>
+            <span class="uwq-acc-title">Are any of the following true about you or your business?</span>
+            <span style="font-size:16px;color:var(--fg-muted)">${knockOpen ? '−' : '+'}</span>
+          </button>
+          ${knockOpen ? `<div class="uwq-acc-body">
             ${UWQ_KNOCKOUTS.map(k => `
               <label class="opt-radio-label" style="align-items:flex-start">
                 <input type="checkbox" class="uwq-knock-chk" data-uwq-knock="${k.id}" ${knockouts.includes(k.id)?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/>
@@ -5467,14 +5482,28 @@
               <input type="radio" name="uwq-none" class="uwq-none-radio" ${noneAbove&&!knockouts.length?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/>
               <span class="opt-radio-dot"></span>
               <span style="font-size:14px;color:var(--fg)">None of the above</span>
-            </label>`)}
-          ${acc('claims', 'Has your business had any insurance claims in the past 3 years?', radioYN('claims', claims))}
-          ${acc('delivery', 'Does your restaurant offer delivery or off-site catering?', radioYN('delivery', delivery))}
-          ${acc('alcohol', 'Annual Alcohol Sales Percentage', `
+            </label>
+          </div>` : ''}
+        </div>`;
+
+      const uwqContent = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
+          ${knockoutAcc}
+          <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+            <div style="font-size:14px;color:var(--tertiary);font-weight:500">Has your business had any insurance claims in the past 3 years? <span style="font-weight:400">(answer this)</span></div>
+            ${radioYN('claims', claims)}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+            <div style="font-size:14px;color:var(--fg)">Does your restaurant offer delivery or off-site catering?</div>
+            ${radioYN('delivery', delivery)}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+            <div style="font-size:14px;color:var(--fg)">Annual Alcohol Sales Percentage</div>
             <div class="uwq-pct-row">
               <input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct??0}"/>
               <span class="uwq-pct-unit">%</span>
-            </div>`)}
+            </div>
+          </div>
         </div>
         <div class="cov-foot">
           <button class="btn btn-primary" id="cov-next">Next</button>
@@ -5495,8 +5524,31 @@
         </div>
         <div class="cov-foot">
           <button class="text-btn" id="cov-back">Back</button>
+          <button class="btn btn-primary" id="cov-next">Next</button>
+        </div>`;
+
+      const hiddenContent = `
+        <div style="font-size:14px;color:var(--fg-muted);padding:var(--sp-5) 0">
+          No hidden fields configured for this coverage type.
+        </div>
+        <div class="cov-foot">
+          <button class="text-btn" id="cov-back">Back</button>
           <button class="btn btn-primary" id="cov-save">Save</button>
         </div>`;
+
+      const activeName = COV_TYPES.find(t => t.id === State.activeCovType)?.label || 'General Liability';
+      const isGL = State.activeCovType === 'gl';
+      const placeholderContent = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-3);padding:var(--sp-6) 0;color:var(--fg-muted)">
+          <i class="ph ph-shield-check" style="font-size:40px;color:var(--border)"></i>
+          <div style="font-size:15px;font-weight:500;color:var(--fg)">${activeName}</div>
+          <div style="font-size:13px">Questions for this coverage type will appear here.</div>
+        </div>
+        <div class="cov-foot">
+          <button class="btn btn-primary" id="cov-next">Next</button>
+        </div>`;
+      const activeBody = isGL ? (step === 'uwq' ? uwqContent : step === 'optional' ? optContent : hiddenContent) : placeholderContent;
+      const body = activeBody;
 
       return `
         <div class="sec" style="padding:0">
@@ -5504,7 +5556,7 @@
             ${sidebar}
             <div class="cov-main">
               ${progress}
-              ${step === 'uwq' ? uwqContent : optContent}
+              ${body}
             </div>
           </div>
         </div>`;
@@ -6410,12 +6462,21 @@
           triggerAutoSave();
         };
       });
-      // Coverage tab — coverage type selection
-      $$('[data-cov-type]').forEach(btn => {
+      // Coverage sidebar — navigate to an added coverage type
+      $$('[data-cov-nav]').forEach(btn => {
         btn.onclick = () => {
-          const id = btn.dataset.covType;
-          if (State.coverageTypes.has(id)) State.coverageTypes.delete(id);
-          else State.coverageTypes.add(id);
+          State.activeCovType = btn.dataset.covNav;
+          State.coverageStep = 'uwq';
+          render();
+        };
+      });
+      // Coverage sidebar — add a new coverage type and navigate to it
+      $$('[data-cov-add]').forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.dataset.covAdd;
+          State.coverageTypes.add(id);
+          State.activeCovType = id;
+          State.coverageStep = 'uwq';
           render();
         };
       });
@@ -6429,8 +6490,18 @@
           render();
         };
       });
-      const covNext = $('#cov-next'); if (covNext) covNext.onclick = () => { State.coverageStep = 'optional'; render(); };
-      const covBack = $('#cov-back'); if (covBack) covBack.onclick = () => { State.coverageStep = 'uwq'; render(); };
+      const covNext = $('#cov-next'); if (covNext) covNext.onclick = () => {
+        const steps = ['uwq','optional','hidden'];
+        const i = steps.indexOf(State.coverageStep);
+        if (i < steps.length - 1) State.coverageStep = steps[i + 1];
+        render();
+      };
+      const covBack = $('#cov-back'); if (covBack) covBack.onclick = () => {
+        const steps = ['uwq','optional','hidden'];
+        const i = steps.indexOf(State.coverageStep);
+        if (i > 0) State.coverageStep = steps[i - 1];
+        render();
+      };
       const covSave = $('#cov-save'); if (covSave) covSave.onclick = () => { State.coverageStep = 'uwq'; render(); };
       // Coverage tab — optional coverage selection
       $$('[data-opt-cov]').forEach(el => {
