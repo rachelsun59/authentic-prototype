@@ -5199,10 +5199,15 @@
               </tr>
             </thead>
             <tbody>
-              ${stateRows.map(({ r, i }) => `
+              ${stateRows.map(({ r, i }) => {
+                const hasDeclineFlag = i === 2;
+                return `
                 <tr>
-                  <td class="gut"><input type="checkbox" class="row-chk exp-row-chk" data-exp-chk="${i}" ${State.expSelectedRows.has(i) ? 'checked' : ''}></td>
-                  <td style="text-align:center;color:var(--fg-muted)">${i + 1}</td>
+                  <td class="gut" style="position:relative">
+                    <input type="checkbox" class="row-chk exp-row-chk" data-exp-chk="${i}" ${State.expSelectedRows.has(i) ? 'checked' : ''}>
+                    ${hasDeclineFlag ? `<span title="Decline reason: tier four wind zone for property" style="position:absolute;top:6px;right:2px;color:var(--err);font-size:12px;cursor:help;line-height:1"><i class="ph ph-warning-circle"></i></span>` : ''}
+                  </td>
+                  <td style="text-align:center;color:var(--fg-muted)">${i + 1}</td>`;
                   ${cLoc(i, `${r.addr}, ${r.city}, ${r.st} ${r.zip}`)}
                   ${cNum (i, 'sales', r.sales, true)}
                   ${cNum (i, 'sqft',  r.sqft)}
@@ -5212,7 +5217,7 @@
                   ${cText(i, 'lim1',     r.lim1 || '')}
                   ${cNum (i, 'ded',   r.ded)}
                   ${cNum (i, 'prem',  r.prem, true)}
-                </tr>`).join('')}
+                </tr>`;}).join('')}
             </tbody>
           </table>
         </div>`;
