@@ -1720,7 +1720,8 @@
     .cov-type-btn.is-on { border-color:var(--tertiary); background:var(--err-bg); }
     .cov-type-btn .cov-chk { width:16px; height:16px; border:1.5px solid var(--border); border-radius:3px; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
     .cov-type-btn.is-on .cov-chk { background:var(--tertiary); border-color:var(--tertiary); }
-    .cov-main { flex:1; min-width:0; display:flex; flex-direction:column; padding:var(--sp-5); gap:var(--sp-4); padding-bottom:var(--sp-6); }
+    .cov-main { flex:1; min-width:0; display:flex; flex-direction:column; padding:var(--sp-5); gap:var(--sp-4); overflow-y:auto; }
+    .cov-sticky-foot { padding:var(--sp-3) var(--sp-5); display:flex; justify-content:flex-end; gap:var(--sp-2); background:var(--surface); flex-shrink:0; }
     .cov-progress { display:flex; align-items:flex-start; }
     .cov-prog-step { display:flex; flex-direction:column; align-items:center; gap:6px; }
     .cov-prog-dot { width:14px; height:14px; border-radius:50%; border:2px solid var(--border); background:var(--surface); flex-shrink:0; transition:all .15s; }
@@ -5505,9 +5506,7 @@
             </div>
           </div>
         </div>
-        <div class="cov-foot">
-          <button class="btn btn-primary" id="cov-next">Next</button>
-        </div>`;
+`;
 
       const optContent = `
         <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
@@ -5521,19 +5520,11 @@
               <div class="cov-opt-add"><i class="ph ph-plus" style="font-size:13px"></i></div>
             </div>`;
           }).join('')}
-        </div>
-        <div class="cov-foot">
-          <button class="text-btn" id="cov-back">Back</button>
-          <button class="btn btn-primary" id="cov-next">Next</button>
         </div>`;
 
       const hiddenContent = `
         <div style="font-size:14px;color:var(--fg-muted);padding:var(--sp-5) 0">
           No hidden fields configured for this coverage type.
-        </div>
-        <div class="cov-foot">
-          <button class="text-btn" id="cov-back">Back</button>
-          <button class="btn btn-primary" id="cov-save">Save</button>
         </div>`;
 
       const activeName = COV_TYPES.find(t => t.id === State.activeCovType)?.label || 'General Liability';
@@ -5543,22 +5534,30 @@
           <i class="ph ph-shield-check" style="font-size:40px;color:var(--border)"></i>
           <div style="font-size:15px;font-weight:500;color:var(--fg)">${activeName}</div>
           <div style="font-size:13px">Questions for this coverage type will appear here.</div>
-        </div>
-        <div class="cov-foot">
-          <button class="btn btn-primary" id="cov-next">Next</button>
         </div>`;
-      const activeBody = isGL ? (step === 'uwq' ? uwqContent : step === 'optional' ? optContent : hiddenContent) : placeholderContent;
-      const body = activeBody;
+      const body = isGL ? (step === 'uwq' ? uwqContent : step === 'optional' ? optContent : hiddenContent) : placeholderContent;
+
+      // Sticky footer — shown outside the scrollable cov-main
+      const isFirst = step === 'uwq';
+      const isLast  = step === 'hidden';
+      const footer = `
+        <div class="cov-sticky-foot">
+          ${!isFirst ? `<button class="text-btn" id="cov-back">Back</button>` : ''}
+          ${isLast
+            ? `<button class="btn btn-primary" id="cov-save">Save</button>`
+            : `<button class="btn btn-primary" id="cov-next">Next</button>`}
+        </div>`;
 
       return `
-        <div class="sec" style="padding:0">
-          <div class="cov-shell">
+        <div class="sec" style="padding:0;display:flex;flex-direction:column">
+          <div class="cov-shell" style="flex:1;overflow:hidden">
             ${sidebar}
             <div class="cov-main">
               ${progress}
               ${body}
             </div>
           </div>
+          ${footer}
         </div>`;
     }
 
