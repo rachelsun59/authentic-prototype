@@ -5542,15 +5542,42 @@
         </div>`;
 
       // ---- Step 2: Optional Coverages (full GL form) ----
+      // ---- Step 2: Optional Coverages (3 items from updated form) ----
+      const addlInsCount = gf.addlInsCount || 0;
       const optContent = `
         <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
           ${glYN('epl','Employment Practices Liability (EPL) Coverage','','i')}
-          ${glYN('addlIns','Add Additional Insureds to your GL policy (e.g. Landlord, Franchisor, Municipality, Venue)','','i')}
+          ${glYN('addlIns','Add Additional Insureds to your General Liability policy (e.g. Landlord, Franchisor, Municipality, Venue)','','i')}
+          ${gf.addlIns === 'yes' ? `<div class="gl-cond">
+            <div class="gl-qblock">
+              <div class="gl-qlabel">Number of Additional Insureds <span class="gl-info">i</span></div>
+              <input type="number" class="gl-num" id="gl-num-insureds" min="1" max="20" placeholder="0" value="${addlInsCount||''}" oninput="
+                const n=parseInt(this.value)||0;
+                const c=document.getElementById('gl-insured-fields');
+                if(!c)return;
+                State.glForm.addlInsCount=n;
+                c.innerHTML='';
+                for(let i=1;i<=Math.min(n,20);i++){
+                  const d=document.createElement('input');
+                  d.type='text';d.className='gl-input';
+                  d.placeholder='Name and Address of Additional Insured ('+i+')';
+                  c.appendChild(d);
+                }"/>
+              <div id="gl-insured-fields" style="display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-2)">
+                ${Array.from({length:Math.min(addlInsCount,20)},(_,i)=>`<input type="text" class="gl-input" placeholder="Name and Address of Additional Insured (${i+1})">`).join('')}
+              </div>
+            </div>
+          </div>` : ''}
           ${glYN('hnoa','Hired Auto and Nonowned Auto Liability','','i')}
+        </div>`;
+
+      // ---- Step 3: Hidden Fields (all remaining items from updated form) ----
+      const hiddenContent = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
           ${glYN('waiverSpec','Waiver of Subrogation - Specified Named / Organization','','i')}
           ${glYN('mechAmusement','Mechanically Operated Amusement Device Exclusion')}
           ${glYN('excessMed','Excess Medical Payments - Participants',
-            glQ('Excess Medical Payments Limit', glRadioList(['$5,000','$10,000','$15,000','$25,000']))
+            glQ('Excess Medical Payments - Participants Limit', glRadioList(['$5,000','$10,000','$15,000','$25,000']))
           )}
           ${glYN('cannabis','Cannabis Exclusion with Hemp Exception')}
           ${glYN('tenantLegal','Tenant\'s Legal Liability Coverage','','i')}
@@ -5565,7 +5592,7 @@
           ${glYN('addlInsLand','Additional Insured - Owners Or Other Interests From Whom Land Has Been Leased (Blanket)')}
           ${glYN('playground','Playground Facility Exclusion')}
           ${glYN('mgrLessors','Additional Insured - Managers Or Lessors Of Premises (Blanket)',
-            glTA('Designation of Premises (leave blank for blanket coverage)')
+            glTA("Designation of Premises (e.g., 'Suite 200, 123 Main St'; leave blank for blanket coverage)")
           )}
           ${glYN('foodTruck','Is your primary operation a motorized food truck or mobile restaurant/food trailer?')}
           ${glYN('grantorFranchise','Additional Insured - Grantor of Franchise coverage')}
@@ -5585,11 +5612,11 @@
           ${glYN('commDisease','Attach Communicable Disease Exclusion Flag')}
           ${glYN('watercraft','Watercraft Liability')}
           ${glYN('customExcl','Attach Custom Exclusion - Designated Operations Flag',
-            glTA('Description for Exclusion - Custom Designated Operations')
+            glTA('Description Box for Exclusion - Custom Designated Operations')
           )}
           ${glYN('incidentalMed','Incidental Medical Malpractice')}
           ${glYN('profServices','Attach Exclusion - Designated Professional Services',
-            glTA('Description for Exclusion - Designated Professional Services')
+            glTA('Description Box for Exclusion - Designated Professional Services')
           )}
           ${glYN('constructionExcl','Attach Construction Exclusions Flag')}
           ${glYN('ebl','Employee Benefits Liability Coverage','','i')}
@@ -5599,20 +5626,16 @@
           ${glYN('excldDiscrim','Exclusion - Discrimination')}
           ${glYN('pollutionFire','Exclusion Pollution Hostile Fire Exception')}
           ${glQ('How many locations does your business have?', glRadioList(['1','2','3','4','5','6','7','8','9','10+']))}
-          ${glYN('sam','Sexual Abuse & Molestation (SAM) Coverage')}
+          ${glYN('sam','Sexual Abuse &amp; Molestation (SAM) Coverage')}
           ${glYN('vendors','Additional Insured - Vendors',
-            glTA('Vendors - Name Of Additional Insured Person(s) Or Organization(s)')
+            glTA('Vendors - Name Of Additional Insured Person(s) Or Organization(s) (Vendor)')
           )}
           ${glYN('electronicMedia','Electronic Media Liability','','i')}
           ${glYN('umbrella','Does your landlord require an umbrella policy?','','i')}
           ${glQ('Describe your Business', glInput('Business description'))}
-        </div>`;
-
-      // ---- Step 3: Hidden Fields (full GL form) ----
-      const hiddenContent = `
-        <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+          <hr class="gl-divider">
           ${glYN('franchise','Is your business a franchise?')}
-          ${glYN('multiLocation','Do you have more than one business location?')}
+          ${glYN('multiLocation','Optional — Do you have more than one business location?')}
           ${glYN('aircraft','Do you own or operate any aircraft or watercraft (including drones)?')}
           ${glYN('limPremises','Limitation of Coverage to Designated Premises, Project or Operation',
             glYN('manuscriptedPremises','Designated Premises - Toggle Manuscripted Premises','','i')
@@ -5620,7 +5643,7 @@
           ${glYN('deductibleLiab','Deductible Liability Insurance',
             glQ('Property Damage Liability Deductible', glRadioList(['$500','$1,000','$2,500','$5,000','$10,000','$15,000','$25,000','$50,000','$100,000','$150,000']))
           )}
-          ${glYN('multiState','Do you have locations at multiple states?')}
+          ${glYN('multiState','Optional — Do you have locations at multiple states?')}
           ${glYN('lraro','Toggle for LRARO Rating ($100K+ Premium ONLY)',
             glInput('LRARO Rate Multiplier')
           )}
@@ -5629,7 +5652,7 @@
           ${glYN('tenantConstruct','Tenant Business Under Construction Policy')}
           ${glYN('manualOverride','Manual Underwriting Override - Policy Level')}
           ${glQ('Notes from Underwriting Review', glTA('Enter notes...'))}
-          ${glQ('Renewal Workflow Status', glRadioList([
+          ${glQ('Optional — Renewal Workflow Status', glRadioList([
             'Not Released - Pending Documents',
             'Not Released – Review in Progress',
             'Renewal Approved',
