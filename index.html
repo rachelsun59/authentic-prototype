@@ -1723,6 +1723,26 @@
     .cov-type-btn.is-on .cov-chk { background:var(--tertiary); border-color:var(--tertiary); }
     .cov-main { flex:1; min-width:0; display:flex; flex-direction:column; padding:var(--sp-5); gap:var(--sp-4); overflow-y:auto; }
     .cov-sticky-foot { padding:var(--sp-3) var(--sp-5); display:flex; justify-content:flex-end; gap:var(--sp-2); background:var(--surface); flex-shrink:0; }
+    /* GL Form question components */
+    .gl-qblock { display:flex; flex-direction:column; gap:var(--sp-2); }
+    .gl-qlabel { font-size:13px; color:var(--fg); line-height:1.5; }
+    .gl-info { display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; border-radius:50%; border:1.5px solid var(--border); color:var(--fg-muted); font-size:9px; margin-left:4px; cursor:help; vertical-align:middle; }
+    .gl-yn { display:flex; gap:var(--sp-2); }
+    .gl-yn-btn { padding:5px 16px; border:1.5px solid var(--border); background:var(--surface); border-radius:var(--r-md); cursor:pointer; font-size:13px; color:var(--fg-muted); font-family:inherit; transition:border-color .15s,color .15s; }
+    .gl-yn-btn:hover { border-color:var(--border-acc); }
+    .gl-yn-btn.active { border-color:var(--tertiary); color:var(--tertiary); font-weight:500; }
+    .gl-cond { margin-top:var(--sp-2); padding:var(--sp-3); border:1.5px solid var(--warn-bg); border-radius:var(--r-md); background:#fffef5; display:flex; flex-direction:column; gap:var(--sp-3); }
+    .gl-radio-list { border:1px solid var(--border-soft); border-radius:var(--r-md); overflow:hidden; }
+    .gl-radio-item { padding:8px 12px; border-bottom:1px solid var(--border-soft); font-size:13px; color:var(--fg); cursor:pointer; transition:background .1s; }
+    .gl-radio-item:last-child { border-bottom:0; }
+    .gl-radio-item:hover { background:var(--bg-accent); }
+    .gl-radio-item.active { color:var(--tertiary); background:var(--err-bg); border-left:3px solid var(--tertiary); }
+    .gl-input { width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:var(--r-md); font:inherit; font-size:13px; color:var(--fg); background:var(--surface); box-sizing:border-box; }
+    .gl-input:focus { outline:none; border-color:var(--tertiary); }
+    .gl-input::placeholder { color:var(--fg-muted); }
+    .gl-ta { min-height:70px; resize:vertical; }
+    .gl-num { width:80px; text-align:center; padding:8px 12px; border:1.5px solid var(--border); border-radius:var(--r-md); font:inherit; font-size:13px; }
+    .gl-divider { border:none; border-top:1px solid var(--border-soft); margin:0; }
     .cov-progress { display:flex; align-items:flex-start; }
     .cov-prog-step { display:flex; flex-direction:column; align-items:center; gap:6px; }
     .cov-prog-dot { width:14px; height:14px; border-radius:50%; border:2px solid var(--border); background:var(--surface); flex-shrink:0; transition:all .15s; }
@@ -2695,6 +2715,7 @@
       activeCovType: 'gl',                    // currently viewed coverage type
       optCovSelected: new Set(),      // selected optional coverages
       uwqOpen: new Set(['knockouts','claims','delivery','alcohol']), // open question accordions
+      glForm: {},  // GL restaurant form field values
       bindModal: { open: false, plan: 'annual', method: 'card' },
       brokerBindModal: { open: false },
       queueDone: new Set(),
@@ -5482,44 +5503,138 @@
           </div>` : ''}
         </div>`;
 
+      // ---- GL Form helpers ----
+      const gf = State.glForm;
+      const glYN = (id, label, condHtml='', tip='') => {
+        const val = gf[id];
+        const showCond = val === 'yes' && condHtml;
+        return `<div class="gl-qblock">
+          <div class="gl-qlabel">${label}${tip?`<span class="gl-info">i</span>`:''}</div>
+          <div class="gl-yn">
+            <button class="gl-yn-btn${val==='yes'?' active':''}" data-gl-yn="${id}" data-gl-val="yes">Yes</button>
+            <button class="gl-yn-btn${val==='no' ?' active':''}" data-gl-yn="${id}" data-gl-val="no">No</button>
+          </div>
+          ${showCond ? `<div class="gl-cond">${condHtml}</div>` : ''}
+        </div>`;
+      };
+      const glInput = (ph, id='') => `<input type="text" class="gl-input" placeholder="${ph}" ${id?`id="gl-${id}"`:''}>`;
+      const glTA    = (ph) => `<textarea class="gl-input gl-ta" placeholder="${ph}"></textarea>`;
+      const glNum   = (ph, id='') => `<input type="number" class="gl-num" placeholder="${ph}" min="0" ${id?`id="gl-${id}"`:''}>`;
+      const glRadioList = (items) => `<div class="gl-radio-list">${items.map(it=>`<div class="gl-radio-item">${it}</div>`).join('')}</div>`;
+      const glCond  = (inner) => `<div class="gl-cond">${inner}</div>`;
+      const glQ     = (label, body, tip='') => `<div class="gl-qblock"><div class="gl-qlabel">${label}${tip?'<span class="gl-info">i</span>':''}</div>${body}</div>`;
+      const glSep   = () => `<hr class="gl-divider">`;
+
+      // ---- Step 1: UW Questions (full GL form) ----
       const uwqContent = `
         <div style="border:1px solid var(--border-soft);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column">
           ${knockoutAcc}
-          <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-4);border-top:1px solid var(--border-soft)">
-            <div style="font-size:14px;color:var(--tertiary);font-weight:500">Has your business had any insurance claims in the past 3 years? <span style="font-weight:400">(answer this)</span></div>
-            ${radioYN('claims', claims)}
+          <div style="padding:var(--sp-4);border-top:1px solid var(--border-soft);display:flex;flex-direction:column;gap:var(--sp-4)">
+            ${glYN('claims','Has your business had any insurance claims in the past 3 years?',`
+              ${glQ('How many insurance claims in the past 3 years?', glRadioList(['1','2','3','4','5','6','7','8','9','10+']))}
+              ${glYN('claims50k','Have you had any insurance claim greater than $50,000 in the past 3 years?','','i')}
+            `)}
+            ${glYN('delivery','Does your restaurant offer in-house delivery service (not including third-party apps)?',
+              glYN('deliveryAuto','Do you have an active commercial auto policy to cover your in-house delivery?')
+            )}
+            ${glQ('Annual Alcohol Sales Percentage',`<div class="uwq-pct-row"><input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct??0}"/><span class="uwq-pct-unit">%</span></div>`)}
           </div>
-          <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-4);border-top:1px solid var(--border-soft)">
-            <div style="font-size:14px;color:var(--fg)">Does your restaurant offer delivery or off-site catering?</div>
-            ${radioYN('delivery', delivery)}
-          </div>
-          <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-4);border-top:1px solid var(--border-soft)">
-            <div style="font-size:14px;color:var(--fg)">Annual Alcohol Sales Percentage</div>
-            <div class="uwq-pct-row">
-              <input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct??0}"/>
-              <span class="uwq-pct-unit">%</span>
-            </div>
-          </div>
-        </div>
-`;
-
-      const optContent = `
-        <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
-          ${OPT_COVERAGES.map(oc => {
-            const on = State.optCovSelected.has(oc.id);
-            return `<div class="cov-opt-item">
-              <div class="cov-opt-chk${on?' is-on':''}" data-opt-cov="${oc.id}">
-                ${on?'<i class="ph ph-check" style="font-size:11px;color:#fff"></i>':''}
-              </div>
-              <span class="cov-opt-label">${oc.label}</span>
-              <div class="cov-opt-add"><i class="ph ph-plus" style="font-size:13px"></i></div>
-            </div>`;
-          }).join('')}
         </div>`;
 
+      // ---- Step 2: Optional Coverages (full GL form) ----
+      const optContent = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+          ${glYN('epl','Employment Practices Liability (EPL) Coverage','','i')}
+          ${glYN('addlIns','Add Additional Insureds to your GL policy (e.g. Landlord, Franchisor, Municipality, Venue)','','i')}
+          ${glYN('hnoa','Hired Auto and Nonowned Auto Liability','','i')}
+          ${glYN('waiverSpec','Waiver of Subrogation - Specified Named / Organization','','i')}
+          ${glYN('mechAmusement','Mechanically Operated Amusement Device Exclusion')}
+          ${glYN('excessMed','Excess Medical Payments - Participants',
+            glQ('Excess Medical Payments Limit', glRadioList(['$5,000','$10,000','$15,000','$25,000']))
+          )}
+          ${glYN('cannabis','Cannabis Exclusion with Hemp Exception')}
+          ${glYN('tenantLegal','Tenant\'s Legal Liability Coverage','','i')}
+          ${glYN('addlInsControl','Additional Insured - Controlling Interest coverage')}
+          ${glYN('addlInsCoOwner','Additional Insured - Co-Owner of Insured Premises coverage')}
+          ${glYN('addlInsLessor','Additional Insured - Lessor of Leased Equipment', glTA('Lessor of Leased Equipment - Name Of Additional Insured Person(s) Or Organization(s)'))}
+          ${glYN('namedInsureds','Add Named Insureds','','i')}
+          ${glYN('injuryWorker','Exclusion - Injury to Worker')}
+          ${glYN('waiverGen','Waiver of Subrogation')}
+          ${glYN('pfas','Exclusion - Perfluoroalkyl and Polyfluoroalkyl Substances (PFAS)')}
+          ${glYN('persAdvExcl','Personal and Advertising Injury Exclusion Option')}
+          ${glYN('addlInsLand','Additional Insured - Owners Or Other Interests From Whom Land Has Been Leased (Blanket)')}
+          ${glYN('playground','Playground Facility Exclusion')}
+          ${glYN('mgrLessors','Additional Insured - Managers Or Lessors Of Premises (Blanket)',
+            glTA('Designation of Premises (leave blank for blanket coverage)')
+          )}
+          ${glYN('foodTruck','Is your primary operation a motorized food truck or mobile restaurant/food trailer?')}
+          ${glYN('grantorFranchise','Additional Insured - Grantor of Franchise coverage')}
+          ${glYN('medMalpractice','Exclusion - Medical Malpractice')}
+          ${glYN('participantExcl','Add Participant vs Participant Exclusion')}
+          ${glYN('selectedActivities','Add Selected Activities Exclusion',
+            glYN('excludeAllActivities','Exclude All Listed Activities')
+          )}
+          ${glYN('sexualAbuse','Sexual Abuse and Sexual Molestation Exclusion')}
+          ${glYN('blanketAddlIns','Blanket Additional Insured by Contract coverage','','i')}
+          ${glYN('cancelNonrenew','Cancellation or Nonrenewal by Us - Notification to Designated Entity',
+            glYN('manuscriptedEnt','Designated Entities - Toggle Manuscripted Entities','','i')
+          )}
+          ${glYN('blanketPrimary','Blanket Primary and Non-Contributory Coverage')}
+          ${glYN('medExpExcl','Medical Expenses Exclusion Option')}
+          ${glYN('stateGov','Additional Insured - State Gov Agency Subdivision Political Subdivision (Blanket)')}
+          ${glYN('commDisease','Attach Communicable Disease Exclusion Flag')}
+          ${glYN('watercraft','Watercraft Liability')}
+          ${glYN('customExcl','Attach Custom Exclusion - Designated Operations Flag',
+            glTA('Description for Exclusion - Custom Designated Operations')
+          )}
+          ${glYN('incidentalMed','Incidental Medical Malpractice')}
+          ${glYN('profServices','Attach Exclusion - Designated Professional Services',
+            glTA('Description for Exclusion - Designated Professional Services')
+          )}
+          ${glYN('constructionExcl','Attach Construction Exclusions Flag')}
+          ${glYN('ebl','Employee Benefits Liability Coverage','','i')}
+          ${glYN('priorActs','Prior Acts Coverage - Employee Benefits Liability','','i')}
+          ${glYN('limitBizDesc','Limitation of Coverage to Business Description')}
+          ${glYN('excldProducts','Exclusion - Designated Products')}
+          ${glYN('excldDiscrim','Exclusion - Discrimination')}
+          ${glYN('pollutionFire','Exclusion Pollution Hostile Fire Exception')}
+          ${glQ('How many locations does your business have?', glRadioList(['1','2','3','4','5','6','7','8','9','10+']))}
+          ${glYN('sam','Sexual Abuse & Molestation (SAM) Coverage')}
+          ${glYN('vendors','Additional Insured - Vendors',
+            glTA('Vendors - Name Of Additional Insured Person(s) Or Organization(s)')
+          )}
+          ${glYN('electronicMedia','Electronic Media Liability','','i')}
+          ${glYN('umbrella','Does your landlord require an umbrella policy?','','i')}
+          ${glQ('Describe your Business', glInput('Business description'))}
+        </div>`;
+
+      // ---- Step 3: Hidden Fields (full GL form) ----
       const hiddenContent = `
-        <div style="font-size:14px;color:var(--fg-muted);padding:var(--sp-5) 0">
-          No hidden fields configured for this coverage type.
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+          ${glYN('franchise','Is your business a franchise?')}
+          ${glYN('multiLocation','Do you have more than one business location?')}
+          ${glYN('aircraft','Do you own or operate any aircraft or watercraft (including drones)?')}
+          ${glYN('limPremises','Limitation of Coverage to Designated Premises, Project or Operation',
+            glYN('manuscriptedPremises','Designated Premises - Toggle Manuscripted Premises','','i')
+          )}
+          ${glYN('deductibleLiab','Deductible Liability Insurance',
+            glQ('Property Damage Liability Deductible', glRadioList(['$500','$1,000','$2,500','$5,000','$10,000','$15,000','$25,000','$50,000','$100,000','$150,000']))
+          )}
+          ${glYN('multiState','Do you have locations at multiple states?')}
+          ${glYN('lraro','Toggle for LRARO Rating ($100K+ Premium ONLY)',
+            glInput('LRARO Rate Multiplier')
+          )}
+          ${glYN('isRenewal','Is this a Renewal Application?')}
+          ${glYN('bikeDelivery','Do you perform any deliveries via bicycle, scooter or non-automobile transportation?')}
+          ${glYN('tenantConstruct','Tenant Business Under Construction Policy')}
+          ${glYN('manualOverride','Manual Underwriting Override - Policy Level')}
+          ${glQ('Notes from Underwriting Review', glTA('Enter notes...'))}
+          ${glQ('Renewal Workflow Status', glRadioList([
+            'Not Released - Pending Documents',
+            'Not Released – Review in Progress',
+            'Renewal Approved',
+            'Renewal Denied'
+          ]))}
         </div>`;
 
       const activeName = COV_TYPES.find(t => t.id === State.activeCovType)?.label || 'General Liability';
@@ -6553,6 +6668,21 @@
           if (!rec.uwq) rec.uwq = {};
           rec.uwq[input.dataset.uwqRadio] = input.value;
           render();
+        };
+      });
+      // GL form Yes/No buttons
+      $$('[data-gl-yn]').forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.dataset.glYn;
+          State.glForm[id] = btn.dataset.glVal;
+          render();
+        };
+      });
+      // GL form radio list items
+      $$('.gl-radio-item').forEach(item => {
+        item.onclick = () => {
+          item.closest('.gl-radio-list').querySelectorAll('.gl-radio-item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
         };
       });
 
