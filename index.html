@@ -1715,7 +1715,8 @@
     .ujc-row.empty { border-bottom: 0; }
     /* Coverage tab layout */
     .cov-shell { display:flex; gap:0; }
-    .cov-sidebar { width:200px; flex-shrink:0; border-right:1px solid var(--border-soft); padding:var(--sp-4); display:flex; flex-direction:column; gap:var(--sp-2); }
+    .cov-sidebar { width:204px; flex-shrink:0; border-right:1px solid var(--border-soft); padding:var(--sp-4); display:flex; flex-direction:column; gap:var(--sp-2); }
+    .cov-type-divider { height:1px; background:var(--border-soft); margin:var(--sp-1) 0; }
     .cov-type-btn { display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-2) var(--sp-3); border:1px solid var(--border); border-radius:var(--r-md); background:var(--surface); font-size:13px; color:var(--fg); cursor:pointer; text-align:left; width:100%; transition:border-color .15s, background .15s; }
     .cov-type-btn.is-on { border-color:var(--tertiary); background:var(--err-bg); }
     .cov-type-btn .cov-chk { width:16px; height:16px; border:1.5px solid var(--border); border-radius:3px; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
@@ -2689,9 +2690,9 @@
       },
       protoUser: 'hunt',
       userMenuOpen: false,
-      coverageStep: 'uwq',           // 'uwq' | 'optional' | 'hidden'
-      coverageTypes: new Set(['gl']), // selected coverage types
-      activeCovType: 'gl',           // currently viewed coverage type
+      coverageStep: 'uwq',                    // 'uwq' | 'optional' | 'hidden'
+      coverageTypes: new Set(['gl','prop']),  // selected coverage types
+      activeCovType: 'gl',                    // currently viewed coverage type
       optCovSelected: new Set(),      // selected optional coverages
       uwqOpen: new Set(['knockouts','claims','delivery','alcohol']), // open question accordions
       bindModal: { open: false, plan: 'annual', method: 'card' },
@@ -5421,26 +5422,26 @@
         </div>`;
 
       // Sidebar — selected types are nav items, unselected show as addable
+      const addedTypes    = COV_TYPES.filter(t => State.coverageTypes.has(t.id));
+      const unaddedTypes = COV_TYPES.filter(t => !State.coverageTypes.has(t.id));
       const sidebar = `
         <div class="cov-sidebar">
-          ${COV_TYPES.map(t => {
-            const added  = State.coverageTypes.has(t.id);
+          ${addedTypes.map(t => {
             const active = State.activeCovType === t.id;
-            if (added) {
-              return `<button class="cov-type-btn is-on${active?' is-active':''}" data-cov-nav="${t.id}"
-                style="justify-content:flex-start;gap:var(--sp-2);border-color:${active?'var(--tertiary)':'var(--border)'};background:${active?'var(--err-bg)':'var(--surface)'}">
-                <i class="ph ${t.icon}" style="font-size:16px;flex-shrink:0;color:var(--tertiary)"></i>
-                <span style="flex:1;text-align:left;font-weight:${active?'500':'400'}">${t.label}</span>
-                <span style="width:8px;height:8px;border-radius:50%;background:var(--err);flex-shrink:0"></span>
-              </button>`;
-            } else {
-              return `<button class="cov-type-btn" data-cov-add="${t.id}"
-                style="justify-content:flex-start;gap:var(--sp-2);color:var(--fg-muted)">
-                <i class="ph ph-plus-circle" style="font-size:16px;flex-shrink:0;color:var(--fg-muted)"></i>
-                <span style="flex:1;text-align:left">${t.label}</span>
-              </button>`;
-            }
+            return `<button class="cov-type-btn is-on" data-cov-nav="${t.id}"
+              style="justify-content:flex-start;gap:var(--sp-2);border-color:${active?'var(--tertiary)':'var(--border-soft)'};background:${active?'var(--err-bg)':'var(--surface)'}">
+              <i class="ph ${t.icon}" style="font-size:16px;flex-shrink:0;color:var(--tertiary)"></i>
+              <span style="flex:1;text-align:left;font-weight:${active?'600':'400'};color:var(--fg)">${t.label}</span>
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--err);flex-shrink:0"></span>
+            </button>`;
           }).join('')}
+          ${addedTypes.length > 0 && unaddedTypes.length > 0 ? '<div class="cov-type-divider"></div>' : ''}
+          ${unaddedTypes.map(t => `
+            <button class="cov-type-btn" data-cov-add="${t.id}"
+              style="justify-content:flex-start;gap:var(--sp-2)">
+              <i class="ph ph-plus-circle" style="font-size:16px;flex-shrink:0;color:var(--fg-muted)"></i>
+              <span style="flex:1;text-align:left;color:var(--fg-muted)">${t.label}</span>
+            </button>`).join('')}
         </div>`;
 
       // 3-step progress bar
