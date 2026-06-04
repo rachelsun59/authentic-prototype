@@ -1672,21 +1672,21 @@
     /* Toggle switch */
     .toggle-sw {
       position: relative; flex-shrink: 0;
-      width: 40px; height: 22px;
+      width: 32px; height: 18px;
       background: var(--border); border: none;
-      border-radius: 11px; cursor: pointer;
+      border-radius: 9px; cursor: pointer;
       transition: background 0.15s;
       padding: 0;
     }
     .toggle-sw.is-on { background: var(--err); }
     .toggle-sw::after {
       content: ''; position: absolute;
-      width: 16px; height: 16px; background: #fff;
+      width: 12px; height: 12px; background: #fff;
       border-radius: 50%; top: 3px; left: 3px;
       transition: transform 0.15s;
       box-shadow: 0 1px 3px rgba(0,0,0,.2);
     }
-    .toggle-sw.is-on::after { transform: translateX(18px); }
+    .toggle-sw.is-on::after { transform: translateX(14px); }
     /* Optional coverages radio rows */
     .opt-cov-block { padding: var(--sp-4); border-bottom: 1px solid var(--border-soft); display: flex; flex-direction: column; gap: var(--sp-3); }
     .opt-cov-block:last-child { border-bottom: 0; }
