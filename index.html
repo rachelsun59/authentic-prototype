@@ -5421,27 +5421,19 @@
           <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="no"  ${val==='no' ?'checked':''}/><span class="opt-radio-dot"></span>No</label>
         </div>`;
 
-      // Sidebar — selected types are nav items, unselected show as addable
-      const addedTypes    = COV_TYPES.filter(t => State.coverageTypes.has(t.id));
-      const unaddedTypes = COV_TYPES.filter(t => !State.coverageTypes.has(t.id));
+      // Sidebar — all coverage types shown with toggle switches
       const sidebar = `
-        <div class="cov-sidebar">
-          ${addedTypes.map(t => {
-            const active = State.activeCovType === t.id;
-            return `<button class="cov-type-btn is-on" data-cov-nav="${t.id}"
-              style="justify-content:flex-start;gap:var(--sp-2);border-color:${active?'var(--tertiary)':'var(--border-soft)'};background:${active?'var(--err-bg)':'var(--surface)'}">
-              <i class="ph ${t.icon}" style="font-size:16px;flex-shrink:0;color:var(--tertiary)"></i>
-              <span style="flex:1;text-align:left;font-weight:${active?'600':'400'};color:var(--fg)">${t.label}</span>
-              <span style="width:8px;height:8px;border-radius:50%;background:var(--err);flex-shrink:0"></span>
-            </button>`;
+        <div class="cov-sidebar" style="gap:var(--sp-1)">
+          ${COV_TYPES.map(t => {
+            const on     = State.coverageTypes.has(t.id);
+            const active = on && State.activeCovType === t.id;
+            const isGL   = t.id === 'gl';
+            return `<div class="cov-type-row${active?' is-active':''}" style="display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-md);cursor:${on?'pointer':'default'};background:${active?'var(--err-bg)':'transparent'}">
+              <i class="ph ${on?t.icon:'ph-circle-dashed'}" style="font-size:16px;flex-shrink:0;color:${on?'var(--tertiary)':'var(--fg-muted)'}" ${on?`data-cov-nav="${t.id}"`:''}></i>
+              <span style="flex:1;font-size:13px;font-weight:${active?'600':'400'};color:${on?'var(--fg)':'var(--fg-muted)'}" ${on?`data-cov-nav="${t.id}"`:''}>${t.label}</span>
+              <button class="toggle-sw${on?' is-on':''}" ${isGL?'disabled title="Required"':''} data-cov-toggle="${t.id}" style="flex-shrink:0;${isGL?'opacity:.5;cursor:not-allowed':''}"></button>
+            </div>`;
           }).join('')}
-          ${addedTypes.length > 0 && unaddedTypes.length > 0 ? '<div class="cov-type-divider"></div>' : ''}
-          ${unaddedTypes.map(t => `
-            <button class="cov-type-btn" data-cov-add="${t.id}"
-              style="justify-content:flex-start;gap:var(--sp-2)">
-              <i class="ph ph-plus-circle" style="font-size:16px;flex-shrink:0;color:var(--fg-muted)"></i>
-              <span style="flex:1;text-align:left;color:var(--fg-muted)">${t.label}</span>
-            </button>`).join('')}
         </div>`;
 
       // 3-step progress bar
@@ -6469,21 +6461,31 @@
           triggerAutoSave();
         };
       });
-      // Coverage sidebar — navigate to an added coverage type
-      $$('[data-cov-nav]').forEach(btn => {
-        btn.onclick = () => {
-          State.activeCovType = btn.dataset.covNav;
+      // Coverage sidebar — navigate by clicking label/icon
+      $$('[data-cov-nav]').forEach(el => {
+        el.onclick = () => {
+          State.activeCovType = el.dataset.covNav;
           State.coverageStep = 'uwq';
           render();
         };
       });
-      // Coverage sidebar — add a new coverage type and navigate to it
-      $$('[data-cov-add]').forEach(btn => {
-        btn.onclick = () => {
-          const id = btn.dataset.covAdd;
-          State.coverageTypes.add(id);
-          State.activeCovType = id;
-          State.coverageStep = 'uwq';
+      // Coverage sidebar — toggle switch adds/removes coverage type
+      $$('[data-cov-toggle]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.covToggle;
+          if (id === 'gl') return; // GL can't be removed
+          if (State.coverageTypes.has(id)) {
+            State.coverageTypes.delete(id);
+            if (State.activeCovType === id) {
+              State.activeCovType = 'gl';
+              State.coverageStep = 'uwq';
+            }
+          } else {
+            State.coverageTypes.add(id);
+            State.activeCovType = id;
+            State.coverageStep = 'uwq';
+          }
           render();
         };
       });
