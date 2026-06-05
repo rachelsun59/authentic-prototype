@@ -1856,6 +1856,15 @@
       padding:var(--sp-2) var(--sp-3); white-space:nowrap; pointer-events:none;
     }
     .exp-flag-tip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--surface); }
+    /* Coverage multi-select dropdown */
+    .cov-drop-wrap { position:relative; width:100%; height:100%; }
+    .cov-drop-btn { width:100%; height:100%; border:0; background:transparent; text-align:left; padding:var(--sp-2) var(--sp-3); font:inherit; font-size:13px; color:var(--fg); cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:4px; }
+    .cov-drop-btn:hover { background:var(--bg-accent); }
+    .cov-drop-menu { position:absolute; top:100%; left:0; z-index:300; min-width:180px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); box-shadow:0 4px 12px rgba(0,0,0,.1); overflow:hidden; }
+    .cov-drop-opt { display:flex; align-items:center; gap:var(--sp-2); padding:8px 12px; font-size:13px; color:var(--fg); cursor:pointer; border-bottom:1px solid var(--border-soft); }
+    .cov-drop-opt:last-child { border-bottom:0; }
+    .cov-drop-opt:hover { background:var(--bg-accent); }
+    .cov-drop-opt input[type="checkbox"] { accent-color:var(--tertiary); flex-shrink:0; }
     .exp-flag-tip__title { font-size:13px; font-weight:500; color:var(--fg); }
     .exp-flag-tip__sub   { font-size:12px; color:var(--fg-muted); margin-top:2px; }
     .exp-flag:hover .exp-flag-tip { display:block; }
@@ -2696,6 +2705,7 @@
       expClassOpen: new Set(),                   // expanded class-code accordions
       expGroupBy:   'state',                     // 'state' | 'cov'
       expSelectedRows: new Set(),                // selected row indices
+      expCovDropOpen: null,                      // row index with open coverage dropdown
       hiddenFieldModal: { open: false, group: null },
       // Underwriter Decision modal — opened from the "Make Decision" button
       uwDecision: { open: false, mode: 'approve', declineReason: '', notes: '' },
@@ -5195,16 +5205,41 @@
           <input class="cell-input" type="text" inputmode="decimal" data-exp-row="${i}" data-exp-field="${field}"
             value="${fmtVal(val)}"/>
         </td>`;
-      // Dropdown cell helper
-      const COV_OPTIONS    = ['GL','GL / LL','GL / HNOA','GL / LL / HNOA','LL','HNOA'];
-      const LIMITS_OPTIONS = ['1M / 2M','2M / 4M','500K / 1M','3M / 6M','5M / 10M','—'];
-      const CLASS_OPTIONS  = [classCode || 'Restaurant - Fast Food or Quick Service','Restaurant - Dine-in','Restaurant - Casual','Restaurant - Fine Dining','Restaurant - Fast Casual','Restaurant - Food Truck'];
       const cSelect = (i, field, val, options) => `
         <td class="cell-edit" style="padding:0">
           <select class="cell-input cell-text" data-exp-row="${i}" data-exp-field="${field}" style="width:100%;height:100%;border:0;background:transparent;cursor:pointer;padding:var(--sp-2) var(--sp-3)">
             ${options.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}
           </select>
         </td>`;
+
+      // Multi-select coverage dropdown
+      const COV_MULTI_OPTS = [
+        { id:'GL',   label:'General Liability' },
+        { id:'LL',   label:'Liquor Liability'  },
+        { id:'Prop', label:'Property'           },
+      ];
+      const cCovMulti = (i, r) => {
+        const selected = r.covArr || ['GL'];
+        const open = State.expCovDropOpen === i;
+        const label = selected.join(' / ') || 'GL';
+        return `
+          <td class="cell-edit" style="padding:0;position:relative">
+            <div class="cov-drop-wrap">
+              <button class="cov-drop-btn" data-cov-drop="${i}">
+                <span>${label}</span>
+                <i class="ph ph-caret-down" style="font-size:10px;color:var(--fg-muted);flex-shrink:0"></i>
+              </button>
+              ${open ? `
+              <div class="cov-drop-menu">
+                ${COV_MULTI_OPTS.map(opt => `
+                  <label class="cov-drop-opt">
+                    <input type="checkbox" data-cov-chk="${i}" data-cov-val="${opt.id}" ${selected.includes(opt.id)?'checked':''} ${opt.id==='GL'?'disabled':''}/>
+                    ${opt.label}
+                  </label>`).join('')}
+              </div>` : ''}
+            </div>
+          </td>`;
+      };
       const cLoc = (i, val) => {
         const loc = val == null ? '' : String(val);
         const invalid = loc.trim().length > 0 && !expLocIsValid(loc);
@@ -5224,6 +5259,8 @@
 
       // Group rows by state or class code (business type), preserving global row index
       const classCode = BDE.quote?.basicInfo?.businessType || 'Restaurant - Fast Food or Quick Service';
+      const LIMITS_OPTIONS = ['1M / 2M','4M / 6M'];
+      const CLASS_OPTIONS  = [classCode,'Restaurant - Dine-in','Restaurant - Casual','Restaurant - Fine Dining','Restaurant - Fast Casual','Restaurant - Food Truck'];
       const grouped = {};
       rows.forEach((r, i) => {
         const key = groupBy === 'cov' ? (r.classCode || classCode) : r.st;
@@ -5276,9 +5313,9 @@
                   ${cNum (i, 'sales', r.sales, true)}
                   ${cNum (i, 'sqft',  r.sqft)}
                   ${cNum (i, 'emp',   r.emp)}
-                  ${cSelect(i, 'cov',       r.cov || 'GL',                   COV_OPTIONS)}
-                  ${cSelect(i, 'classCode', r.classCode || classCode,          CLASS_OPTIONS)}
-                  ${cSelect(i, 'lim1',      r.lim1 || '1M / 2M',              LIMITS_OPTIONS)}
+                  ${cCovMulti(i, r)}
+                  ${cSelect(i, 'classCode', r.classCode || classCode, CLASS_OPTIONS)}
+                  ${cSelect(i, 'lim1',      r.lim1 || '1M / 2M',    LIMITS_OPTIONS)}
                   ${cNum (i, 'ded',   r.ded)}
                   ${cNum (i, 'prem',  r.prem, true)}
                   <td style="text-align:center;padding:0 4px">
@@ -6205,6 +6242,41 @@
           triggerAutoSave();
         };
       });
+      // Coverage multi-select dropdown toggle
+      $$('[data-cov-drop]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const i = Number(btn.dataset.covDrop);
+          State.expCovDropOpen = State.expCovDropOpen === i ? null : i;
+          render();
+        };
+      });
+      // Coverage multi-select checkbox changes
+      $$('[data-cov-chk]').forEach(chk => {
+        chk.onchange = (e) => {
+          e.stopPropagation();
+          const i = Number(chk.dataset.covChk);
+          const val = chk.dataset.covVal;
+          let arr = EXPOSURE_ROWS[i].covArr || ['GL'];
+          if (chk.checked) { if (!arr.includes(val)) arr = [...arr, val]; }
+          else { arr = arr.filter(v => v !== val); }
+          if (!arr.includes('GL')) arr = ['GL', ...arr]; // GL always included
+          EXPOSURE_ROWS[i].covArr = arr;
+          triggerAutoSave();
+          render();
+        };
+      });
+      // Close coverage dropdown on outside click
+      if (State.expCovDropOpen !== null) {
+        const closeCovDrop = (e) => {
+          if (!e.target.closest('.cov-drop-wrap')) {
+            State.expCovDropOpen = null;
+            document.removeEventListener('mousedown', closeCovDrop, true);
+            render();
+          }
+        };
+        setTimeout(() => document.addEventListener('mousedown', closeCovDrop, true), 0);
+      }
       $$('input.cell-input[data-exp-row]').forEach(inp => {
         inp.oninput = () => {
           const i = Number(inp.dataset.expRow);
