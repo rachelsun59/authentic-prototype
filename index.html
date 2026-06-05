@@ -5195,6 +5195,16 @@
           <input class="cell-input" type="text" inputmode="decimal" data-exp-row="${i}" data-exp-field="${field}"
             value="${fmtVal(val)}"/>
         </td>`;
+      // Dropdown cell helper
+      const COV_OPTIONS    = ['GL','GL / LL','GL / HNOA','GL / LL / HNOA','LL','HNOA'];
+      const LIMITS_OPTIONS = ['1M / 2M','2M / 4M','500K / 1M','3M / 6M','5M / 10M','—'];
+      const CLASS_OPTIONS  = [classCode || 'Restaurant - Fast Food or Quick Service','Restaurant - Dine-in','Restaurant - Casual','Restaurant - Fine Dining','Restaurant - Fast Casual','Restaurant - Food Truck'];
+      const cSelect = (i, field, val, options) => `
+        <td class="cell-edit" style="padding:0">
+          <select class="cell-input cell-text" data-exp-row="${i}" data-exp-field="${field}" style="width:100%;height:100%;border:0;background:transparent;cursor:pointer;padding:var(--sp-2) var(--sp-3)">
+            ${options.map(o => `<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </td>`;
       const cLoc = (i, val) => {
         const loc = val == null ? '' : String(val);
         const invalid = loc.trim().length > 0 && !expLocIsValid(loc);
@@ -5266,9 +5276,9 @@
                   ${cNum (i, 'sales', r.sales, true)}
                   ${cNum (i, 'sqft',  r.sqft)}
                   ${cNum (i, 'emp',   r.emp)}
-                  ${cText(i, 'cov',      r.cov)}
-                  ${cText(i, 'classCode', r.classCode || classCode)}
-                  ${cText(i, 'lim1',     r.lim1 || '')}
+                  ${cSelect(i, 'cov',       r.cov || 'GL',                   COV_OPTIONS)}
+                  ${cSelect(i, 'classCode', r.classCode || classCode,          CLASS_OPTIONS)}
+                  ${cSelect(i, 'lim1',      r.lim1 || '1M / 2M',              LIMITS_OPTIONS)}
                   ${cNum (i, 'ded',   r.ded)}
                   ${cNum (i, 'prem',  r.prem, true)}
                   <td style="text-align:center;padding:0 4px">
@@ -6186,6 +6196,15 @@
       });
       // Exposure table — editable cells
       const EXP_NUM_FIELDS = new Set(['sales','sqft','emp','prem','ded']);
+      // Exposure select dropdowns
+      $$('select.cell-input[data-exp-row]').forEach(sel => {
+        sel.onchange = () => {
+          const i = Number(sel.dataset.expRow);
+          const f = sel.dataset.expField;
+          EXPOSURE_ROWS[i][f] = sel.value;
+          triggerAutoSave();
+        };
+      });
       $$('input.cell-input[data-exp-row]').forEach(inp => {
         inp.oninput = () => {
           const i = Number(inp.dataset.expRow);
