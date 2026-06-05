@@ -2706,6 +2706,10 @@
       expGroupBy:   'state',                     // 'state' | 'cov'
       expSelectedRows: new Set(),                // selected row indices
       expCovDropOpen: null,                      // row index with open coverage dropdown
+      expFilters: { st:[], cov:[], classCode:[] }, // exposure column filters
+      expFilterOpen: null,                       // which column filter popover is open
+      claimFilters: { ay:[], src:[] },           // claims column filters
+      claimFilterOpen: null,                     // which column filter popover is open
       hiddenFieldModal: { open: false, group: null },
       // Underwriter Decision modal — opened from the "Make Decision" button
       uwDecision: { open: false, mode: 'approve', declineReason: '', notes: '' },
@@ -4836,8 +4840,15 @@
         </td>
       `;
       const sel = State.selectedClaims;
-      const allChecked = rec.claims.length > 0 && rec.claims.every((_, i) => sel.has(i));
-      const rows = rec.claims.map((c, i) => `
+      const cf = State.claimFilters;
+      const filteredClaims = rec.claims.filter(c => {
+        if (cf.ay.length  && !cf.ay.includes(String(c.ay)))  return false;
+        if (cf.src.length && !cf.src.includes(c.src || ''))  return false;
+        return true;
+      });
+      const claimUniqueVals = (field) => [...new Set(rec.claims.map(c => String(c[field] || '')).filter(Boolean))].sort();
+      const allChecked = filteredClaims.length > 0 && filteredClaims.every((_, i) => sel.has(i));
+      const rows = filteredClaims.map((c, i) => `
         <tr class="${sel.has(i) ? 'row-selected' : ''}">
           <td class="gut">
             <input type="checkbox" class="row-chk" data-bde-chk-claim="${i}" ${sel.has(i) ? 'checked' : ''} title="Select row"/>
@@ -4876,13 +4887,13 @@
                   <th class="gut"><input type="checkbox" id="bde-chk-all" ${allChecked ? 'checked' : ''} title="Select all"/></th>
                   <th>Loss Date</th>
                   <th>Valuation Date<br><span style="color:var(--fg-muted);font-weight:400">optional</span></th>
-                  <th>Accident<br>Year</th>
+                  <th>Accident Year ${renderColFilterPopover('claim', claimUniqueVals('ay'), cf, 'ay')}</th>
                   <th>Location</th>
                   <th>Event description</th>
                   <th class="r">Case Incurred ($)<br>(Gross)</th>
                   <th class="r">Net Unlimited ($)<br>(after ded.)</th>
                   <th class="r">Net @$100K<br>(ded. + cap)</th>
-                  <th>Source</th>
+                  <th>Source ${renderColFilterPopover('claim', claimUniqueVals('src'), cf, 'src')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -5187,6 +5198,29 @@
       return s.includes(',') && /\d/.test(s) && /\b[A-Z]{2}\b/.test(s) && /\b\d{5}\b/.test(s);
     }
 
+    function renderColFilterPopover(col, values, activeFilters, dataAttr) {
+      const isOpen = (col === 'exp' ? State.expFilterOpen : State.claimFilterOpen) === dataAttr;
+      const active = activeFilters[dataAttr] || [];
+      const hasActive = active.length > 0;
+      return `
+        <div style="position:relative;display:inline-flex;align-items:center">
+          <button data-col-filter="${col}" data-col-field="${dataAttr}" title="Filter"
+            style="background:transparent;border:0;padding:2px 3px;cursor:pointer;border-radius:var(--r-sm);color:${hasActive?'var(--tertiary)':'var(--fg-muted)'}">
+            <i class="ph ph-funnel${hasActive?'-fill':''}" style="font-size:12px"></i>
+          </button>
+          ${isOpen ? `
+          <div class="th-popover" onclick="event.stopPropagation()" style="min-width:160px">
+            <div class="pop-section">Filter</div>
+            ${values.map(v => `
+              <button class="pop-row${active.includes(v)?' checked':''}" data-filter-val="${v}" data-filter-col="${col}" data-filter-field="${dataAttr}">
+                <span class="pop-check"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg></span>
+                <span class="label">${v}</span>
+              </button>`).join('')}
+            ${active.length > 0 ? `<button class="pop-row" data-filter-clear="${col}" data-filter-field="${dataAttr}" style="color:var(--err)">Clear filter</button>` : ''}
+          </div>` : ''}
+        </div>`;
+    }
+
     function renderExposuresTab(rec) {
       const rows = EXPOSURE_ROWS;
 
@@ -5261,8 +5295,28 @@
       const classCode = BDE.quote?.basicInfo?.businessType || 'Restaurant - Fast Food or Quick Service';
       const LIMITS_OPTIONS = ['1M / 2M','4M / 6M'];
       const CLASS_OPTIONS  = [classCode,'Restaurant - Dine-in','Restaurant - Casual','Restaurant - Fine Dining','Restaurant - Fast Casual','Restaurant - Food Truck'];
+
+      // Apply column filters
+      const ef = State.expFilters;
+      const filteredRows = rows.filter((r, i) => {
+        if (ef.st.length       && !ef.st.includes(r.st)) return false;
+        const covStr = (r.covArr || ['GL']).join(' / ');
+        if (ef.cov.length      && !ef.cov.some(v => covStr.includes(v))) return false;
+        const cc = r.classCode || classCode;
+        if (ef.classCode.length && !ef.classCode.includes(cc)) return false;
+        return true;
+      });
+
+      // Unique values for filter popovers
+      const uniqueVals = (field) => [...new Set(rows.map(r => {
+        if (field === 'cov') return (r.covArr || ['GL']).join(' / ');
+        if (field === 'classCode') return r.classCode || classCode;
+        return r[field];
+      }).filter(Boolean))].sort();
+
       const grouped = {};
-      rows.forEach((r, i) => {
+      filteredRows.forEach((r) => {
+        const i = rows.indexOf(r);
         const key = groupBy === 'cov' ? (r.classCode || classCode) : r.st;
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push({ r, i });
@@ -5283,8 +5337,8 @@
                 <th class="r" style="min-width:120px">Annual Sales ($)</th>
                 <th class="r" style="min-width:110px">Sqft</th>
                 <th class="r" style="min-width:90px">Employees</th>
-                <th style="min-width:100px">Coverage</th>
-                <th style="min-width:200px">Class Code</th>
+                <th style="min-width:100px">Coverage ${renderColFilterPopover('exp', uniqueVals('cov'), ef, 'cov')}</th>
+                <th style="min-width:200px">Class Code ${renderColFilterPopover('exp', uniqueVals('classCode'), ef, 'classCode')}</th>
                 <th style="min-width:120px">Limits</th>
                 <th class="r" style="min-width:100px">Deductible ($)</th>
                 <th class="r" style="min-width:100px">Premium ($)</th>
@@ -6242,6 +6296,59 @@
           triggerAutoSave();
         };
       });
+      // Column filter popover open/close
+      $$('[data-col-filter]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const col = btn.dataset.colFilter;
+          const field = btn.dataset.colField;
+          if (col === 'exp') {
+            State.expFilterOpen = State.expFilterOpen === field ? null : field;
+            State.claimFilterOpen = null;
+          } else {
+            State.claimFilterOpen = State.claimFilterOpen === field ? null : field;
+            State.expFilterOpen = null;
+          }
+          render();
+        };
+      });
+      // Column filter value toggle
+      $$('[data-filter-val]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const col   = btn.dataset.filterCol;
+          const field = btn.dataset.filterField;
+          const val   = btn.dataset.filterVal;
+          const filters = col === 'exp' ? State.expFilters : State.claimFilters;
+          if (!filters[field]) filters[field] = [];
+          const idx = filters[field].indexOf(val);
+          if (idx >= 0) filters[field].splice(idx, 1);
+          else filters[field].push(val);
+          render();
+        };
+      });
+      // Column filter clear
+      $$('[data-filter-clear]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const col   = btn.dataset.filterClear;
+          const field = btn.dataset.filterField;
+          const filters = col === 'exp' ? State.expFilters : State.claimFilters;
+          filters[field] = [];
+          render();
+        };
+      });
+      // Close filter popovers on outside click
+      if (State.expFilterOpen || State.claimFilterOpen) {
+        const closeFilters = (e) => {
+          if (!e.target.closest('[data-col-filter]') && !e.target.closest('.th-popover')) {
+            State.expFilterOpen = null; State.claimFilterOpen = null;
+            document.removeEventListener('mousedown', closeFilters, true);
+            render();
+          }
+        };
+        setTimeout(() => document.addEventListener('mousedown', closeFilters, true), 0);
+      }
       // Coverage multi-select dropdown toggle
       $$('[data-cov-drop]').forEach(btn => {
         btn.onclick = (e) => {
