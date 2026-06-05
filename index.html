@@ -4209,7 +4209,10 @@
 
             <!-- Info row -->
             <div class="meta-row">
-              <span class="meta-k app-id-tip" title="${rec.fullAppId || rec.appId}">${rec.appId}</span>
+              <span class="meta-pair" style="gap:4px">
+                <span class="meta-k app-id-tip" title="${rec.fullAppId || rec.appId}">${rec.appId}</span>
+                <button id="copy-app-id-btn" data-copy-id="${rec.fullAppId || rec.appId}" title="Copy Application ID" style="background:transparent;border:0;padding:2px 4px;cursor:pointer;color:var(--fg-muted);border-radius:var(--r-sm);line-height:1;font-size:13px"><i class="ph ph-copy"></i></button>
+              </span>
               <span class="meta-vsep"></span>
               <span class="meta-pair rep-picker-wrap">
                 <span class="meta-k">Sales Rep:</span>
@@ -6441,6 +6444,20 @@
       }
 
       // Need-by date picker
+      // Copy Application ID
+      const copyIdBtn = document.getElementById('copy-app-id-btn');
+      if (copyIdBtn) copyIdBtn.onclick = (e) => {
+        e.stopPropagation();
+        const id = copyIdBtn.dataset.copyId;
+        navigator.clipboard.writeText(id).then(() => {
+          copyIdBtn.innerHTML = '<i class="ph ph-check" style="color:var(--ok)"></i>';
+          copyIdBtn.title = 'Copied!';
+          setTimeout(() => {
+            copyIdBtn.innerHTML = '<i class="ph ph-copy"></i>';
+            copyIdBtn.title = 'Copy Application ID';
+          }, 1500);
+        });
+      };
       const needbyBtn = document.querySelector('[data-needby-edit]');
       if (needbyBtn) needbyBtn.onclick = () => { State.needByEditing = true; render(); };
       const needbyInput = document.getElementById('needby-input');
