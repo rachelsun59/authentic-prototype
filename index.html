@@ -2724,9 +2724,9 @@
       },
       protoUser: 'hunt',
       userMenuOpen: false,
-      coverageStep: 'uwq',                    // 'uwq' | 'optional' | 'hidden'
-      coverageTypes: new Set(['gl','prop']),  // selected coverage types
-      activeCovType: 'gl',                    // currently viewed coverage type
+      coverageStep: 'uwq',                       // 'uwq' | 'optional' | 'hidden'
+      coverageTypes: new Set(['gl','prop']),   // selected coverage types
+      activeCovType: 'policy-info',            // currently viewed coverage type
       optCovSelected: new Set(),      // selected optional coverages
       uwqOpen: new Set(['knockouts','claims','delivery','alcohol']), // open question accordions
       glForm: {},  // GL restaurant form field values
@@ -5527,9 +5527,15 @@
           <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="no"  ${val==='no' ?'checked':''}/><span class="opt-radio-dot"></span>No</label>
         </div>`;
 
-      // Sidebar — all coverage types shown with toggle switches
+      // Sidebar — Policy Info fixed nav item + coverage type toggles
+      const policyActive = State.activeCovType === 'policy-info';
       const sidebar = `
         <div class="cov-sidebar" style="gap:var(--sp-1)">
+          <div class="cov-type-row${policyActive?' is-active':''}" style="display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-md);cursor:pointer;background:${policyActive?'var(--err-bg)':'transparent'};border:${policyActive?'1px solid var(--tertiary)':'1px solid transparent'}" data-cov-nav="policy-info">
+            <i class="ph ph-file-text" style="font-size:16px;flex-shrink:0;color:${policyActive?'var(--tertiary)':'var(--fg-muted)'}"></i>
+            <span style="flex:1;font-size:13px;font-weight:${policyActive?'600':'400'};color:${policyActive?'var(--fg)':'var(--fg-muted)'}">Policy Info</span>
+          </div>
+          <div style="height:1px;background:var(--border-soft);margin:var(--sp-1) 0"></div>
           ${COV_TYPES.map(t => {
             const on     = State.coverageTypes.has(t.id);
             const active = on && State.activeCovType === t.id;
@@ -5774,12 +5780,17 @@
           <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Competing/Expiring Premium</span><input type="text" value="${(BDE.indication.competing||0).toLocaleString('en-US')}"/></div></div>
           <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Deductible per Occurrence</span><select id="bde-deductible-cov" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%">${BDE_DEDUCTIBLE_OPTS.map(v=>`<option value="${v}" ${Number(BDE.indication.deductible)===v?'selected':''}>${v.toLocaleString('en-US')}</option>`).join('')}</select></div></div>
         </div>`);
-      const infoSections = isGL ? `<div class="bde-sections" style="margin-bottom:var(--sp-4)"><div class="section-row">${basicInfoTop}${polInfoTop}</div></div>` : '';
-      const body = isGL ? infoSections + (step === 'uwq' ? uwqContent : step === 'optional' ? optContent : hiddenContent) : placeholderContent;
+      const policyInfoContent = `<div class="bde-sections"><div class="section-row">${basicInfoTop}${polInfoTop}</div></div>`;
+      const isPolicyInfo = State.activeCovType === 'policy-info';
+      const body = isPolicyInfo
+        ? policyInfoContent
+        : isGL
+          ? (step === 'uwq' ? uwqContent : step === 'optional' ? optContent : hiddenContent)
+          : placeholderContent;
 
       // Sticky footer — shown outside the scrollable cov-main
-      const isFirst = step === 'uwq';
-      const isLast  = step === 'hidden';
+      const isFirst = step === 'uwq' || isPolicyInfo;
+      const isLast  = step === 'hidden' && !isPolicyInfo;
       const footer = `
         <div class="cov-sticky-foot">
           ${!isFirst ? `<button class="text-btn" id="cov-back">Back</button>` : ''}
@@ -5798,7 +5809,7 @@
                 <input type="text" placeholder="Search for anything..."/>
                 <span class="kbd-row"><span class="kbd">⌘</span><span class="kbd">K</span></span>
               </div>
-              ${progress}
+              ${isPolicyInfo ? '' : progress}
               ${body}
             </div>
           </div>
