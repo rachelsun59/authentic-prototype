@@ -2669,7 +2669,7 @@
     const State = {
       page: 'home',
       currentId: null,
-      tab: 'indication',
+      tab: 'loss-run',
       // Growth list — sort + filters + open popover
       sort: { key: null, dir: 'asc' },          // null = received-desc default
       filters: {
@@ -4192,8 +4192,8 @@
       // same derivation works whether it's BDE Florida or a synthesized row.
       const ind = getBDEIndication();
       rec.stats = [
-        { label:'Calculated', value: fmtUSD(ind.premIndication), sub: `Selected Premium ${fmtUSD(ind.selected)}`, kind:'ok' },
-        { label:'Expected Lost Ratio',           value: ind.expectedLRPct,    kind:'ok' },
+        { label:'Calculated (Selected Premium)', value: fmtUSD(ind.premIndication), sub: `Selected Premium ${fmtUSD(ind.selected)}`, kind:'ok' },
+        { label:'Expected Lost Ratio',           value: ind.expectedLRPct, sub: 'Target Loss Ratio: 60%', kind:'ok' },
       ];
       const stats = rec.stats;
       const tlCount = (rec.timeline || []).length;
@@ -4327,15 +4327,16 @@
                   ${c.sub ? `<span class="sub">${c.sub}</span>` : ''}
                 </div>
               `).join('')}
-              ${State.protoUser === 'hunt' ? `
               <div class="stat-cell-triggers">
-                <div class="trig-row"><span class="lbl">Large Loss Influence <i class="ph ph-info info-ico" title="Refer to UW MGR if large losses have an outsized impact on the indication (uncapped vs. capped method more than 2x difference)."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
-                <div class="trig-row"><span class="lbl">Age of Loss Runs <i class="ph ph-info info-ico" title="Refer if the valuation date is more than 120 days stale; reserves may have developed materially."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+                <div class="trig-row"><span class="lbl">Large Loss Influence <i class="ph ph-info info-ico" title="Uncapped vs. capped method more than 2x difference."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+                <div class="trig-row"><span class="lbl">Claim Data Credibility <i class="ph ph-info info-ico" title="Refer when total reported claims are too few for BF method."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+                <div class="trig-row"><span class="lbl">Competing Loss Cost <i class="ph ph-info info-ico" title="Competing premium × target LR ÷ sales × 1,000."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
               </div>
               <div class="stat-cell-triggers">
-                <div class="trig-row"><span class="lbl">Claim data Credibility <i class="ph ph-info info-ico" title="Refer when total reported claims are too few for the BF method to be credible (typically < 30 claims over 5y)."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
-                <div class="trig-row"><span class="lbl">Orphan Claims <i class="ph ph-info info-ico" title="Refer if any claim's accident year falls outside the 5-year matrix; investigate before binding."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
-              </div>` : ''}
+                <div class="trig-row"><span class="lbl">Capped / Uncapped Weighting <i class="ph ph-info info-ico" title="Weight between capped and uncapped ultimate loss methods."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+                <div class="trig-row"><span class="lbl">BF A-priori Loss Cost <i class="ph ph-info info-ico" title="Bornhuetter-Ferguson prior expected loss cost."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+                <div class="trig-row"><span class="lbl">Annual Loss Trend Rate <i class="ph ph-info info-ico" title="Annual loss inflation applied to trend each AY's losses forward."></i></span><span class="pill-ok"><i class="ph ph-check-circle"></i></span></div>
+              </div>
             </div>
             <!-- Sticky-only actions: Status pill + comment count + Status Update.
                  Hidden until .is-detail-scrolled so the original detail-actions
@@ -4351,7 +4352,6 @@
           </div>
 
           <div class="tabs">
-            <button class="tab ${State.tab==='indication'?'active':''}" data-tab="indication">Submission Details</button>
             <button class="tab ${State.tab==='loss-run'?'active':''}" data-tab="loss-run">Claims</button>
             <button class="tab ${State.tab==='exposures'?'active':''}" data-tab="exposures">Exposures</button>
             <button class="tab ${State.tab==='uwq'?'active':''}" data-tab="uwq">Coverage</button>
@@ -4757,7 +4757,6 @@
 
       return `
         <div class="bde-sections">
-          ${bdeSection('ujc', 'Underwriting Judgment & Price Assumption', ujcBody)}
           <div class="section-row">
             ${bdeSection('basic-info', 'Basic Information', basicInfoSec)}
             ${bdeSection('indication', 'Policy Information', polInfoSec)}
@@ -5765,7 +5764,29 @@
           <div style="font-size:15px;font-weight:500;color:var(--fg)">${activeName}</div>
           <div style="font-size:13px">Questions for this coverage type will appear here.</div>
         </div>`;
-      const body = isGL ? (step === 'uwq' ? uwqContent : step === 'optional' ? optContent : hiddenContent) : placeholderContent;
+      // Basic Info + Policy Info shown at top of Coverage tab (GL only)
+      const ind2 = getBDEIndication();
+      const curGL2 = (BDE.indication.glLimit || '1,000,000/2,000,000').replace(/^\$\s*/, '');
+      const bi2 = BDE.quote?.basicInfo || {};
+      const phoneMissing2 = !bi2.phone;
+      const basicInfoTop = bdeSection('basic-info-cov', 'Basic Information', `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3)">
+          <div class="qf-field"><i class="ph ph-user ico"></i><div class="stack"><span class="label">Full name</span><input type="text" data-quote-field="fullName" value="${bi2.fullName||''}" placeholder="Full name"/></div></div>
+          <div><div class="qf-field ${phoneMissing2?'is-error':''}"><i class="ph ph-phone ico"></i><div class="stack"><span class="label">Phone</span><input type="text" data-quote-field="phone" value="${bi2.phone||''}" placeholder="(000) 000-0000"/></div></div>${phoneMissing2?'<div class="qf-error-text">Missing required field</div>':''}</div>
+          <div class="qf-row"><div class="qf-field"><i class="ph ph-map-pin ico"></i><div class="stack"><span class="label">Mailing Address</span><input type="text" data-quote-field="mailingAddress" value="${bi2.mailingAddress||''}" placeholder="Street, City, ST ZIP"/></div></div><div class="qf-field unit"><div class="stack"><span class="label">Unit #</span><input type="text" data-quote-field="unit" value="${bi2.unit||''}" placeholder="Suite"/></div></div></div>
+          <div class="qf-field"><i class="ph ph-buildings ico"></i><div class="stack"><span class="label">Business name</span><input type="text" data-quote-field="businessName" value="${bi2.businessName||''}"/></div></div>
+          <div class="qf-field"><i class="ph ph-storefront ico"></i><div class="stack"><span class="label">Business type</span><input type="text" data-quote-field="businessType" value="${bi2.businessType||''}"/></div></div>
+        </div>`);
+      const polInfoTop = bdeSection('pol-info-cov', 'Policy Information', `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3)">
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Selected Premium</span><input id="bde-selected-premium-cov" type="text" value="${ind2.selected.toLocaleString('en-US')}"/></div></div>
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">General Liability Limit</span><select id="bde-gl-limit-cov" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%">${BDE_GL_LIMIT_OPTS.map(v=>`<option value="${v}" ${curGL2===v?'selected':''}>${v}</option>`).join('')}</select></div></div>
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Prospective Year Annual Sales</span><input type="text" value="${(BDE.indication.prospectiveSales||0).toLocaleString('en-US')}"/></div></div>
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Competing/Expiring Premium</span><input type="text" value="${(BDE.indication.competing||0).toLocaleString('en-US')}"/></div></div>
+          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Deductible per Occurrence</span><select id="bde-deductible-cov" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%">${BDE_DEDUCTIBLE_OPTS.map(v=>`<option value="${v}" ${Number(BDE.indication.deductible)===v?'selected':''}>${v.toLocaleString('en-US')}</option>`).join('')}</select></div></div>
+        </div>`);
+      const infoSections = isGL ? `<div class="bde-sections" style="margin-bottom:var(--sp-4)"><div class="section-row">${basicInfoTop}${polInfoTop}</div></div>` : '';
+      const body = isGL ? infoSections + (step === 'uwq' ? uwqContent : step === 'optional' ? optContent : hiddenContent) : placeholderContent;
 
       // Sticky footer — shown outside the scrollable cov-main
       const isFirst = step === 'uwq';
@@ -5799,11 +5820,10 @@
     function renderDetail() {
       const rec = RECORDS[State.currentId] || BDE;
       let body = '';
-      if      (State.tab === 'indication') body = renderIndicationTab(rec);
-      else if (State.tab === 'loss-run')   body = renderLossRunTab(rec);
+      if      (State.tab === 'loss-run')   body = renderIndicationTab(rec) + renderLossRunTab(rec);
       else if (State.tab === 'exposures')  body = renderExposuresTab(rec);
       else if (State.tab === 'uwq')        body = renderUWQuestionsTab(rec);
-      else                                  body = renderQuoteTab(rec);
+      else                                  body = renderIndicationTab(rec) + renderLossRunTab(rec);
       // Activity drawer is rendered alongside main content so it can sit on the right.
       const drawer = State.activityOpen ? renderActivityDrawer(rec) : '';
       return `<div class="detail-shell ${State.activityOpen ? 'with-drawer' : ''}">
@@ -5890,7 +5910,7 @@
           State.protoUser = btn.dataset.protoUser;
           State.userMenuOpen = false;
           // Reset to safe tab if current tab not available for new user
-          if (State.protoUser === 'broker' && State.tab === 'uwq') State.tab = 'indication';
+          if (State.protoUser === 'broker' && State.tab === 'uwq') State.tab = 'loss-run';
           render();
           renderUserChip();
         };
@@ -6168,7 +6188,7 @@
           BDE = RECORDS[id];
           State.currentId = id;
           State.page = 'detail';
-          State.tab = 'indication';
+          State.tab = 'loss-run';
           State.activityOpen = true;
           State.tlCollapsed = new Set();
           render();
@@ -6184,7 +6204,7 @@
             BDE = RECORDS[id];
             State.currentId = id;
             State.page = 'detail';
-            State.tab = 'indication';
+            State.tab = 'loss-run';
             State.activityOpen = false;
           } else {
             State.page = 'growth';
@@ -6214,7 +6234,7 @@
           if (!RECORDS[id]) return;
           State.currentId = id;
           BDE = RECORDS[id];
-          State.page = 'detail'; State.tab = 'indication';
+          State.page = 'detail'; State.tab = 'loss-run';
           State.activityOpen = false;
           State.tlCollapsed = new Set();
           State.statusMenuOpen = false;
@@ -7051,7 +7071,7 @@
       State.currentId = newest.id;
       BDE = RECORDS[newest.id];
       State.page = 'detail';
-      State.tab = 'indication';
+      State.tab = 'loss-run';
       State.activityOpen = true;
       State.mobileNavOpen = false;
       render();
