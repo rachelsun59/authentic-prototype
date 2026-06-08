@@ -4341,14 +4341,7 @@
             <!-- Sticky-only actions: Status pill + comment count + Status Update.
                  Hidden until .is-detail-scrolled so the original detail-actions
                  (above) still render in the unscrolled state. -->
-            <div class="sticky-actions">
-              <span class="status-label">Status:</span>
-              <span class="pill ${rec.statusKind}">${rec.status}</span>
-              <button class="comment-btn"><i class="ph ph-chat-circle" style="font-size:16px"></i><span class="count">${commentCount}</span></button>
-              ${State.protoUser === 'hunt'  ? `<button class="btn btn-primary" id="make-decision-btn-sticky"><span>Make Decision</span></button>` : ''}
-              ${State.protoUser === 'bobby'  ? `<button class="btn btn-primary" id="bind-btn-sticky"><i class="ph ph-lock-simple" style="font-size:14px"></i> Bind</button>` : ''}
-              ${State.protoUser === 'broker' ? `<button class="btn btn-primary" id="broker-bind-btn-sticky"><i class="ph ph-lock-simple" style="font-size:14px"></i> Request Bind</button>` : ''}
-            </div>
+            <div class="sticky-actions"></div>
           </div>
 
           <div class="tabs">
@@ -4757,10 +4750,6 @@
 
       return `
         <div class="bde-sections">
-          <div class="section-row">
-            ${bdeSection('basic-info', 'Basic Information', basicInfoSec)}
-            ${bdeSection('indication', 'Policy Information', polInfoSec)}
-          </div>
           ${Number(BDE.indication.deductible) > 0 ? bdeSection('deductible', 'Deductible Analysis', renderBDEDeductibleAnalysisBody()) : ''}
         </div>
       `;
