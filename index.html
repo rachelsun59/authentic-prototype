@@ -5780,7 +5780,7 @@
           <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Competing/Expiring Premium</span><input type="text" value="${(BDE.indication.competing||0).toLocaleString('en-US')}"/></div></div>
           <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Deductible per Occurrence</span><select id="bde-deductible-cov" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%">${BDE_DEDUCTIBLE_OPTS.map(v=>`<option value="${v}" ${Number(BDE.indication.deductible)===v?'selected':''}>${v.toLocaleString('en-US')}</option>`).join('')}</select></div></div>
         </div>`);
-      const policyInfoContent = `<div class="bde-sections"><div class="section-row">${basicInfoTop}${polInfoTop}</div></div>`;
+      const policyInfoContent = `<div class="bde-sections">${basicInfoTop}${polInfoTop}</div>`;
       const isPolicyInfo = State.activeCovType === 'policy-info';
       const body = isPolicyInfo
         ? policyInfoContent
