@@ -5543,7 +5543,7 @@
             return `<div class="cov-type-row${active?' is-active':''}" style="display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-md);cursor:${on?'pointer':'default'};background:${active?'var(--err-bg)':'transparent'}">
               <i class="ph ${on?t.icon:'ph-circle-dashed'}" style="font-size:16px;flex-shrink:0;color:${on?'var(--tertiary)':'var(--fg-muted)'}" ${on?`data-cov-nav="${t.id}"`:''}></i>
               <span style="flex:1;font-size:13px;font-weight:${active?'600':'400'};color:${on?'var(--fg)':'var(--fg-muted)'}" ${on?`data-cov-nav="${t.id}"`:''}>${t.label}</span>
-              <button class="toggle-sw${on?' is-on':''}" ${isGL?'disabled title="Required"':''} data-cov-toggle="${t.id}" style="flex-shrink:0;${isGL?'opacity:.5;cursor:not-allowed':''}"></button>
+              ${isGL ? '' : `<button class="toggle-sw${on?' is-on':''}" data-cov-toggle="${t.id}" style="flex-shrink:0"></button>`}
             </div>`;
           }).join('')}
         </div>`;
