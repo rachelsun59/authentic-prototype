@@ -5571,10 +5571,24 @@
       })();
       const liqPct = 0; // placeholder until Liquor questions are added
 
+      // ---- Missing field counts per nav section ----
+      const missingCounts = {
+        'account-info': [bi2.fullName, bi2.phone, bi2.mailingAddress, bi2.businessName, bi2.businessType].filter(v => !v).length,
+        'policy-info':  ind2.selected <= 0 ? 1 : 0,
+        'gl-uwq':       (q.claims ? 0 : 1) + (q.delivery ? 0 : 1) + (q.noneAbove === undefined && !q.knockouts?.length ? 1 : 0),
+        'gl-addq':      0,
+        'gl-addons':    0,
+        'liq-uwq':      0,
+        'liq-addq':     0,
+      };
+
       // ---- Tree sidebar nav ----
       const ns = State.covNavSection; // active sub-item
+      const chip = (n) => n > 0 ? `<span style="margin-left:auto;background:var(--err);color:#fff;font-size:10px;padding:1px 6px;border-radius:var(--r-full);font-weight:600;flex-shrink:0">${n}</span>` : '';
       const child = (id, label) => `
-        <div class="cov-tree-child${ns===id?' is-active':''}" data-cov-child="${id}">${label}</div>`;
+        <div class="cov-tree-child${ns===id?' is-active':''}" data-cov-child="${id}" style="display:flex;align-items:center;gap:var(--sp-2)">
+          <span style="flex:1">${label}</span>${chip(missingCounts[id]||0)}
+        </div>`;
       const toggledCovs = { gl:'General Liability', liq:'Liquor Liability' };
       const covPct = { gl: glPct, liq: liqPct };
       const addableCovs = [
