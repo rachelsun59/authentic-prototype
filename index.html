@@ -5538,6 +5538,12 @@
           <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="no"  ${val==='no' ?'checked':''}/><span class="opt-radio-dot"></span>No</label>
         </div>`;
 
+      // Pre-compute ind2 needed for progress calculation
+      const ind2 = getBDEIndication();
+      const curGL2 = (BDE.indication.glLimit || '1,000,000/2,000,000').replace(/^\$\s*/, '');
+      const bi2 = BDE.quote?.basicInfo || {};
+      const phoneMissing2 = !bi2.phone;
+
       // ---- Progress ring helper ----
       const ring = (pct) => {
         const r = 8, c = 2 * Math.PI * r;
@@ -5819,11 +5825,6 @@
           <div style="font-size:15px;font-weight:500;color:var(--fg)">${activeName}</div>
           <div style="font-size:13px">Questions for this coverage type will appear here.</div>
         </div>`;
-      // Basic Info + Policy Info shown at top of Coverage tab (GL only)
-      const ind2 = getBDEIndication();
-      const curGL2 = (BDE.indication.glLimit || '1,000,000/2,000,000').replace(/^\$\s*/, '');
-      const bi2 = BDE.quote?.basicInfo || {};
-      const phoneMissing2 = !bi2.phone;
       // Account Info card field helper matching Figma 165:28493
       const acField = (ico, label, val, ph='', extraClass='', errorMsg='') => `
         <div style="border:1px solid ${extraClass?'var(--err)':'var(--border)'};border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface)">
