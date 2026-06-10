@@ -4872,6 +4872,12 @@
               <strong>Loss run detail</strong>
               <span class="meta-vsep"></span>
               <span class="sub">${rec.claims.length} claims</span>
+              ${(() => {
+                const years = [...new Set(rec.claims.map(c => c.ay).filter(Boolean))];
+                if (years.length < 1) return '';
+                const avg = (rec.claims.length / years.length).toFixed(1);
+                return `<span class="meta-vsep"></span><span class="sub" title="Total claims ÷ accident years">Avg Claim Expectancy: <strong>${avg}/yr</strong></span>`;
+              })()}
             </div>
           </div>
           <div style="overflow-x:auto">
