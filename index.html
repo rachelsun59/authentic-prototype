@@ -1717,6 +1717,16 @@
     .cov-shell { display:flex; gap:0; }
     .cov-sidebar { width:204px; flex-shrink:0; border-right:1px solid var(--border-soft); padding:var(--sp-4); display:flex; flex-direction:column; gap:var(--sp-2); }
     .cov-type-divider { height:1px; background:var(--border-soft); margin:var(--sp-1) 0; }
+    /* Coverage tree nav */
+    .cov-tree-section { display:flex; flex-direction:column; gap:0; }
+    .cov-tree-head { display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-2) var(--sp-3); border-radius:var(--r-md); cursor:pointer; }
+    .cov-tree-head:hover { background:var(--bg-accent); }
+    .cov-tree-ico { font-size:16px; flex-shrink:0; }
+    .cov-tree-label { font-size:13px; font-weight:500; color:var(--fg); }
+    .cov-tree-children { display:flex; flex-direction:column; padding-left:22px; border-left:1.5px solid var(--border-soft); margin-left:19px; }
+    .cov-tree-child { display:flex; align-items:center; gap:var(--sp-2); padding:5px var(--sp-3); font-size:13px; color:var(--fg-muted); cursor:pointer; border-radius:var(--r-md); transition:background .15s,color .15s; white-space:nowrap; }
+    .cov-tree-child:hover { background:var(--bg-accent); color:var(--fg); }
+    .cov-tree-child.is-active { color:var(--tertiary); font-weight:500; background:var(--err-bg); border-radius:var(--r-md); }
     .cov-type-btn { display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-2) var(--sp-3); border:1px solid var(--border); border-radius:var(--r-md); background:var(--surface); font-size:13px; color:var(--fg); cursor:pointer; text-align:left; width:100%; transition:border-color .15s, background .15s; }
     .cov-type-btn.is-on { border-color:var(--tertiary); background:var(--err-bg); }
     .cov-type-btn .cov-chk { width:16px; height:16px; border:1.5px solid var(--border); border-radius:3px; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
@@ -2725,8 +2735,9 @@
       protoUser: 'hunt',
       userMenuOpen: false,
       coverageStep: 'uwq',                       // 'uwq' | 'optional' | 'hidden'
-      coverageTypes: new Set(['gl','prop']),   // selected coverage types
+      coverageTypes: new Set(['gl','liq']),    // toggled-on coverage types
       activeCovType: 'policy-info',            // currently viewed coverage type
+      covNavSection: 'policy-info',            // active nav sub-item
       optCovSelected: new Set(),      // selected optional coverages
       uwqOpen: new Set(['knockouts','claims','delivery','alcohol']), // open question accordions
       glForm: {},  // GL restaurant form field values
@@ -5527,25 +5538,47 @@
           <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="no"  ${val==='no' ?'checked':''}/><span class="opt-radio-dot"></span>No</label>
         </div>`;
 
-      // Sidebar — Policy Info fixed nav item + coverage type toggles
-      const policyActive = State.activeCovType === 'policy-info';
+      // ---- Tree sidebar nav ----
+      const ns = State.covNavSection; // active sub-item
+      const child = (id, label) => `
+        <div class="cov-tree-child${ns===id?' is-active':''}" data-cov-child="${id}">${label}</div>`;
+      const toggledCovs = { gl:'General Liability', liq:'Liquor Liability' };
+      const addableCovs = [
+        { id:'prop',  label:'Property Liability'  },
+        { id:'excess',label:'Excess Liability'     },
+      ];
       const sidebar = `
-        <div class="cov-sidebar" style="gap:var(--sp-1)">
-          <div class="cov-type-row${policyActive?' is-active':''}" style="display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-md);cursor:pointer;background:${policyActive?'var(--err-bg)':'transparent'};border:${policyActive?'1px solid var(--tertiary)':'1px solid transparent'}" data-cov-nav="policy-info">
-            <i class="ph ph-file-text" style="font-size:16px;flex-shrink:0;color:${policyActive?'var(--tertiary)':'var(--fg-muted)'}"></i>
-            <span style="flex:1;font-size:13px;font-weight:${policyActive?'600':'400'};color:${policyActive?'var(--fg)':'var(--fg-muted)'}">Policy Info</span>
+        <div class="cov-sidebar" style="gap:var(--sp-2);overflow-y:auto">
+          <!-- Submission Details -->
+          <div class="cov-tree-section">
+            <div class="cov-tree-head">
+              <i class="ph ph-circle-half cov-tree-ico" style="color:var(--warn)"></i>
+              <span class="cov-tree-label">Submission Details</span>
+            </div>
+            <div class="cov-tree-children">
+              ${child('account-info','Account Information')}
+              ${child('policy-info','Policy Information')}
+            </div>
           </div>
-          <div style="height:1px;background:var(--border-soft);margin:var(--sp-1) 0"></div>
-          ${COV_TYPES.map(t => {
-            const on     = State.coverageTypes.has(t.id);
-            const active = on && State.activeCovType === t.id;
-            const isGL   = t.id === 'gl';
-            return `<div class="cov-type-row${active?' is-active':''}" style="display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2) var(--sp-3);border-radius:var(--r-md);cursor:${on?'pointer':'default'};background:${active?'var(--err-bg)':'transparent'}">
-              <i class="ph ${on?t.icon:'ph-circle-dashed'}" style="font-size:16px;flex-shrink:0;color:${on?'var(--tertiary)':'var(--fg-muted)'}" ${on?`data-cov-nav="${t.id}"`:''}></i>
-              <span style="flex:1;font-size:13px;font-weight:${active?'600':'400'};color:${on?'var(--fg)':'var(--fg-muted)'}" ${on?`data-cov-nav="${t.id}"`:''}>${t.label}</span>
-              ${isGL ? '' : `<button class="toggle-sw${on?' is-on':''}" data-cov-toggle="${t.id}" style="flex-shrink:0"></button>`}
-            </div>`;
-          }).join('')}
+          <!-- GL + Liquor -->
+          ${Object.entries(toggledCovs).map(([id, label]) => `
+          <div class="cov-tree-section">
+            <div class="cov-tree-head">
+              <i class="ph ph-circle cov-tree-ico" style="color:var(--border)"></i>
+              <span class="cov-tree-label">${label}</span>
+            </div>
+            <div class="cov-tree-children">
+              ${child(id+'-uwq',  'Underwriting questions')}
+              ${child(id+'-addq', 'Addition questions')}
+              ${id==='gl' ? child('gl-addons','Add-ons') : ''}
+            </div>
+          </div>`).join('')}
+          <!-- Addable coverages -->
+          ${addableCovs.map(t => `
+          <div class="cov-tree-head" data-cov-toggle="${t.id}" style="cursor:pointer">
+            <i class="ph ph-plus-circle cov-tree-ico" style="color:var(--fg-muted)"></i>
+            <span class="cov-tree-label" style="color:var(--fg-muted);font-weight:400">${t.label}</span>
+          </div>`).join('')}
         </div>`;
 
       // 3-step progress bar
@@ -5780,36 +5813,51 @@
           <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Competing/Expiring Premium</span><input type="text" value="${(BDE.indication.competing||0).toLocaleString('en-US')}"/></div></div>
           <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Deductible per Occurrence</span><select id="bde-deductible-cov" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%">${BDE_DEDUCTIBLE_OPTS.map(v=>`<option value="${v}" ${Number(BDE.indication.deductible)===v?'selected':''}>${v.toLocaleString('en-US')}</option>`).join('')}</select></div></div>
         </div>`);
-      const policyInfoContent = `<div class="bde-sections">${basicInfoTop}${polInfoTop}</div>`;
-      const isPolicyInfo = State.activeCovType === 'policy-info';
-      const body = isPolicyInfo
-        ? policyInfoContent
-        : isGL
-          ? (step === 'uwq' ? uwqContent : step === 'optional' ? optContent : hiddenContent)
-          : placeholderContent;
+      // ---- Content routing by nav section ----
+      const getBody = () => {
+        switch (ns) {
+          case 'account-info': return `<div class="bde-sections">${basicInfoTop}</div>`;
+          case 'policy-info':  return `
+            <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
+              <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Policy Info</h2>
+              <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+                <div class="co-input-icon"><span style="color:var(--fg-muted);font-size:14px;flex-shrink:0">$</span><div style="flex:1"><div style="font-size:11px;color:var(--fg-muted)">Selected Premium</div><input type="text" value="${ind2.selected.toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;width:100%"/></div></div>
+                <div class="co-input-icon"><span style="color:var(--fg-muted);font-size:14px;flex-shrink:0">$</span><div style="flex:1"><div style="font-size:11px;color:var(--fg-muted)">General Liability Limit</div><select id="bde-gl-limit-cov" style="border:0;outline:0;background:transparent;font:inherit;font-size:14px;width:100%">${BDE_GL_LIMIT_OPTS.map(v=>`<option value="${v}" ${curGL2===v?'selected':''}>${v}</option>`).join('')}</select></div></div>
+                <div class="co-input-icon"><span style="color:var(--fg-muted);font-size:14px;flex-shrink:0">$</span><div style="flex:1"><div style="font-size:11px;color:var(--fg-muted)">Prospective Year Annual Sales</div><input type="text" value="${(BDE.indication.prospectiveSales||0).toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;width:100%"/></div></div>
+                <div class="co-input-icon"><span style="color:var(--fg-muted);font-size:14px;flex-shrink:0">$</span><div style="flex:1"><div style="font-size:11px;color:var(--fg-muted)">Competing/Expiring Premium</div><input type="text" value="${(BDE.indication.competing||0).toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;width:100%"/></div></div>
+                <div class="co-input-icon"><span style="color:var(--fg-muted);font-size:14px;flex-shrink:0">$</span><div style="flex:1"><div style="font-size:11px;color:var(--fg-muted)">Deductible per Occurrence</div><select id="bde-deductible-cov" style="border:0;outline:0;background:transparent;font:inherit;font-size:14px;width:100%">${BDE_DEDUCTIBLE_OPTS.map(v=>`<option value="${v}" ${Number(BDE.indication.deductible)===v?'selected':''}>${v.toLocaleString('en-US')}</option>`).join('')}</select></div></div>
+              </div>
+              <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" id="cov-next">Continue</button></div>
+            </div>`;
+          case 'gl-uwq':   return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${uwqContent}</div>`;
+          case 'gl-addq':  return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${optContent}</div>`;
+          case 'gl-addons':return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${hiddenContent}</div>`;
+          default: return `<div style="padding:var(--sp-6) 0;text-align:center;color:var(--fg-muted)"><i class="ph ph-shield-check" style="font-size:40px;color:var(--border);display:block;margin-bottom:var(--sp-3)"></i>Questions for this section will appear here.</div>`;
+        }
+      };
+      const body = getBody();
+      const showFooter = !['policy-info'].includes(ns); // policy-info has its own Continue button
 
       // Sticky footer — shown outside the scrollable cov-main
-      const isFirst = step === 'uwq' || isPolicyInfo;
-      const isLast  = step === 'hidden' && !isPolicyInfo;
-      const footer = `
+      const isFirst = true;
+      const isLast  = ns === 'gl-addons';
+      const footer = showFooter ? `
         <div class="cov-sticky-foot">
-          ${!isFirst ? `<button class="text-btn" id="cov-back">Back</button>` : ''}
           ${isLast
             ? `<button class="btn btn-primary" id="cov-save">Save</button>`
             : `<button class="btn btn-primary" id="cov-next">Next</button>`}
-        </div>`;
+        </div>` : '';
 
       return `
+        <div class="search-input" style="border-bottom:1px solid var(--border-soft);border-radius:0;background:var(--surface)">
+          <i class="ph ph-magnifying-glass" style="font-size:14px;color:var(--fg-muted)"></i>
+          <input type="text" placeholder="Search for anything..."/>
+          <span class="kbd-row"><span class="kbd">⌘</span><span class="kbd">K</span></span>
+        </div>
         <div class="sec" style="padding:0;display:flex;flex-direction:column">
           <div class="cov-shell" style="flex:1;overflow:hidden">
             ${sidebar}
             <div class="cov-main">
-              <div class="search-input" style="margin-bottom:var(--sp-2)">
-                <i class="ph ph-magnifying-glass" style="font-size:14px;color:var(--fg-muted)"></i>
-                <input type="text" placeholder="Search for anything..."/>
-                <span class="kbd-row"><span class="kbd">⌘</span><span class="kbd">K</span></span>
-              </div>
-              ${isPolicyInfo ? '' : progress}
               ${body}
             </div>
           </div>
@@ -6828,9 +6876,17 @@
         };
       });
       // Coverage sidebar — navigate by clicking label/icon
+      // Coverage tree child nav
+      $$('[data-cov-child]').forEach(el => {
+        el.onclick = () => {
+          State.covNavSection = el.dataset.covChild;
+          render();
+        };
+      });
       $$('[data-cov-nav]').forEach(el => {
         el.onclick = () => {
           State.activeCovType = el.dataset.covNav;
+          State.covNavSection = el.dataset.covNav;
           State.coverageStep = 'uwq';
           render();
         };
