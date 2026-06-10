@@ -5604,11 +5604,11 @@
         <div class="cov-tree-child${ns===id?' is-active':''}" data-cov-child="${id}" style="display:flex;align-items:center;gap:var(--sp-2)">
           <span style="flex:1">${label}</span>${chip(missingCounts[id]||0)}
         </div>`;
-      const toggledCovs = { gl:'General Liability', liq:'Liquor Liability' };
       const covPct = { gl: glPct, liq: liqPct };
       const addableCovs = [
-        { id:'prop',  label:'Property Liability'  },
-        { id:'excess',label:'Excess Liability'     },
+        { id:'prop',  label:'Property Liability'            },
+        { id:'epl',   label:'Employment Practice Liability' },
+        { id:'excess',label:'Excess Liability'              },
       ];
       const cc = State.covCollapsed;
       const section = (sectionId, pct, label, children) => {
@@ -5623,19 +5623,29 @@
             ${collapsed ? '' : `<div class="cov-tree-children">${children}</div>`}
           </div>`;
       };
+      const glChildren =
+        child('gl-uwq',    'Underwriting questions') +
+        child('gl-opt-q',  'Optional questions') +
+        child('gl-addl-ins','Additional Insured') +
+        child('gl-deductible','Deductible') +
+        child('gl-exclusion','Exclusion') +
+        child('gl-limits', 'Limits') +
+        child('gl-addons', 'Add-ons');
+      const liqChildren =
+        child('liq-uwq',       'Underwriting questions') +
+        child('liq-deductible','Deductible') +
+        child('liq-exclusion', 'Exclusion') +
+        child('liq-limits',    'Limits');
       const sidebar = `
         <div class="cov-sidebar" style="gap:var(--sp-2);overflow-y:auto">
           ${section('submission', submPct, 'Submission Info',
             child('account-info','Account Information') + child('policy-info','Policy Information')
           )}
-          ${Object.entries(toggledCovs).map(([id, label]) =>
-            section(id, covPct[id]||0, label,
-              child(id+'-uwq','Underwriting questions') +
-              child(id+'-addq','Addition questions') +
-              (id==='gl' ? child('gl-addons','Add-ons') : '')
-            )
-          ).join('')}
-          <!-- Addable coverages -->
+          ${section('gl',  covPct.gl||0,  'General Liability',  glChildren)}
+          ${section('liq', covPct.liq||0, 'Liquor Liability',   liqChildren)}
+          ${section('uw-toolbox', 0, 'Underwriter toolbox',
+            child('uw-toolbox-uwq','Underwriting questions')
+          )}
           ${addableCovs.map(t => `
           <div class="cov-tree-head" data-cov-toggle="${t.id}" style="cursor:pointer">
             <i class="ph ph-plus-circle cov-tree-ico" style="color:var(--fg-muted)"></i>
@@ -5711,19 +5721,63 @@
       const glQ     = (label, body, tip='') => `<div class="gl-qblock"><div class="gl-qlabel">${label}${tip?'<span class="gl-info">i</span>':''}</div>${body}</div>`;
       const glSep   = () => `<hr class="gl-divider">`;
 
-      // ---- Step 1: UW Questions (full GL form) ----
+      // ---- UWQ card helper ----
+      const uwqCard = (content) => `<div style="border:1px solid var(--border-soft);border-radius:var(--r-lg);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)">${content}</div>`;
+      const uwqYN = (id, label) => {
+        const val = gf[id];
+        return `<div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+          <div style="font-size:14px;color:var(--fg)">${label}</div>
+          <div class="gl-yn">
+            <button class="gl-yn-btn${val==='yes'?' active':''}" data-gl-yn="${id}" data-gl-val="yes">Yes</button>
+            <button class="gl-yn-btn${val==='no' ?' active':''}" data-gl-yn="${id}" data-gl-val="no">No</button>
+          </div>
+        </div>`;
+      };
+
+      // ---- Step 1: UW Questions — card-based layout matching Figma 236:37786 ----
       const uwqContent = `
-        <div style="border:1px solid var(--border-soft);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column">
-          ${knockoutAcc}
-          <div style="padding:var(--sp-4);border-top:1px solid var(--border-soft);display:flex;flex-direction:column;gap:var(--sp-4)">
-            ${glYN('claims','Has your business had any insurance claims in the past 3 years?',`
-              ${glQ('How many insurance claims in the past 3 years?', glRadioList(['1','2','3','4','5','6','7','8','9','10+']))}
-              ${glYN('claims50k','Have you had any insurance claim greater than $50,000 in the past 3 years?','','i')}
-            `)}
-            ${glYN('delivery','Does your restaurant offer in-house delivery service (not including third-party apps)?',
-              glYN('deliveryAuto','Do you have an active commercial auto policy to cover your in-house delivery?')
-            )}
-            ${glQ('Annual Alcohol Sales Percentage',`<div class="uwq-pct-row"><input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct??0}"/><span class="uwq-pct-unit">%</span></div>`)}
+        <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
+          <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Underwriting Questions</h2>
+
+          ${uwqCard(`
+            <div style="font-size:14px;color:var(--fg);margin-bottom:var(--sp-1)">Are any of the following true about you or your business?</div>
+            ${UWQ_KNOCKOUTS.map(k => `
+              <label class="opt-radio-label" style="align-items:flex-start">
+                <input type="checkbox" class="uwq-knock-chk" data-uwq-knock="${k.id}" ${knockouts.includes(k.id)?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/>
+                <span class="opt-radio-dot" style="margin-top:2px;flex-shrink:0"></span>
+                <span style="font-size:14px;color:var(--fg)">${k.text}</span>
+              </label>`).join('')}
+            <div class="uwq-knock-sep"></div>
+            <label class="opt-radio-label">
+              <input type="radio" name="uwq-none" class="uwq-none-radio" ${noneAbove&&!knockouts.length?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/>
+              <span class="opt-radio-dot"></span>
+              <span style="font-size:14px;color:var(--fg)">None of the above</span>
+            </label>`)}
+
+          <div style="border:1px solid var(--border-soft);border-radius:var(--r-lg);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)">
+            ${uwqYN('claims','Has your business had any insurance claims in the past 3 years?')}
+            ${gf.claims === 'yes' ? `
+            <div style="border:1px solid var(--border-soft);border-radius:var(--r-md);padding:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-3)">
+              <div style="font-size:13px;color:var(--fg)">How many insurance claims has your business had in the past 3 years?</div>
+              ${glRadioList(['1','2','3','4','5','6','7','8','9','10+'])}
+              ${uwqYN('claims50k','Have you had any insurance claim greater than $50,000 in the past 3 years?')}
+            </div>` : ''}
+          </div>
+
+          <div style="border:1px solid var(--border-soft);border-radius:var(--r-lg);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)">
+            ${uwqYN('delivery','Does your restaurant offer in-house delivery service (not including Third-party apps such as DoorDash or Uber Eats)?')}
+            ${gf.delivery === 'yes' ? `
+            <div style="border:1px solid var(--border-soft);border-radius:var(--r-md);padding:var(--sp-3)">
+              ${uwqYN('deliveryAuto','Do you have an active commercial auto policy to cover your in-house delivery service?')}
+            </div>` : ''}
+          </div>
+
+          <div style="border:1px solid var(--border-soft);border-radius:var(--r-lg);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)">
+            <div style="font-size:14px;color:var(--fg)">Annual Alcohol Sales Percentage</div>
+            <div class="uwq-pct-row">
+              <input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct??0}"/>
+              <span class="uwq-pct-unit">%</span>
+            </div>
           </div>
         </div>`;
 
@@ -5906,9 +5960,15 @@
               </div>
               <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" id="cov-next">Continue</button></div>
             </div>`;
-          case 'gl-uwq':   return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${uwqContent}</div>`;
-          case 'gl-addq':  return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${optContent}</div>`;
-          case 'gl-addons':return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${hiddenContent}</div>`;
+          case 'gl-uwq':       return uwqContent;
+          case 'gl-opt-q':     return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${optContent}</div>`;
+          case 'gl-addl-ins':  return `<div style="display:flex;flex-direction:column;gap:var(--sp-4)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Additional Insured</h2>${hiddenContent.replace('display:flex;flex-direction:column;gap:var(--sp-2)','display:flex;flex-direction:column;gap:var(--sp-3)')}</div>`;
+          case 'gl-deductible':return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Deductible</h2>${hiddenContent}</div>`;
+          case 'gl-exclusion': return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Exclusion</h2>${hiddenContent}</div>`;
+          case 'gl-limits':    return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Limits</h2>${hiddenContent}</div>`;
+          case 'gl-addons':    return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${hiddenContent}</div>`;
+          case 'liq-uwq': case 'liq-deductible': case 'liq-exclusion': case 'liq-limits':
+          case 'uw-toolbox-uwq':
           default: return `<div style="padding:var(--sp-6) 0;text-align:center;color:var(--fg-muted)"><i class="ph ph-shield-check" style="font-size:40px;color:var(--border);display:block;margin-bottom:var(--sp-3)"></i>Questions for this section will appear here.</div>`;
         }
       };
