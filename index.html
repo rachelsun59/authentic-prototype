@@ -2738,6 +2738,7 @@
       coverageTypes: new Set(['gl','liq']),    // toggled-on coverage types
       activeCovType: 'policy-info',            // currently viewed coverage type
       covNavSection: 'policy-info',            // active nav sub-item
+      covCollapsed: new Set(),                 // collapsed tree sections
       optCovSelected: new Set(),      // selected optional coverages
       uwqOpen: new Set(['knockouts','claims','delivery','alcohol']), // open question accordions
       glForm: {},  // GL restaurant form field values
@@ -5580,32 +5581,31 @@
         { id:'prop',  label:'Property Liability'  },
         { id:'excess',label:'Excess Liability'     },
       ];
+      const cc = State.covCollapsed;
+      const section = (sectionId, pct, label, children) => {
+        const collapsed = cc.has(sectionId);
+        return `
+          <div class="cov-tree-section">
+            <div class="cov-tree-head" data-cov-section="${sectionId}" style="cursor:pointer">
+              ${ring(pct)}
+              <span class="cov-tree-label" style="flex:1">${label}</span>
+              <i class="ph ph-caret-${collapsed?'down':'up'}" style="font-size:11px;color:var(--fg-muted)"></i>
+            </div>
+            ${collapsed ? '' : `<div class="cov-tree-children">${children}</div>`}
+          </div>`;
+      };
       const sidebar = `
         <div class="cov-sidebar" style="gap:var(--sp-2);overflow-y:auto">
-          <!-- Submission Info -->
-          <div class="cov-tree-section">
-            <div class="cov-tree-head">
-              ${ring(submPct)}
-              <span class="cov-tree-label">Submission Info</span>
-            </div>
-            <div class="cov-tree-children">
-              ${child('account-info','Account Information')}
-              ${child('policy-info','Policy Information')}
-            </div>
-          </div>
-          <!-- GL + Liquor -->
-          ${Object.entries(toggledCovs).map(([id, label]) => `
-          <div class="cov-tree-section">
-            <div class="cov-tree-head">
-              ${ring(covPct[id] || 0)}
-              <span class="cov-tree-label">${label}</span>
-            </div>
-            <div class="cov-tree-children">
-              ${child(id+'-uwq',  'Underwriting questions')}
-              ${child(id+'-addq', 'Addition questions')}
-              ${id==='gl' ? child('gl-addons','Add-ons') : ''}
-            </div>
-          </div>`).join('')}
+          ${section('submission', submPct, 'Submission Info',
+            child('account-info','Account Information') + child('policy-info','Policy Information')
+          )}
+          ${Object.entries(toggledCovs).map(([id, label]) =>
+            section(id, covPct[id]||0, label,
+              child(id+'-uwq','Underwriting questions') +
+              child(id+'-addq','Addition questions') +
+              (id==='gl' ? child('gl-addons','Add-ons') : '')
+            )
+          ).join('')}
           <!-- Addable coverages -->
           ${addableCovs.map(t => `
           <div class="cov-tree-head" data-cov-toggle="${t.id}" style="cursor:pointer">
@@ -6920,6 +6920,15 @@
       });
       // Coverage sidebar — navigate by clicking label/icon
       // Coverage tree child nav
+      // Coverage tree section collapse/expand
+      $$('[data-cov-section]').forEach(el => {
+        el.onclick = () => {
+          const id = el.dataset.covSection;
+          if (State.covCollapsed.has(id)) State.covCollapsed.delete(id);
+          else State.covCollapsed.add(id);
+          render();
+        };
+      });
       $$('[data-cov-child]').forEach(el => {
         el.onclick = () => {
           State.covNavSection = el.dataset.covChild;
