@@ -5538,21 +5538,48 @@
           <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="no"  ${val==='no' ?'checked':''}/><span class="opt-radio-dot"></span>No</label>
         </div>`;
 
+      // ---- Progress ring helper ----
+      const ring = (pct) => {
+        const r = 8, c = 2 * Math.PI * r;
+        const dash = (pct / 100) * c;
+        const color = pct >= 100 ? 'var(--ok)' : pct > 0 ? 'var(--warn)' : 'var(--border)';
+        return `<svg width="20" height="20" viewBox="0 0 20 20" style="flex-shrink:0;transform:rotate(-90deg)">
+          <circle cx="10" cy="10" r="${r}" fill="none" stroke="var(--border-soft)" stroke-width="2"/>
+          <circle cx="10" cy="10" r="${r}" fill="none" stroke="${color}" stroke-width="2"
+            stroke-dasharray="${dash} ${c}" stroke-linecap="round"/>
+        </svg>`;
+      };
+      // Calculate completion % for each section
+      const submPct = (() => {
+        const bi = BDE.quote?.basicInfo || {};
+        const done = [bi.fullName, bi.phone, bi.mailingAddress, bi.businessName, bi.businessType].filter(Boolean).length;
+        const polDone = ind2.selected > 0 ? 1 : 0;
+        return Math.round(((done + polDone) / 6) * 100);
+      })();
+      const glPct = (() => {
+        const uwq = rec.uwq || {};
+        const answered = [uwq.claims, uwq.delivery].filter(Boolean).length;
+        const noneSet = uwq.noneAbove !== false;
+        return Math.round(((answered + (noneSet?1:0)) / 3) * 100);
+      })();
+      const liqPct = 0; // placeholder until Liquor questions are added
+
       // ---- Tree sidebar nav ----
       const ns = State.covNavSection; // active sub-item
       const child = (id, label) => `
         <div class="cov-tree-child${ns===id?' is-active':''}" data-cov-child="${id}">${label}</div>`;
       const toggledCovs = { gl:'General Liability', liq:'Liquor Liability' };
+      const covPct = { gl: glPct, liq: liqPct };
       const addableCovs = [
         { id:'prop',  label:'Property Liability'  },
         { id:'excess',label:'Excess Liability'     },
       ];
       const sidebar = `
         <div class="cov-sidebar" style="gap:var(--sp-2);overflow-y:auto">
-          <!-- Submission Details -->
+          <!-- Submission Info -->
           <div class="cov-tree-section">
             <div class="cov-tree-head">
-              <i class="ph ph-circle-half cov-tree-ico" style="color:var(--warn)"></i>
+              ${ring(submPct)}
               <span class="cov-tree-label">Submission Info</span>
             </div>
             <div class="cov-tree-children">
@@ -5564,7 +5591,7 @@
           ${Object.entries(toggledCovs).map(([id, label]) => `
           <div class="cov-tree-section">
             <div class="cov-tree-head">
-              <i class="ph ph-circle cov-tree-ico" style="color:var(--border)"></i>
+              ${ring(covPct[id] || 0)}
               <span class="cov-tree-label">${label}</span>
             </div>
             <div class="cov-tree-children">
@@ -5819,7 +5846,6 @@
             ${acField('ph-threads-logo','Business name',bi2.businessName||'',   'businessName')}
             ${acField('ph-briefcase','Business Type',  bi2.businessType||'',    'businessType')}
           </div>
-          <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" data-cov-child="policy-info">Continue</button></div>
         </div>`;
       const polInfoTop = bdeSection('pol-info-cov', 'Policy Information', `
         <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3)">
