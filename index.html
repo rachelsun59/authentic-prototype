@@ -5905,6 +5905,95 @@
           ]))}
         </div>`;
 
+      // ---- Per-section content matching Figma de2RkFYs4KSk1kxYMYN6P9 node 16:3 ----
+      const secContent = {
+        'gl-deductible': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+          ${glYN('deductibleLiab','Deductible Liability Insurance',
+            glQ('Property Damage Liability Deductible', glRadioList(['$500','$1,000','$2,500','$5,000','$10,000','$15,000','$25,000','$50,000','$100,000','$150,000']))
+          )}
+          ${glYN('waiverSpec','Waiver of Subrogation - Specified Named / Organization','','i')}
+          ${glYN('waiverGen','Waiver of Subrogation')}
+          ${glYN('blanketPrimary','Blanket Primary and Non-Contributory Coverage')}
+          ${glYN('cancelNonrenew','Cancellation or Nonrenewal by Us - Notification to Designated Entity',
+            glYN('manuscriptedEnt','Designated Entities - Toggle Manuscripted Entities','','i')
+          )}
+        </div>`,
+        'gl-exclusion': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+          ${glYN('injuryWorker','Exclusion - Injury to Worker')}
+          ${glYN('persAdvExcl','Personal and Advertising Injury Exclusion Option')}
+          ${glYN('playground','Playground Facility Exclusion')}
+          ${glYN('medMalpractice','Exclusion - Medical Malpractice')}
+          ${glYN('participantExcl','Add Participant vs Participant Exclusion')}
+          ${glYN('medExpExcl','Medical Expenses Exclusion Option')}
+          ${glYN('commDisease','Attach Communicable Disease Exclusion Flag')}
+          ${glYN('watercraft','Watercraft Liability')}
+          ${glYN('customExcl','Attach Custom Exclusion - Designated Operations Flag',
+            glTA('Description Box for Exclusion - Custom Designated Operations')
+          )}
+          ${glYN('profServices','Attach Exclusion - Designated Professional Services',
+            glTA('Description Box for Exclusion - Designated Professional Services')
+          )}
+          ${glYN('constructionExcl','Attach Construction Exclusions Flag')}
+          ${glYN('limitBizDesc','Limitation of Coverage to Business Description')}
+          ${glYN('excldProducts','Exclusion - Designated Products')}
+          ${glYN('pollutionFire','Exclusion Pollution Hostile Fire Exception')}
+          ${glYN('limPremises','Limitation of Coverage to Designated Premises, Project or Operation',
+            glYN('manuscriptedPremises','Designated Premises - Toggle Manuscripted Premises','','i')
+          )}
+        </div>`,
+        'gl-limits': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+          ${glQ('How many locations does your business have?', glRadioList(['1','2','3','4','5','6','7','8','9','10+']))}
+        </div>`,
+        'gl-addl-ins': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+          ${glYN('blanketAddlIns','Blanket Additional Insured by Contract coverage','','i')}
+          ${glYN('addlIns','Add Additional Insureds to your GL policy (e.g. Landlord, Franchisor, Municipality, Venue)','','i')}
+          ${glYN('addlInsControl','Additional Insured - Controlling Interest coverage')}
+          ${glYN('addlInsCoOwner','Additional Insured - Co-Owner of Insured Premises coverage')}
+          ${glYN('addlInsLessor','Additional Insured - Lessor of Leased Equipment', glTA('Lessor of Leased Equipment - Name Of Additional Insured Person(s) Or Organization(s)'))}
+          ${glYN('addlInsLand','Additional Insured - Owners Or Other Interests From Whom Land Has Been Leased (Blanket)')}
+          ${glYN('mgrLessors','Additional Insured - Managers Or Lessors Of Premises (Blanket)', glTA("Designation of Premises (leave blank for blanket coverage)"))}
+          ${glYN('grantorFranchise','Additional Insured - Grantor of Franchise coverage')}
+          ${glYN('stateGov','Additional Insured - State Gov Agency Subdivision Political Subdivision (Blanket)')}
+          ${glYN('vendors','Additional Insured - Vendors', glTA('Vendors - Name Of Additional Insured Person(s) Or Organization(s)'))}
+          ${glYN('namedInsureds','Add Named Insureds','','i')}
+        </div>`,
+        'gl-addons': `<div style="display:flex;flex-direction:column;gap:var(--sp-4)">
+          ${glSecHead('Sexual Abuse & Molestation (SAM)')}
+          ${glYN('sam','Sexual Abuse & Molestation (SAM) Coverage')}
+          ${glYN('sexualAbuse','Sexual Abuse and Sexual Molestation Exclusion')}
+          ${glSecHead('Auto')}
+          ${glYN('delivery','Does your restaurant offer in-house delivery service (not including third-party apps)?',
+            glYN('deliveryAuto','Do you have an active commercial auto policy?')
+          )}
+          ${glYN('bikeDelivery','Do you perform deliveries via bicycle, scooter, or non-automobile transportation?')}
+          ${glYN('hnoa','Hired Auto and Nonowned Auto Liability','','i')}
+          ${glSecHead('Tenant Legal Liability')}
+          ${glYN('tenantLegal','Tenant\'s Legal Liability Coverage','','i')}
+          ${glYN('tenantConstruct','Tenant Business Under Construction Policy')}
+          ${glSecHead('Employee Benefits (EBL)')}
+          ${glYN('ebl','Employee Benefits Liability Coverage','','i')}
+          ${glQ('EBL Limit ($300K/$600K  /  $500K/$1M  /  $1M/$2M)', glRadioList(['$300,000 / $600,000','$500,000 / $1,000,000','$1,000,000 / $2,000,000']))}
+          ${glYN('priorActs','Prior Acts Coverage - Employee Benefits Liability','','i')}
+        </div>`,
+        'uw-toolbox-uwq': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+          ${glQ('Describe your Business', glInput('Business description','bizDesc'))}
+          ${glYN('isRenewal','Is this a Renewal Application?')}
+          ${glYN('manualOverride','Manual Underwriting Override - Policy Level')}
+          ${glQ('Notes from Underwriting Review', glTA('Enter notes...'))}
+          ${glQ('Renewal Workflow Status', glRadioList(['Not Released - Pending Documents','Not Released – Review in Progress','Renewal Approved','Renewal Denied']))}
+          ${glYN('lraro','Toggle for LRARO Rating ($100K+ Premium ONLY)',
+            glInput('LRARO Rate Multiplier')
+          )}
+        </div>`,
+        'liq-uwq': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+          ${glQ('Annual Alcohol Sales Percentage',`<div class="uwq-pct-row"><input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct??0}"/><span class="uwq-pct-unit">%</span></div>`)}
+        </div>`,
+        'liq-exclusion': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+          ${glYN('cannabis','Cannabis Exclusion with Hemp Exception')}
+          ${glYN('pfas','Exclusion - Perfluoroalkyl and Polyfluoroalkyl Substances (PFAS)')}
+        </div>`,
+      };
+
       const activeName = COV_TYPES.find(t => t.id === State.activeCovType)?.label || 'General Liability';
       const isGL = State.activeCovType === 'gl';
       const placeholderContent = `
@@ -5960,15 +6049,17 @@
               </div>
               <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" id="cov-next">Continue</button></div>
             </div>`;
-          case 'gl-uwq':       return uwqContent;
-          case 'gl-opt-q':     return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${optContent}</div>`;
-          case 'gl-addl-ins':  return `<div style="display:flex;flex-direction:column;gap:var(--sp-4)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Additional Insured</h2>${hiddenContent.replace('display:flex;flex-direction:column;gap:var(--sp-2)','display:flex;flex-direction:column;gap:var(--sp-3)')}</div>`;
-          case 'gl-deductible':return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Deductible</h2>${hiddenContent}</div>`;
-          case 'gl-exclusion': return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Exclusion</h2>${hiddenContent}</div>`;
-          case 'gl-limits':    return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Limits</h2>${hiddenContent}</div>`;
-          case 'gl-addons':    return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${hiddenContent}</div>`;
-          case 'liq-uwq': case 'liq-deductible': case 'liq-exclusion': case 'liq-limits':
-          case 'uw-toolbox-uwq':
+          case 'gl-uwq':   return uwqContent;
+          case 'gl-opt-q': return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Optional Questions</h2>${optContent}</div>`;
+          case 'liq-deductible': return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Deductible</h2><p style="color:var(--fg-muted);font-size:13px">No deductible questions for Liquor Liability.</p></div>`;
+          case 'liq-limits':    return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Limits</h2><p style="color:var(--fg-muted);font-size:13px">No limit questions for Liquor Liability.</p></div>`;
+          case 'liq-uwq': case 'uw-toolbox-uwq':
+          case 'gl-addl-ins': case 'gl-deductible': case 'gl-exclusion': case 'gl-limits': case 'gl-addons': case 'liq-exclusion': {
+            if (secContent[ns]) {
+              const titles = {'gl-addl-ins':'Additional Insured','gl-deductible':'Deductible','gl-exclusion':'Exclusion','gl-limits':'Limits','gl-addons':'Add-ons','uw-toolbox-uwq':'Underwriter Toolbox','liq-uwq':'Underwriting Questions','liq-exclusion':'Exclusion'};
+              return `<div style="display:flex;flex-direction:column;gap:var(--sp-4)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">${titles[ns]||ns}</h2>${secContent[ns]}</div>`;
+            }
+          }
           default: return `<div style="padding:var(--sp-6) 0;text-align:center;color:var(--fg-muted)"><i class="ph ph-shield-check" style="font-size:40px;color:var(--border);display:block;margin-bottom:var(--sp-3)"></i>Questions for this section will appear here.</div>`;
         }
       };
