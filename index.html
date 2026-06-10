@@ -5730,8 +5730,10 @@
       // ---- Step 2: Optional Coverages (full GL form) ----
       // ---- Step 2: Optional Coverages (3 items from updated form) ----
       const addlInsCount = gf.addlInsCount || 0;
+      const glSecHead = (label) => `<div style="font-size:11px;font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em;padding:var(--sp-2) 0 var(--sp-1);border-bottom:1px solid var(--border-soft);margin-bottom:var(--sp-1)">${label}</div>`;
       const optContent = `
-        <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+        <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+          ${glSecHead('Additional Insured')}
           ${glYN('epl','Employment Practices Liability (EPL) Coverage','','i')}
           ${glYN('addlIns','Add Additional Insureds to your General Liability policy (e.g. Landlord, Franchisor, Municipality, Venue)','','i')}
           ${gf.addlIns === 'yes' ? `<div class="gl-cond">
@@ -5759,42 +5761,44 @@
 
       // ---- Step 3: Hidden Fields (all remaining items from updated form) ----
       const hiddenContent = `
-        <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+        <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
+          ${glSecHead('Deductible')}
           ${glYN('waiverSpec','Waiver of Subrogation - Specified Named / Organization','','i')}
+          ${glYN('waiverGen','Waiver of Subrogation')}
+          ${glYN('tenantLegal','Tenant\'s Legal Liability Coverage','','i')}
+          ${glYN('blanketPrimary','Blanket Primary and Non-Contributory Coverage')}
+          ${glYN('cancelNonrenew','Cancellation or Nonrenewal by Us - Notification to Designated Entity',
+            glYN('manuscriptedEnt','Designated Entities - Toggle Manuscripted Entities','','i')
+          )}
+          ${glYN('medExpExcl','Medical Expenses Exclusion Option')}
+          ${glSecHead('Additional Insured')}
+          ${glYN('addlInsControl','Additional Insured - Controlling Interest coverage')}
+          ${glYN('addlInsCoOwner','Additional Insured - Co-Owner of Insured Premises coverage')}
+          ${glYN('addlInsLessor','Additional Insured - Lessor of Leased Equipment', glTA('Lessor of Leased Equipment - Name Of Additional Insured Person(s) Or Organization(s)'))}
+          ${glYN('namedInsureds','Add Named Insureds','','i')}
+          ${glYN('addlInsLand','Additional Insured - Owners Or Other Interests From Whom Land Has Been Leased (Blanket)')}
+          ${glYN('mgrLessors','Additional Insured - Managers Or Lessors Of Premises (Blanket)', glTA("Designation of Premises (e.g., 'Suite 200, 123 Main St'; leave blank for blanket coverage)"))}
+          ${glYN('grantorFranchise','Additional Insured - Grantor of Franchise coverage')}
+          ${glYN('blanketAddlIns','Blanket Additional Insured by Contract coverage','','i')}
+          ${glYN('stateGov','Additional Insured - State Gov Agency Subdivision Political Subdivision (Blanket)')}
+          ${glYN('vendors','Additional Insured - Vendors', glTA('Vendors - Name Of Additional Insured Person(s) Or Organization(s) (Vendor)'))}
+          ${glSecHead('Exclusion')}
           ${glYN('mechAmusement','Mechanically Operated Amusement Device Exclusion')}
           ${glYN('excessMed','Excess Medical Payments - Participants',
             glQ('Excess Medical Payments - Participants Limit', glRadioList(['$5,000','$10,000','$15,000','$25,000']))
           )}
           ${glYN('cannabis','Cannabis Exclusion with Hemp Exception')}
-          ${glYN('tenantLegal','Tenant\'s Legal Liability Coverage','','i')}
-          ${glYN('addlInsControl','Additional Insured - Controlling Interest coverage')}
-          ${glYN('addlInsCoOwner','Additional Insured - Co-Owner of Insured Premises coverage')}
-          ${glYN('addlInsLessor','Additional Insured - Lessor of Leased Equipment', glTA('Lessor of Leased Equipment - Name Of Additional Insured Person(s) Or Organization(s)'))}
-          ${glYN('namedInsureds','Add Named Insureds','','i')}
           ${glYN('injuryWorker','Exclusion - Injury to Worker')}
-          ${glYN('waiverGen','Waiver of Subrogation')}
           ${glYN('pfas','Exclusion - Perfluoroalkyl and Polyfluoroalkyl Substances (PFAS)')}
           ${glYN('persAdvExcl','Personal and Advertising Injury Exclusion Option')}
-          ${glYN('addlInsLand','Additional Insured - Owners Or Other Interests From Whom Land Has Been Leased (Blanket)')}
           ${glYN('playground','Playground Facility Exclusion')}
-          ${glYN('mgrLessors','Additional Insured - Managers Or Lessors Of Premises (Blanket)',
-            glTA("Designation of Premises (e.g., 'Suite 200, 123 Main St'; leave blank for blanket coverage)")
-          )}
           ${glYN('foodTruck','Is your primary operation a motorized food truck or mobile restaurant/food trailer?')}
-          ${glYN('grantorFranchise','Additional Insured - Grantor of Franchise coverage')}
           ${glYN('medMalpractice','Exclusion - Medical Malpractice')}
           ${glYN('participantExcl','Add Participant vs Participant Exclusion')}
           ${glYN('selectedActivities','Add Selected Activities Exclusion',
             glYN('excludeAllActivities','Exclude All Listed Activities')
           )}
           ${glYN('sexualAbuse','Sexual Abuse and Sexual Molestation Exclusion')}
-          ${glYN('blanketAddlIns','Blanket Additional Insured by Contract coverage','','i')}
-          ${glYN('cancelNonrenew','Cancellation or Nonrenewal by Us - Notification to Designated Entity',
-            glYN('manuscriptedEnt','Designated Entities - Toggle Manuscripted Entities','','i')
-          )}
-          ${glYN('blanketPrimary','Blanket Primary and Non-Contributory Coverage')}
-          ${glYN('medExpExcl','Medical Expenses Exclusion Option')}
-          ${glYN('stateGov','Additional Insured - State Gov Agency Subdivision Political Subdivision (Blanket)')}
           ${glYN('commDisease','Attach Communicable Disease Exclusion Flag')}
           ${glYN('watercraft','Watercraft Liability')}
           ${glYN('customExcl','Attach Custom Exclusion - Designated Operations Flag',
@@ -5805,6 +5809,7 @@
             glTA('Description Box for Exclusion - Designated Professional Services')
           )}
           ${glYN('constructionExcl','Attach Construction Exclusions Flag')}
+          ${glSecHead('Limit')}
           ${glYN('ebl','Employee Benefits Liability Coverage','','i')}
           ${glYN('priorActs','Prior Acts Coverage - Employee Benefits Liability','','i')}
           ${glYN('limitBizDesc','Limitation of Coverage to Business Description')}
