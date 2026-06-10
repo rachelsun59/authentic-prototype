@@ -5553,7 +5553,7 @@
           <div class="cov-tree-section">
             <div class="cov-tree-head">
               <i class="ph ph-circle-half cov-tree-ico" style="color:var(--warn)"></i>
-              <span class="cov-tree-label">Submission Details</span>
+              <span class="cov-tree-label">Submission Info</span>
             </div>
             <div class="cov-tree-children">
               ${child('account-info','Account Information')}
@@ -5797,14 +5797,30 @@
       const curGL2 = (BDE.indication.glLimit || '1,000,000/2,000,000').replace(/^\$\s*/, '');
       const bi2 = BDE.quote?.basicInfo || {};
       const phoneMissing2 = !bi2.phone;
-      const basicInfoTop = bdeSection('basic-info-cov', 'Basic Information', `
-        <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3)">
-          <div class="qf-field"><i class="ph ph-user ico"></i><div class="stack"><span class="label">Full name</span><input type="text" data-quote-field="fullName" value="${bi2.fullName||''}" placeholder="Full name"/></div></div>
-          <div><div class="qf-field ${phoneMissing2?'is-error':''}"><i class="ph ph-phone ico"></i><div class="stack"><span class="label">Phone</span><input type="text" data-quote-field="phone" value="${bi2.phone||''}" placeholder="(000) 000-0000"/></div></div>${phoneMissing2?'<div class="qf-error-text">Missing required field</div>':''}</div>
-          <div class="qf-row"><div class="qf-field"><i class="ph ph-map-pin ico"></i><div class="stack"><span class="label">Mailing Address</span><input type="text" data-quote-field="mailingAddress" value="${bi2.mailingAddress||''}" placeholder="Street, City, ST ZIP"/></div></div><div class="qf-field unit"><div class="stack"><span class="label">Unit #</span><input type="text" data-quote-field="unit" value="${bi2.unit||''}" placeholder="Suite"/></div></div></div>
-          <div class="qf-field"><i class="ph ph-buildings ico"></i><div class="stack"><span class="label">Business name</span><input type="text" data-quote-field="businessName" value="${bi2.businessName||''}"/></div></div>
-          <div class="qf-field"><i class="ph ph-storefront ico"></i><div class="stack"><span class="label">Business type</span><input type="text" data-quote-field="businessType" value="${bi2.businessType||''}"/></div></div>
-        </div>`);
+      // Account Info card field helper matching Figma 165:28493
+      const acField = (ico, label, val, ph='', extraClass='', errorMsg='') => `
+        <div style="border:1px solid ${extraClass?'var(--err)':'var(--border)'};border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface)">
+          <i class="ph ${ico}" style="font-size:16px;color:var(--fg-muted);flex-shrink:0;margin-top:2px"></i>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">${label}</div>
+            <input type="text" data-quote-field="${ph}" value="${val}" placeholder="${ph||label}"
+              style="border:0;outline:0;font:inherit;font-size:14px;color:var(--fg);background:transparent;width:100%"/>
+          </div>
+        </div>
+        ${errorMsg ? `<div style="font-size:12px;color:var(--err);margin-top:2px">${errorMsg}</div>` : ''}`;
+      const basicInfoContent = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
+          <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Account Info</h2>
+          <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+            ${acField('ph-user',     'Name',           bi2.fullName||'',        'fullName')}
+            ${acField('ph-phone',    'Phone Number',   bi2.phone||'',           'phone', phoneMissing2?'error':'', phoneMissing2?'Missing required field':'')}
+            ${acField('ph-map-pin',  'Mailing Address',bi2.mailingAddress||'',  'mailingAddress')}
+            ${acField('ph-map-pin',  'Unit #',         bi2.unit||'',            'unit')}
+            ${acField('ph-threads-logo','Business name',bi2.businessName||'',   'businessName')}
+            ${acField('ph-briefcase','Business Type',  bi2.businessType||'',    'businessType')}
+          </div>
+          <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" data-cov-child="policy-info">Continue</button></div>
+        </div>`;
       const polInfoTop = bdeSection('pol-info-cov', 'Policy Information', `
         <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3)">
           <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Selected Premium</span><input id="bde-selected-premium-cov" type="text" value="${ind2.selected.toLocaleString('en-US')}"/></div></div>
@@ -5816,7 +5832,7 @@
       // ---- Content routing by nav section ----
       const getBody = () => {
         switch (ns) {
-          case 'account-info': return `<div class="bde-sections">${basicInfoTop}</div>`;
+          case 'account-info': return basicInfoContent;
           case 'policy-info':  return `
             <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
               <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Policy Info</h2>
