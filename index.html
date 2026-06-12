@@ -30,6 +30,10 @@
 }
 </style>
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  <!-- AG Grid Community -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32/styles/ag-grid.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32/styles/ag-theme-quartz.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32/dist/ag-grid-community.min.js"></script>
   <!-- In-browser document parsers for the New Submission flow:
        PapaParse → CSV, SheetJS → XLSX/XLS, PDF.js → PDF text extraction.
        Served from ./vendor/ so the prototype works offline. -->
@@ -4521,41 +4525,8 @@
               <strong>Indication roll-up</strong>
             </div>
           </div>
-          <div style="overflow-x:auto">
-            <table class="xtable excel-grid">
-              <thead>
-                <tr>
-                  <th class="r">Maturity<br>months</th>
-                  <th>Accident<br>Year</th>
-                  <th class="r">Total Annual<br>Sales ($)</th>
-                  <th class="r">Incurred<br>Unlimited ($)</th>
-                  <th class="r">Incurred<br>Limited ($)</th>
-                  <th class="r">LDF</th>
-                  <th class="r">% Claims<br>Unreported</th>
-                  <th class="r">Expected<br>Loss ($)</th>
-                  <th class="r">Ultimate Loss<br>Uncapped ($)</th>
-                  <th class="r">Ultimate Loss<br>Capped ($)</th>
-                  <th class="r">Loss Cost<br>Uncapped</th>
-                  <th class="r">Loss Cost<br>Capped</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${matRows}
-                <tr class="total">
-                  <td></td>
-                  <td>Total</td>
-                  <td class="r">${fmtUSD(tot.sales)}</td>
-                  <td class="r">${fmtUSD(tot.unlim)}</td>
-                  <td class="r">${fmtUSD(tot.lim)}</td>
-                  <td></td><td></td>
-                  <td class="r">${fmtUSD(tot.expL)}</td>
-                  <td class="r">${fmtUSD(tot.uUn)}</td>
-                  <td class="r">${fmtUSD(tot.uCa)}</td>
-                  <td class="r">${totLcU}</td>
-                  <td class="r">${totLcC}</td>
-                </tr>
-              </tbody>
-            </table>
+          <div id="ag-indication" class="ag-theme-quartz" style="height:240px;width:100%"
+            data-ag-ind='${JSON.stringify([...m.map(r=>({mat:r.mat,yr:r.yr,sales:r.sales,unlim:r.unlim,lim:r.lim,ldf:r.ldf,pctU:r.pctU,expL:r.expL,uUn:r.uUn,uCa:r.uCa,lcU:r.lcU,lcC:r.lcC})),{mat:'',yr:'Total',sales:tot.sales,unlim:tot.unlim,lim:tot.lim,ldf:'',pctU:'',expL:tot.expL,uUn:tot.uUn,uCa:tot.uCa,lcU:totLcU,lcC:totLcC}]).replace(/'/g,"&#39;")}'>
           </div>
         </div>
 
@@ -4886,36 +4857,8 @@
               })()}
             </div>
           </div>
-          <div style="overflow-x:auto">
-            <table class="xtable excel-grid">
-              <thead>
-                <tr>
-                  <th class="gut"><input type="checkbox" id="bde-chk-all" ${allChecked ? 'checked' : ''} title="Select all"/></th>
-                  <th>Loss Date</th>
-                  <th>Valuation Date<br><span style="color:var(--fg-muted);font-weight:400">optional</span></th>
-                  <th>Accident Year ${renderColFilterPopover('claim', claimUniqueVals('ay'), cf, 'ay')}</th>
-                  <th>Location</th>
-                  <th>Event description</th>
-                  <th class="r">Case Incurred ($)<br>(Gross)</th>
-                  <th class="r">Net Unlimited ($)<br>(after ded.)</th>
-                  <th class="r">Net @$100K<br>(ded. + cap)</th>
-                  <th>Source ${renderColFilterPopover('claim', claimUniqueVals('src'), cf, 'src')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rows}
-              </tbody>
-              <tfoot>
-                <tr class="total">
-                  <td class="gut"></td>
-                  <td colspan="5"></td>
-                  <td class="r"><strong>${fmtUSD(tot.gross)}</strong></td>
-                  <td class="r"><strong>${fmtUSD(tot.netUnlim)}</strong></td>
-                  <td class="r"><strong>${fmtUSD(tot.netCap)}</strong></td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
+          <div id="ag-claims" class="ag-theme-quartz" style="height:420px;width:100%"
+            data-ag-claims='${JSON.stringify(filteredClaims.map((c)=>({_idx:rec.claims.indexOf(c),date:c.date||'',valDate:c.valDate||'',ay:c.ay||'',loc:c.loc||'',ev:c.ev||'',gross:c.gross||0,netUnlim:c.netUnlim||0,netCap:c.netCap||0,src:c.src||''}))).replace(/'/g,"&#39;")}'>
           </div>
         </div>
 
@@ -5330,9 +5273,21 @@
       const STATE_NAMES = { FL: 'Florida', NY: 'New York', CA: 'California', TX: 'Texas' };
 
       const tableFor = (stateRows, groupKey) => {
-        const allChecked = stateRows.length > 0 && stateRows.every(({i}) => State.expSelectedRows.has(i));
+        const safeKey = groupKey.replace(/[^a-zA-Z0-9]/g, '_');
+        const rowData = stateRows.map(({r, i}) => ({
+          _idx: i, _flag: i === 2,
+          location: `${r.addr}, ${r.city}, ${r.st} ${r.zip}`,
+          sales: r.sales, sqft: r.sqft, emp: r.emp,
+          cov: (r.covArr||['GL']).join(' / '),
+          classCode: r.classCode || classCode,
+          lim1: r.lim1||'1M / 2M', ded: r.ded, prem: r.prem,
+        }));
         return `
-        <div style="overflow-x:auto">
+        <div id="ag-exp-${safeKey}" class="ag-theme-quartz" style="height:${Math.min(400, 60 + stateRows.length * 42)}px;width:100%"
+          data-ag-exp='${JSON.stringify(rowData).replace(/'/g,"&#39;")}'>
+        </div>
+        <!-- legacy table stub (hidden) -->
+        <div style="display:none">
           <table class="xtable excel-grid">
             <thead>
               <tr>
@@ -5383,6 +5338,7 @@
                 </tr>`;}).join('')}
             </tbody>
           </table>
+        </div>
         </div>`;};
 
       const accordions = Object.entries(grouped).map(([key, groupRows]) => {
@@ -6232,6 +6188,103 @@
       });
 
       wireEvents();
+    }
+
+    function initAgGrids() {
+      if (typeof agGrid === 'undefined') return;
+      const numFmt = v => v == null || v === 0 ? '' : Number(v).toLocaleString('en-US');
+      const usdFmt = v => v == null || v === 0 ? '' : '$' + Number(v).toLocaleString('en-US');
+
+      // ---- Indication roll-up grid ----
+      const indEl = document.getElementById('ag-indication');
+      if (indEl && indEl.dataset.agInd) {
+        const indData = JSON.parse(indEl.dataset.agInd);
+        agGrid.createGrid(indEl, {
+          theme: agGrid.themeQuartz,
+          rowData: indData,
+          defaultColDef: { resizable: true, sortable: true, minWidth: 80 },
+          columnDefs: [
+            { field:'mat',   headerName:'Maturity\nMonths', type:'numericColumn', width:90 },
+            { field:'yr',    headerName:'Accident Year',    width:100,
+              cellStyle: p => p.data.yr === 'Total' ? { fontWeight:600 } : {} },
+            { field:'sales', headerName:'Total Annual Sales ($)', type:'numericColumn', width:130, valueFormatter: p => p.data.yr==='Total' ? numFmt(p.value) : usdFmt(p.value) },
+            { field:'unlim', headerName:'Incurred Unlimited ($)', type:'numericColumn', width:130, valueFormatter: p => numFmt(p.value) },
+            { field:'lim',   headerName:'Incurred Limited ($)', type:'numericColumn', width:120, valueFormatter: p => numFmt(p.value) },
+            { field:'ldf',   headerName:'LDF',   width:70 },
+            { field:'pctU',  headerName:'% Claims Unreported', width:110 },
+            { field:'expL',  headerName:'Expected Loss ($)', type:'numericColumn', width:120, valueFormatter: p => numFmt(p.value) },
+            { field:'uUn',   headerName:'Ultimate Loss Uncapped ($)', type:'numericColumn', width:150, valueFormatter: p => numFmt(p.value) },
+            { field:'uCa',   headerName:'Ultimate Loss Capped ($)', type:'numericColumn', width:150, valueFormatter: p => numFmt(p.value) },
+            { field:'lcU',   headerName:'Loss Cost Uncapped', width:120 },
+            { field:'lcC',   headerName:'Loss Cost Capped', width:120 },
+          ],
+          getRowStyle: p => p.data.yr === 'Total' ? { background:'var(--bg-accent)', fontWeight:600 } : {},
+          domLayout: 'normal',
+          headerHeight: 40,
+        });
+      }
+
+      // ---- Loss Run detail grid ----
+      const clEl = document.getElementById('ag-claims');
+      if (clEl && clEl.dataset.agClaims) {
+        const clData = JSON.parse(clEl.dataset.agClaims);
+        agGrid.createGrid(clEl, {
+          theme: agGrid.themeQuartz,
+          rowData: clData,
+          defaultColDef: { resizable: true, sortable: true, filter: true },
+          columnDefs: [
+            { field:'date',    headerName:'Loss Date',       width:110 },
+            { field:'valDate', headerName:'Valuation Date',  width:120 },
+            { field:'ay',      headerName:'Accident Year',   width:110, type:'numericColumn' },
+            { field:'loc',     headerName:'Location',        width:180, filter:'agTextColumnFilter' },
+            { field:'ev',      headerName:'Event Description', flex:1, minWidth:160, filter:'agTextColumnFilter' },
+            { field:'gross',   headerName:'Case Incurred ($)',  type:'numericColumn', width:130, valueFormatter: p => usdFmt(p.value) },
+            { field:'netUnlim',headerName:'Net Unlimited ($)',  type:'numericColumn', width:130, valueFormatter: p => usdFmt(p.value) },
+            { field:'netCap',  headerName:'Net @$100K',         type:'numericColumn', width:110, valueFormatter: p => usdFmt(p.value) },
+            { field:'src',     headerName:'Source', width:160 },
+          ],
+          domLayout: 'normal',
+          headerHeight: 40,
+          rowSelection: 'multiple',
+          suppressRowClickSelection: true,
+          pinnedBottomRowData: [(() => {
+            const d = clData;
+            return { date:'', valDate:'', ay:'', loc:'', ev:`${d.length} claims`,
+              gross: d.reduce((s,r)=>s+(r.gross||0),0),
+              netUnlim: d.reduce((s,r)=>s+(r.netUnlim||0),0),
+              netCap: d.reduce((s,r)=>s+(r.netCap||0),0), src:'' };
+          })()],
+          getRowStyle: p => p.node.rowPinned ? { background:'var(--bg-accent)', fontWeight:600 } : {},
+        });
+      }
+
+      // ---- Exposures grids (one per state group) ----
+      document.querySelectorAll('[id^="ag-exp-"]').forEach(el => {
+        if (!el.dataset.agExp) return;
+        const data = JSON.parse(el.dataset.agExp);
+        agGrid.createGrid(el, {
+          theme: agGrid.themeQuartz,
+          rowData: data,
+          defaultColDef: { resizable: true, sortable: true, minWidth: 80 },
+          columnDefs: [
+            { field:'_idx', headerName:'#', width:50, type:'numericColumn',
+              cellRenderer: p => p.data._flag ? '<span title="Decline reason: tier four wind zone for property" style="color:var(--warn)">⚠</span>' : p.value + 1 },
+            { field:'location',  headerName:'Location', flex:1, minWidth:200, filter:'agTextColumnFilter' },
+            { field:'sales',     headerName:'Annual Sales ($)', type:'numericColumn', width:130, valueFormatter: p => usdFmt(p.value) },
+            { field:'sqft',      headerName:'Sqft', type:'numericColumn', width:85, valueFormatter: p => numFmt(p.value) },
+            { field:'emp',       headerName:'Employees', type:'numericColumn', width:90 },
+            { field:'cov',       headerName:'Coverage', width:100 },
+            { field:'classCode', headerName:'Class Code', width:180, filter:'agTextColumnFilter' },
+            { field:'lim1',      headerName:'Limits', width:100 },
+            { field:'ded',       headerName:'Deductible ($)', type:'numericColumn', width:110, valueFormatter: p => usdFmt(p.value) },
+            { field:'prem',      headerName:'Premium ($)', type:'numericColumn', width:110, valueFormatter: p => usdFmt(p.value) },
+          ],
+          rowSelection: 'multiple',
+          suppressRowClickSelection: true,
+          domLayout: 'normal',
+          headerHeight: 40,
+        });
+      });
     }
 
     function wireEvents() {
@@ -7338,6 +7391,8 @@
         // Defer attach so the click that opened it doesn't immediately close
         setTimeout(() => document.addEventListener('mousedown', close, true), 0);
       }
+      // Initialize AG Grid tables after DOM is ready
+      setTimeout(initAgGrids, 0);
     }
 
     // Lightweight rerender used by the search input — re-renders the Growth
