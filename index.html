@@ -5605,11 +5605,14 @@
         </div>`;
       };
       // Flat nav item helper
-      const flatNav = (id, pct, label, active=false) => `
+      const flatNav = (id, pct, label, active=false, sub='') => `
         <div class="cov-tree-head${active?' is-active-nav':''}" data-cov-nav-flat="${id}"
           style="cursor:pointer;padding:var(--sp-2) var(--sp-2);border-radius:var(--r-md);background:${active?'var(--bg-accent)':'transparent'};display:flex;align-items:center;gap:var(--sp-2)">
           ${ringSmall(pct)}
-          <span style="font-size:13px;font-weight:${active?'500':'400'};color:var(--fg);flex:1">${label}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:${active?'500':'400'};color:var(--fg)">${label}</div>
+            ${sub ? `<div style="font-size:11px;color:var(--fg-muted)">${sub}</div>` : ''}
+          </div>
         </div>`;
       const addableNav = (id, label) => `
         <div class="cov-tree-head" data-cov-toggle="${id}"
@@ -5622,8 +5625,7 @@
       const sidebar = `
         <div class="cov-sidebar" style="gap:2px;overflow-y:auto">
           ${flatNav('submission', 100, 'Submission Info', activeNav==='submission'||activeNav==='account-info'||activeNav==='policy-info')}
-          ${flatNav('gl', covPct2.gl, 'General Liability', activeNav==='gl'||activeNav?.startsWith('gl-'))}
-          ${flatNav('gl-rater', 0, 'General Liability (rater)', activeNav==='gl-rater')}
+          ${flatNav('gl', covPct2.gl, 'General Liability', activeNav==='gl'||activeNav?.startsWith('gl-'), 'Everspan/Greenwood')}
           ${flatNav('liq', covPct2.liq, 'Liquor Liability', activeNav==='liq'||activeNav?.startsWith('liq-'))}
           ${flatNav('uw-toolbox', 0, 'Underwriter toolbox', activeNav==='uw-toolbox'||activeNav==='uw-toolbox-uwq')}
           ${addableNav('prop','Property Liability')}
@@ -5792,9 +5794,46 @@
         </div>`;
 
       // ns already declared above
+      // ─── Liquor Liability content ─────────────────────────
+      const liqContent = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
+          <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Liquor Liability</h2>
+          ${csec('liq-req','Required Questions / Rate Driver',
+            `<div class="covq-item" style="justify-content:space-between">
+              <div style="flex:1">
+                <div class="covq-label">Annual Alcohol Sales Percentage</div>
+                <div class="uwq-pct-row" style="margin-top:var(--sp-2)">
+                  <input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct??0}"/>
+                  <span class="uwq-pct-unit">%</span>
+                </div>
+              </div>
+            </div>`
+          )}
+          ${csec('liq-excl','Exclusions',
+            ci('cannabis','Cannabis Exclusion with Hemp Exception') +
+            ci('pfas','Exclusion – Perfluoroalkyl and Polyfluoroalkyl Substances (PFAS)')
+          )}
+        </div>`;
+
+      // ─── Underwriter Toolbox content ──────────────────────
+      const uwToolboxContent = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
+          <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Underwriter Toolbox</h2>
+          ${csec('uw-underwriting','Underwriting',
+            ci('isRenewal','Is this a Renewal Application?') +
+            ci('manualOverride','Manual Underwriting Override - Policy Level') +
+            ci('lraro','Toggle for LRARO Rating ($100K+ Premium ONLY)')
+          )}
+        </div>`;
+
       const showSubmInfo = ns === 'account-info' || ns === 'policy-info' || ns === 'submission';
-      const mainContent = showSubmInfo ? submInfoContent : `${content}`;
-      const showAnchor  = !showSubmInfo;
+      const showLiq      = ns === 'liq' || ns?.startsWith('liq-');
+      const showUwTool   = ns === 'uw-toolbox' || ns === 'uw-toolbox-uwq';
+      const mainContent  = showSubmInfo ? submInfoContent
+                         : showLiq      ? liqContent
+                         : showUwTool   ? uwToolboxContent
+                         : content;
+      const showAnchor   = !showSubmInfo && !showLiq && !showUwTool;
 
       return `
         <div class="sec" style="padding:0;display:flex;flex-direction:column;height:100%;min-height:0">
