@@ -1715,7 +1715,23 @@
     .ujc-row.empty { border-bottom: 0; }
     /* Coverage tab layout */
     .cov-shell { display:flex; gap:0; }
-    .cov-sidebar { width:240px; flex-shrink:0; border-right:1px solid var(--border-soft); padding:var(--sp-4); display:flex; flex-direction:column; gap:var(--sp-2); }
+    .cov-sidebar { width:200px; flex-shrink:0; border-right:1px solid var(--border-soft); padding:var(--sp-4); display:flex; flex-direction:column; gap:var(--sp-2); }
+    /* Coverage questions checklist */
+    .covq-wrap { display:flex; flex:1; min-width:0; overflow:hidden; }
+    .covq-main { flex:1; min-width:0; overflow-y:auto; padding:var(--sp-5) var(--sp-5) 80px; }
+    .covq-anchor { width:160px; flex-shrink:0; padding:var(--sp-4) var(--sp-3); border-left:1px solid var(--border-soft); position:sticky; top:0; align-self:flex-start; display:flex; flex-direction:column; gap:var(--sp-1); }
+    .covq-anchor-link { font-size:12px; color:var(--fg-muted); padding:4px 8px; border-radius:var(--r-sm); cursor:pointer; text-decoration:none; transition:color .15s, background .15s; display:block; }
+    .covq-anchor-link:hover { color:var(--fg); background:var(--bg-accent); }
+    .covq-anchor-link.is-active { color:var(--tertiary); font-weight:500; }
+    .covq-section { margin-bottom:var(--sp-5); }
+    .covq-section-title { font-size:18px; font-weight:600; color:var(--fg); margin-bottom:var(--sp-3); }
+    .covq-item { display:flex; align-items:flex-start; gap:var(--sp-3); padding:10px 0; border-bottom:1px solid var(--border-soft); }
+    .covq-item:last-child { border-bottom:0; }
+    .covq-chk { width:16px; height:16px; border:1.5px solid var(--border); border-radius:3px; flex-shrink:0; margin-top:2px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .15s; }
+    .covq-chk.is-on { background:var(--tertiary); border-color:var(--tertiary); }
+    .covq-label { font-size:13px; color:var(--fg); flex:1; line-height:1.4; cursor:pointer; }
+    .covq-input { width:100%; margin-top:var(--sp-2); padding:8px 10px; border:1px solid var(--border); border-radius:var(--r-md); font:inherit; font-size:12px; background:var(--surface); }
+    .covq-select { width:100%; margin-top:var(--sp-2); padding:8px 10px; border:1px solid var(--border); border-radius:var(--r-md); font:inherit; font-size:12px; background:var(--surface); }
     .cov-type-divider { height:1px; background:var(--border-soft); margin:var(--sp-1) 0; }
     /* Coverage tree nav */
     .cov-tree-section { display:flex; flex-direction:column; gap:0; }
@@ -1732,7 +1748,7 @@
     .cov-type-btn .cov-chk { width:16px; height:16px; border:1.5px solid var(--border); border-radius:3px; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
     .cov-type-btn.is-on .cov-chk { background:var(--tertiary); border-color:var(--tertiary); }
     .cov-main { flex:1; min-width:0; display:flex; flex-direction:column; padding:var(--sp-5); gap:var(--sp-4); overflow-y:auto; }
-    .cov-sticky-foot { padding:var(--sp-3) var(--sp-5); display:flex; justify-content:flex-end; gap:var(--sp-2); background:var(--surface); flex-shrink:0; }
+    .cov-sticky-foot { padding:var(--sp-3) var(--sp-5); display:flex; justify-content:flex-end; gap:var(--sp-2); background:var(--surface); flex-shrink:0; border-top:1px solid var(--border-soft); }
     /* GL Form question components */
     .gl-qblock { display:flex; flex-direction:column; gap:var(--sp-2); }
     .gl-qlabel { font-size:13px; color:var(--fg); line-height:1.5; }
@@ -2734,10 +2750,11 @@
       },
       protoUser: 'hunt',
       userMenuOpen: false,
+      glChecked: new Set(['blanketPrimary']),    // checked coverage questions
       coverageStep: 'uwq',                       // 'uwq' | 'optional' | 'hidden'
       coverageTypes: new Set(['gl','liq']),    // toggled-on coverage types
       activeCovType: 'policy-info',            // currently viewed coverage type
-      covNavSection: 'policy-info',            // active nav sub-item
+      covNavSection: 'submission',            // active nav sub-item
       covCollapsed: new Set(),                 // collapsed tree sections
       optCovSelected: new Set(),      // selected optional coverages
       uwqOpen: new Set(['knockouts','claims','delivery','alcohol']), // open question accordions
@@ -5538,558 +5555,261 @@
 
     function renderUWQuestionsTab(rec) {
       if (!rec.uwq) rec.uwq = {};
-      const q         = rec.uwq;
-      const knockouts = q.knockouts || [];
-      const noneAbove = q.noneAbove !== false;
-      const claims    = q.claims    || 'no';
-      const delivery  = q.delivery  || 'no';
-      const step      = State.coverageStep; // 'uwq' | 'optional' | 'hidden'
+      const chk = State.glChecked;
 
-      const radioYN = (name, val) => `
-        <div class="opt-radio-group">
-          <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="yes" ${val==='yes'?'checked':''}/><span class="opt-radio-dot"></span>Yes</label>
-          <label class="opt-radio-label"><input type="radio" name="${name}" data-uwq-radio="${name}" value="no"  ${val==='no' ?'checked':''}/><span class="opt-radio-dot"></span>No</label>
+      // Checklist item helper
+      const ci = (id, label, condHtml='') => {
+        const on = chk.has(id);
+        return `<div class="covq-item" style="justify-content:space-between">
+          <div style="flex:1;cursor:pointer" data-covq-chk="${id}">
+            <span class="covq-label">${label}</span>
+            ${on && condHtml ? condHtml : ''}
+          </div>
+          <div class="covq-chk${on?' is-on':''}" data-covq-chk="${id}" style="flex-shrink:0;margin-top:2px">
+            ${on?'<i class="ph ph-check" style="font-size:10px;color:#fff"></i>':''}
+          </div>
+        </div>`;
+      };
+      const csec = (id, title, items) =>
+        `<div class="covq-section" id="covq-${id}">
+          <div class="covq-section-title">${title}</div>
+          ${items}
+        </div>`;
+      const cselect = (opts, ph='Select one') =>
+        `<select class="covq-select"><option value="">${ph}</option>${opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+
+      // ─── Simplified sidebar ───────────────────────────────────
+      const covPct2 = { gl: chk.size > 0 ? Math.min(100, Math.round((chk.size/20)*100)) : 0, liq: 0 };
+      const cc = State.covCollapsed;
+      const ringSmall = (pct) => {
+        const r=8, c=2*Math.PI*r, dash=(pct/100)*c;
+        const color = pct>=100?'var(--ok)':pct>0?'var(--warn)':'var(--border)';
+        const done = pct>=100;
+        return `<svg width="20" height="20" viewBox="0 0 20 20" style="flex-shrink:0">
+          <circle cx="10" cy="10" r="${r}" fill="none" stroke="var(--border-soft)" stroke-width="2"/>
+          <circle cx="10" cy="10" r="${r}" fill="${done?'var(--ok)':'none'}" stroke="${color}" stroke-width="2"
+            stroke-dasharray="${dash} ${c}" stroke-linecap="round" transform="rotate(-90 10 10)"/>
+          ${done?`<polyline points="6,10 9,13 14,7" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`:''}
+        </svg>`;
+      };
+      const ns = State.covNavSection;
+      const cchild = (id, label) => `<div class="cov-tree-child${ns===id?' is-active':''}" data-cov-child="${id}">${label}</div>`;
+      const sideSection = (sid, pct, label, children) => {
+        const collapsed = cc.has(sid);
+        return `<div class="cov-tree-section">
+          <div class="cov-tree-head" data-cov-section="${sid}" style="cursor:pointer">
+            ${ringSmall(pct)}<span class="cov-tree-label" style="flex:1">${label}</span>
+            <i class="ph ph-caret-${collapsed?'down':'up'}" style="font-size:11px;color:var(--fg-muted)"></i>
+          </div>
+          ${collapsed?'':`<div class="cov-tree-children">${children}</div>`}
+        </div>`;
+      };
+      // Flat nav item helper
+      const flatNav = (id, pct, label, active=false) => `
+        <div class="cov-tree-head${active?' is-active-nav':''}" data-cov-nav-flat="${id}"
+          style="cursor:pointer;padding:var(--sp-2) var(--sp-2);border-radius:var(--r-md);background:${active?'var(--bg-accent)':'transparent'};display:flex;align-items:center;gap:var(--sp-2)">
+          ${ringSmall(pct)}
+          <span style="font-size:13px;font-weight:${active?'500':'400'};color:var(--fg);flex:1">${label}</span>
+        </div>`;
+      const addableNav = (id, label) => `
+        <div class="cov-tree-head" data-cov-toggle="${id}"
+          style="cursor:pointer;padding:var(--sp-2) var(--sp-2);border-radius:var(--r-md);display:flex;align-items:center;gap:var(--sp-2)">
+          <i class="ph ph-plus-circle" style="font-size:20px;color:var(--fg-muted);flex-shrink:0"></i>
+          <span style="font-size:13px;color:var(--fg-muted);font-weight:400">${label}</span>
         </div>`;
 
-      // Pre-compute ind2 needed for progress calculation
+      const activeNav = ns;
+      const sidebar = `
+        <div class="cov-sidebar" style="gap:2px;overflow-y:auto">
+          ${flatNav('submission', 100, 'Submission Info', activeNav==='submission'||activeNav==='account-info'||activeNav==='policy-info')}
+          ${flatNav('gl', covPct2.gl, 'General Liability', activeNav==='gl'||activeNav?.startsWith('gl-'))}
+          ${flatNav('gl-rater', 0, 'General Liability (rater)', activeNav==='gl-rater')}
+          ${flatNav('liq', covPct2.liq, 'Liquor Liability', activeNav==='liq'||activeNav?.startsWith('liq-'))}
+          ${flatNav('uw-toolbox', 0, 'Underwriter toolbox', activeNav==='uw-toolbox'||activeNav==='uw-toolbox-uwq')}
+          ${addableNav('prop','Property Liability')}
+          ${addableNav('excess','Excess Liability')}
+        </div>`;
+
+      // ─── Right anchor nav ─────────────────────────────────────
+      const anchorNav = `
+        <div class="covq-anchor">
+          <div style="font-size:10px;font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:var(--sp-2)">On this page</div>
+          <a class="covq-anchor-link" href="#covq-uwq">Underwriting Questions</a>
+          <a class="covq-anchor-link" href="#covq-opt-q">Optional Questions</a>
+          <a class="covq-anchor-link" href="#covq-addl-ins">Additional Insured</a>
+          <a class="covq-anchor-link" href="#covq-exclusion">Exclusion</a>
+          <a class="covq-anchor-link" href="#covq-limits">Limits</a>
+          <a class="covq-anchor-link" href="#covq-addons">Add-ons</a>
+        </div>`;
+
+      // ─── Checklist content ────────────────────────────────────
+      const content = `
+        <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display);margin-bottom:var(--sp-4)">Coverage Questions</h2>
+
+        ${csec('uwq','Underwriting Questions',
+          ci('blanketPrimary','Blanket Primary and Non-Contributory Coverage') +
+          ci('cancelNonrenew','Cancellation or Nonrenewal – Notification to Designated Entity') +
+          ci('mechAmusement','Mechanically Operated Amusement Device Exclusion') +
+          ci('incidentalMed','Incidental Medical Malpractice') +
+          ci('selectedActivities','Add Selected Activities Exclusion') +
+          ci('foodTruck','Is your primary operation a motorized food truck or mobile restaurant?') +
+          ci('violations','Violations: OSHA, bankruptcy, cancelled coverage, losses, felony?') +
+          ci('franchise','Is your business a franchise?') +
+          ci('multiLocation','Do you have more than one business location?') +
+          ci('multiState','Do you have locations in multiple states?') +
+          ci('aircraft','Do you own or operate any aircraft or watercraft (including drones)?')
+        )}
+
+        ${csec('opt-q','Optional Questions',
+          ci('hnoa','Hired Auto and Nonowned Auto Liability') +
+          ci('epl','Employment Practices Liability (EPL) Coverage') +
+          ci('bikeDelivery','Do you perform deliveries via bicycle, scooter, or non-automobile transportation?') +
+          ci('lraro','Toggle for LRARO Rating ($100K+ Premium ONLY)') +
+          ci('isRenewal','Is this a Renewal Application?') +
+          ci('manualOverride','Manual Underwriting Override - Policy Level')
+        )}
+
+        ${csec('deductible','Deductible',
+          ci('deductibleLiab','Deductible Liability Insurance',
+            cselect(['$500','$1,000','$2,500','$5,000','$10,000','$15,000','$25,000','$50,000','$100,000','$150,000'],'Property Damage Liability Deductible')
+          )
+        )}
+
+        ${csec('addl-ins','Additional Insured',
+          ci('blanketAddlIns','Blanket Additional Insured by Contract coverage') +
+          ci('addlIns','Add Additional Insureds to GL policy (Landlord, Franchisor, Municipality, Venue)') +
+          ci('addlInsControl','Controlling Interest coverage') +
+          ci('addlInsCoOwner','Additional Insured – Co-Owner of Insured Premises coverage') +
+          ci('addlInsLessor','Additional Insured – Lessor of Leased Equipment') +
+          ci('addlInsLand','Additional Insured – Owners / Land Leased (Blanket)') +
+          ci('mgrLessors','Additional Insured – Managers or Lessors of Premises (Blanket)') +
+          ci('grantorFranchise','Additional Insured – Grantor of Franchise coverage') +
+          ci('stateGov','Additional Insured – State Gov Agency / Political Subdivision (Blanket)') +
+          ci('vendors','Additional Insured – Vendors') +
+          ci('waiverSpec','Waiver of Subrogation – Specified Named / Organization') +
+          ci('waiverGen','Waiver of Subrogation (Blanket)') +
+          ci('namedInsureds','Add Named Insureds')
+        )}
+
+        ${csec('exclusion','Exclusion',
+          ci('injuryWorker','Exclusion – Injury to Worker') +
+          ci('persAdvExcl','Personal and Advertising Injury Exclusion Option') +
+          ci('playground','Playground Facility Exclusion') +
+          ci('medMalpractice','Exclusion – Medical Malpractice') +
+          ci('participantExcl','Add Participant vs Participant Exclusion') +
+          ci('medExpExcl','Medical Expenses Exclusion Option') +
+          ci('commDisease','Attach Communicable Disease Exclusion Flag') +
+          ci('watercraft','Watercraft Liability') +
+          ci('profServices','Attach Exclusion – Designated Professional Services',
+            `<textarea class="covq-input" placeholder="Description" rows="2"></textarea>`
+          ) +
+          ci('constructionExcl','Attach Construction Exclusions Flag') +
+          ci('limitBizDesc','Limitation of Coverage to Business Description') +
+          ci('excldProducts','Exclusion – Designated Products') +
+          ci('pollutionFire','Exclusion Pollution Hostile Fire Exception') +
+          ci('limPremises','Limitation of Coverage to Designated Premises, Project or Operation')
+        )}
+
+        ${csec('limits','Limits',
+          ci('excessMed','Excess Medical Payments - Participants',
+            cselect(['$5,000','$10,000','$15,000','$25,000'],'Excess Medical Payments Limit')
+          ) +
+          ci('umbrella','Does your landlord require an umbrella policy?',
+            cselect(['$1,000,000','$2,000,000'],'Umbrella Policy Limit')
+          ) +
+          ci('locations','How many locations does your business have?',
+            cselect(['1','2','3','4','5','6','7','8','9','10+'])
+          )
+        )}
+
+        ${csec('addons','Add-ons',
+          ci('sam','Sexual Abuse & Molestation (SAM) Coverage') +
+          ci('sexualAbuse','Sexual Abuse and Sexual Molestation Exclusion') +
+          ci('tenantLegal','Tenant\'s Legal Liability Coverage') +
+          ci('tenantConstruct','Tenant Business Under Construction Policy') +
+          ci('ebl','Employee Benefits Liability Coverage',
+            cselect(['$300,000/$600,000','$500,000/$1,000,000','$1,000,000/$2,000,000'],'EBL Limit ($300K/$600K / $500K/$1M / $1M/$2M)')
+          ) +
+          ci('priorActs','Prior Acts Coverage – Employee Benefits Liability')
+        )}`;
+
+      // ─── Submission Info: Account + Policy forms ──────────
       const ind2 = getBDEIndication();
       const curGL2 = (BDE.indication.glLimit || '1,000,000/2,000,000').replace(/^\$\s*/, '');
       const bi2 = BDE.quote?.basicInfo || {};
       const phoneMissing2 = !bi2.phone;
 
-      // ---- Progress ring helper ----
-      const ring = (pct) => {
-        const r = 8, c = 2 * Math.PI * r;
-        const dash = (pct / 100) * c;
-        const color = pct >= 100 ? 'var(--ok)' : pct > 0 ? 'var(--warn)' : 'var(--border)';
-        const done = pct >= 100;
-        return `<svg width="20" height="20" viewBox="0 0 20 20" style="flex-shrink:0">
-          <circle cx="10" cy="10" r="${r}" fill="none" stroke="var(--border-soft)" stroke-width="2"/>
-          <circle cx="10" cy="10" r="${r}" fill="${done?'var(--ok)':'none'}" stroke="${color}" stroke-width="2"
-            stroke-dasharray="${dash} ${c}" stroke-linecap="round"
-            transform="rotate(-90 10 10)"/>
-          ${done ? `<polyline points="6,10 9,13 14,7" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
-        </svg>`;
-      };
-      // Calculate completion % for each section
-      const submPct = (() => {
-        const bi = BDE.quote?.basicInfo || {};
-        const done = [bi.fullName, bi.phone, bi.mailingAddress, bi.businessName, bi.businessType].filter(Boolean).length;
-        const polDone = ind2.selected > 0 ? 1 : 0;
-        return Math.round(((done + polDone) / 6) * 100);
-      })();
-      const glPct = (() => {
-        const uwq = rec.uwq || {};
-        const answered = [uwq.claims, uwq.delivery].filter(Boolean).length;
-        const noneSet = uwq.noneAbove !== false;
-        return Math.round(((answered + (noneSet?1:0)) / 3) * 100);
-      })();
-      const liqPct = 0; // placeholder until Liquor questions are added
-
-      // ---- Missing field counts per nav section ----
-      const missingCounts = {
-        'account-info': [bi2.fullName, bi2.phone, bi2.mailingAddress, bi2.businessName, bi2.businessType].filter(v => !v).length,
-        'policy-info':  ind2.selected <= 0 ? 1 : 0,
-        'gl-uwq':       (q.claims ? 0 : 1) + (q.delivery ? 0 : 1) + (q.noneAbove === undefined && !q.knockouts?.length ? 1 : 0),
-        'gl-addq':      0,
-        'gl-addons':    0,
-        'liq-uwq':      0,
-        'liq-addq':     0,
-      };
-
-      // ---- Tree sidebar nav ----
-      const ns = State.covNavSection; // active sub-item
-      const chip = (n) => n > 0 ? `<span style="margin-left:auto;background:var(--err);color:#fff;font-size:10px;padding:1px 6px;border-radius:var(--r-full);font-weight:600;flex-shrink:0">${n}</span>` : '';
-      const child = (id, label) => `
-        <div class="cov-tree-child${ns===id?' is-active':''}" data-cov-child="${id}" style="display:flex;align-items:center;gap:var(--sp-2)">
-          <span style="flex:1">${label}</span>${chip(missingCounts[id]||0)}
-        </div>`;
-      const covPct = { gl: glPct, liq: liqPct };
-      const addableCovs = [
-        { id:'prop',  label:'Property Liability'            },
-        { id:'epl',   label:'Employment Practice Liability' },
-        { id:'excess',label:'Excess Liability'              },
-      ];
-      const cc = State.covCollapsed;
-      const section = (sectionId, pct, label, children) => {
-        const collapsed = cc.has(sectionId);
-        return `
-          <div class="cov-tree-section">
-            <div class="cov-tree-head" data-cov-section="${sectionId}" style="cursor:pointer">
-              ${ring(pct)}
-              <span class="cov-tree-label" style="flex:1">${label}</span>
-              <i class="ph ph-caret-${collapsed?'down':'up'}" style="font-size:11px;color:var(--fg-muted)"></i>
-            </div>
-            ${collapsed ? '' : `<div class="cov-tree-children">${children}</div>`}
-          </div>`;
-      };
-      const glChildren =
-        child('gl-uwq',    'Underwriting questions') +
-        child('gl-opt-q',  'Optional questions') +
-        child('gl-addl-ins','Additional Insured') +
-        child('gl-deductible','Deductible') +
-        child('gl-exclusion','Exclusion') +
-        child('gl-limits', 'Limits') +
-        child('gl-addons', 'Add-ons');
-      const liqChildren =
-        child('liq-uwq',       'Underwriting questions') +
-        child('liq-deductible','Deductible') +
-        child('liq-exclusion', 'Exclusion') +
-        child('liq-limits',    'Limits');
-      const sidebar = `
-        <div class="cov-sidebar" style="gap:var(--sp-2);overflow-y:auto">
-          ${section('submission', submPct, 'Submission Info',
-            child('account-info','Account Information') + child('policy-info','Policy Information')
-          )}
-          ${section('gl',  covPct.gl||0,  'General Liability',  glChildren)}
-          ${section('liq', covPct.liq||0, 'Liquor Liability',   liqChildren)}
-          ${section('uw-toolbox', 0, 'Underwriter toolbox',
-            child('uw-toolbox-uwq','Underwriting questions')
-          )}
-          ${addableCovs.map(t => `
-          <div class="cov-tree-head" data-cov-toggle="${t.id}" style="cursor:pointer">
-            <i class="ph ph-plus-circle cov-tree-ico" style="color:var(--fg-muted)"></i>
-            <span class="cov-tree-label" style="color:var(--fg-muted);font-weight:400">${t.label}</span>
-          </div>`).join('')}
-        </div>`;
-
-      // 3-step progress bar
-      const steps = ['uwq','optional','hidden'];
-      const si = steps.indexOf(step);
-      const progress = `
-        <div class="cov-progress" style="margin-bottom:var(--sp-3)">
-          <div class="cov-prog-step">
-            <div class="cov-prog-dot done"></div>
-            <div class="cov-prog-label">Underwriting Questions</div>
-          </div>
-          <div class="cov-prog-line${si>=1?' done':''}"></div>
-          <div class="cov-prog-step">
-            <div class="cov-prog-dot${si===1?' active':si>1?' done':''}"></div>
-            <div class="cov-prog-label">Optional Coverages</div>
-          </div>
-          <div class="cov-prog-line${si>=2?' done':''}"></div>
-          <div class="cov-prog-step">
-            <div class="cov-prog-dot${si===2?' active':''}"></div>
-            <div class="cov-prog-label">Hidden Fields</div>
-          </div>
-        </div>`;
-
-      // Knockout accordion (only this question uses accordion)
-      const knockOpen = State.uwqOpen.has('knockouts');
-      const knockoutAcc = `
-        <div class="uwq-acc">
-          <button class="uwq-acc-head" data-uwq-acc="knockouts">
-            <i class="ph ph-check-circle uwq-acc-ico" style="color:var(--ok)"></i>
-            <span class="uwq-acc-title">Are any of the following true about you or your business?</span>
-            <span style="font-size:16px;color:var(--fg-muted)">${knockOpen ? '−' : '+'}</span>
-          </button>
-          ${knockOpen ? `<div class="uwq-acc-body">
-            ${UWQ_KNOCKOUTS.map(k => `
-              <label class="opt-radio-label" style="align-items:flex-start">
-                <input type="checkbox" class="uwq-knock-chk" data-uwq-knock="${k.id}" ${knockouts.includes(k.id)?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/>
-                <span class="opt-radio-dot" style="margin-top:2px;flex-shrink:0"></span>
-                <span style="font-size:14px;color:var(--fg)">${k.text}</span>
-              </label>`).join('')}
-            <div class="uwq-knock-sep"></div>
-            <label class="opt-radio-label">
-              <input type="radio" name="uwq-none" class="uwq-none-radio" ${noneAbove&&!knockouts.length?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/>
-              <span class="opt-radio-dot"></span>
-              <span style="font-size:14px;color:var(--fg)">None of the above</span>
-            </label>
-          </div>` : ''}
-        </div>`;
-
-      // ---- GL Form helpers ----
-      const gf = State.glForm;
-      const glYN = (id, label, condHtml='', tip='') => {
-        const val = gf[id];
-        const showCond = val === 'yes' && condHtml;
-        return `<div class="gl-qblock">
-          <div class="gl-qlabel">${label}${tip?`<span class="gl-info">i</span>`:''}</div>
-          <div class="gl-yn">
-            <button class="gl-yn-btn${val==='yes'?' active':''}" data-gl-yn="${id}" data-gl-val="yes">Yes</button>
-            <button class="gl-yn-btn${val==='no' ?' active':''}" data-gl-yn="${id}" data-gl-val="no">No</button>
-          </div>
-          ${showCond ? `<div class="gl-cond">${condHtml}</div>` : ''}
-        </div>`;
-      };
-      const glInput = (ph, id='') => `<input type="text" class="gl-input" placeholder="${ph}" ${id?`id="gl-${id}"`:''}>`;
-      const glTA    = (ph) => `<textarea class="gl-input gl-ta" placeholder="${ph}"></textarea>`;
-      const glNum   = (ph, id='') => `<input type="number" class="gl-num" placeholder="${ph}" min="0" ${id?`id="gl-${id}"`:''}>`;
-      const glRadioList = (items) => `<div class="gl-radio-list">${items.map(it=>`<div class="gl-radio-item">${it}</div>`).join('')}</div>`;
-      const glCond  = (inner) => `<div class="gl-cond">${inner}</div>`;
-      const glQ     = (label, body, tip='') => `<div class="gl-qblock"><div class="gl-qlabel">${label}${tip?'<span class="gl-info">i</span>':''}</div>${body}</div>`;
-      const glSep   = () => `<hr class="gl-divider">`;
-
-      // ---- UWQ card helper ----
-      const uwqCard = (content) => `<div style="border:1px solid var(--border-soft);border-radius:var(--r-lg);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)">${content}</div>`;
-      const uwqYN = (id, label) => {
-        const val = gf[id];
-        return `<div style="display:flex;flex-direction:column;gap:var(--sp-2)">
-          <div style="font-size:14px;color:var(--fg)">${label}</div>
-          <div class="gl-yn">
-            <button class="gl-yn-btn${val==='yes'?' active':''}" data-gl-yn="${id}" data-gl-val="yes">Yes</button>
-            <button class="gl-yn-btn${val==='no' ?' active':''}" data-gl-yn="${id}" data-gl-val="no">No</button>
-          </div>
-        </div>`;
-      };
-
-      // ---- Step 1: UW Questions — card-based layout matching Figma 236:37786 ----
-      const uwqContent = `
-        <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
-          <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Underwriting Questions</h2>
-
-          ${uwqCard(`
-            <div style="font-size:14px;color:var(--fg);margin-bottom:var(--sp-1)">Are any of the following true about you or your business?</div>
-            ${UWQ_KNOCKOUTS.map(k => `
-              <label class="opt-radio-label" style="align-items:flex-start">
-                <input type="checkbox" class="uwq-knock-chk" data-uwq-knock="${k.id}" ${knockouts.includes(k.id)?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/>
-                <span class="opt-radio-dot" style="margin-top:2px;flex-shrink:0"></span>
-                <span style="font-size:14px;color:var(--fg)">${k.text}</span>
-              </label>`).join('')}
-            <div class="uwq-knock-sep"></div>
-            <label class="opt-radio-label">
-              <input type="radio" name="uwq-none" class="uwq-none-radio" ${noneAbove&&!knockouts.length?'checked':''} style="position:absolute;opacity:0;width:0;height:0"/>
-              <span class="opt-radio-dot"></span>
-              <span style="font-size:14px;color:var(--fg)">None of the above</span>
-            </label>`)}
-
-          <div style="border:1px solid var(--border-soft);border-radius:var(--r-lg);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)">
-            ${uwqYN('claims','Has your business had any insurance claims in the past 3 years?')}
-            ${gf.claims === 'yes' ? `
-            <div style="border:1px solid var(--border-soft);border-radius:var(--r-md);padding:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-3)">
-              <div style="font-size:13px;color:var(--fg)">How many insurance claims has your business had in the past 3 years?</div>
-              ${glRadioList(['1','2','3','4','5','6','7','8','9','10+'])}
-              ${uwqYN('claims50k','Have you had any insurance claim greater than $50,000 in the past 3 years?')}
-            </div>` : ''}
-          </div>
-
-          <div style="border:1px solid var(--border-soft);border-radius:var(--r-lg);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)">
-            ${uwqYN('delivery','Does your restaurant offer in-house delivery service (not including Third-party apps such as DoorDash or Uber Eats)?')}
-            ${gf.delivery === 'yes' ? `
-            <div style="border:1px solid var(--border-soft);border-radius:var(--r-md);padding:var(--sp-3)">
-              ${uwqYN('deliveryAuto','Do you have an active commercial auto policy to cover your in-house delivery service?')}
-            </div>` : ''}
-          </div>
-
-          <div style="border:1px solid var(--border-soft);border-radius:var(--r-lg);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3)">
-            <div style="font-size:14px;color:var(--fg)">Annual Alcohol Sales Percentage</div>
-            <div class="uwq-pct-row">
-              <input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct??0}"/>
-              <span class="uwq-pct-unit">%</span>
-            </div>
-          </div>
-        </div>`;
-
-      // ---- Step 2: Optional Coverages (full GL form) ----
-      // ---- Step 2: Optional Coverages (3 items from updated form) ----
-      const addlInsCount = gf.addlInsCount || 0;
-      const glSecHead = (label) => `<div style="font-size:11px;font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em;padding:var(--sp-2) 0 var(--sp-1);border-bottom:1px solid var(--border-soft);margin-bottom:var(--sp-1)">${label}</div>`;
-      const optContent = `
-        <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
-          ${glSecHead('Additional Insured')}
-          ${glYN('epl','Employment Practices Liability (EPL) Coverage','','i')}
-          ${glYN('addlIns','Add Additional Insureds to your General Liability policy (e.g. Landlord, Franchisor, Municipality, Venue)','','i')}
-          ${gf.addlIns === 'yes' ? `<div class="gl-cond">
-            <div class="gl-qblock">
-              <div class="gl-qlabel">Number of Additional Insureds <span class="gl-info">i</span></div>
-              <input type="number" class="gl-num" id="gl-num-insureds" min="1" max="20" placeholder="0" value="${addlInsCount||''}" oninput="
-                const n=parseInt(this.value)||0;
-                const c=document.getElementById('gl-insured-fields');
-                if(!c)return;
-                State.glForm.addlInsCount=n;
-                c.innerHTML='';
-                for(let i=1;i<=Math.min(n,20);i++){
-                  const d=document.createElement('input');
-                  d.type='text';d.className='gl-input';
-                  d.placeholder='Name and Address of Additional Insured ('+i+')';
-                  c.appendChild(d);
-                }"/>
-              <div id="gl-insured-fields" style="display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-2)">
-                ${Array.from({length:Math.min(addlInsCount,20)},(_,i)=>`<input type="text" class="gl-input" placeholder="Name and Address of Additional Insured (${i+1})">`).join('')}
-              </div>
-            </div>
-          </div>` : ''}
-          ${glYN('hnoa','Hired Auto and Nonowned Auto Liability','','i')}
-        </div>`;
-
-      // ---- Step 3: Hidden Fields (all remaining items from updated form) ----
-      const hiddenContent = `
-        <div style="display:flex;flex-direction:column;gap:var(--sp-2)">
-          ${glSecHead('Deductible')}
-          ${glYN('waiverSpec','Waiver of Subrogation - Specified Named / Organization','','i')}
-          ${glYN('waiverGen','Waiver of Subrogation')}
-          ${glYN('tenantLegal','Tenant\'s Legal Liability Coverage','','i')}
-          ${glYN('blanketPrimary','Blanket Primary and Non-Contributory Coverage')}
-          ${glYN('cancelNonrenew','Cancellation or Nonrenewal by Us - Notification to Designated Entity',
-            glYN('manuscriptedEnt','Designated Entities - Toggle Manuscripted Entities','','i')
-          )}
-          ${glYN('medExpExcl','Medical Expenses Exclusion Option')}
-          ${glSecHead('Additional Insured')}
-          ${glYN('addlInsControl','Additional Insured - Controlling Interest coverage')}
-          ${glYN('addlInsCoOwner','Additional Insured - Co-Owner of Insured Premises coverage')}
-          ${glYN('addlInsLessor','Additional Insured - Lessor of Leased Equipment', glTA('Lessor of Leased Equipment - Name Of Additional Insured Person(s) Or Organization(s)'))}
-          ${glYN('namedInsureds','Add Named Insureds','','i')}
-          ${glYN('addlInsLand','Additional Insured - Owners Or Other Interests From Whom Land Has Been Leased (Blanket)')}
-          ${glYN('mgrLessors','Additional Insured - Managers Or Lessors Of Premises (Blanket)', glTA("Designation of Premises (e.g., 'Suite 200, 123 Main St'; leave blank for blanket coverage)"))}
-          ${glYN('grantorFranchise','Additional Insured - Grantor of Franchise coverage')}
-          ${glYN('blanketAddlIns','Blanket Additional Insured by Contract coverage','','i')}
-          ${glYN('stateGov','Additional Insured - State Gov Agency Subdivision Political Subdivision (Blanket)')}
-          ${glYN('vendors','Additional Insured - Vendors', glTA('Vendors - Name Of Additional Insured Person(s) Or Organization(s) (Vendor)'))}
-          ${glSecHead('Exclusion')}
-          ${glYN('mechAmusement','Mechanically Operated Amusement Device Exclusion')}
-          ${glYN('excessMed','Excess Medical Payments - Participants',
-            glQ('Excess Medical Payments - Participants Limit', glRadioList(['$5,000','$10,000','$15,000','$25,000']))
-          )}
-          ${glYN('cannabis','Cannabis Exclusion with Hemp Exception')}
-          ${glYN('injuryWorker','Exclusion - Injury to Worker')}
-          ${glYN('pfas','Exclusion - Perfluoroalkyl and Polyfluoroalkyl Substances (PFAS)')}
-          ${glYN('persAdvExcl','Personal and Advertising Injury Exclusion Option')}
-          ${glYN('playground','Playground Facility Exclusion')}
-          ${glYN('foodTruck','Is your primary operation a motorized food truck or mobile restaurant/food trailer?')}
-          ${glYN('medMalpractice','Exclusion - Medical Malpractice')}
-          ${glYN('participantExcl','Add Participant vs Participant Exclusion')}
-          ${glYN('selectedActivities','Add Selected Activities Exclusion',
-            glYN('excludeAllActivities','Exclude All Listed Activities')
-          )}
-          ${glYN('sexualAbuse','Sexual Abuse and Sexual Molestation Exclusion')}
-          ${glYN('commDisease','Attach Communicable Disease Exclusion Flag')}
-          ${glYN('watercraft','Watercraft Liability')}
-          ${glYN('customExcl','Attach Custom Exclusion - Designated Operations Flag',
-            glTA('Description Box for Exclusion - Custom Designated Operations')
-          )}
-          ${glYN('incidentalMed','Incidental Medical Malpractice')}
-          ${glYN('profServices','Attach Exclusion - Designated Professional Services',
-            glTA('Description Box for Exclusion - Designated Professional Services')
-          )}
-          ${glYN('constructionExcl','Attach Construction Exclusions Flag')}
-          ${glSecHead('Limit')}
-          ${glYN('ebl','Employee Benefits Liability Coverage','','i')}
-          ${glYN('priorActs','Prior Acts Coverage - Employee Benefits Liability','','i')}
-          ${glYN('limitBizDesc','Limitation of Coverage to Business Description')}
-          ${glYN('excldProducts','Exclusion - Designated Products')}
-          ${glYN('excldDiscrim','Exclusion - Discrimination')}
-          ${glYN('pollutionFire','Exclusion Pollution Hostile Fire Exception')}
-          ${glQ('How many locations does your business have?', glRadioList(['1','2','3','4','5','6','7','8','9','10+']))}
-          ${glYN('sam','Sexual Abuse &amp; Molestation (SAM) Coverage')}
-          ${glYN('vendors','Additional Insured - Vendors',
-            glTA('Vendors - Name Of Additional Insured Person(s) Or Organization(s) (Vendor)')
-          )}
-          ${glYN('electronicMedia','Electronic Media Liability','','i')}
-          ${glYN('umbrella','Does your landlord require an umbrella policy?','','i')}
-          ${glQ('Describe your Business', glInput('Business description'))}
-          <hr class="gl-divider">
-          ${glYN('franchise','Is your business a franchise?')}
-          ${glYN('multiLocation','Optional — Do you have more than one business location?')}
-          ${glYN('aircraft','Do you own or operate any aircraft or watercraft (including drones)?')}
-          ${glYN('limPremises','Limitation of Coverage to Designated Premises, Project or Operation',
-            glYN('manuscriptedPremises','Designated Premises - Toggle Manuscripted Premises','','i')
-          )}
-          ${glYN('deductibleLiab','Deductible Liability Insurance',
-            glQ('Property Damage Liability Deductible', glRadioList(['$500','$1,000','$2,500','$5,000','$10,000','$15,000','$25,000','$50,000','$100,000','$150,000']))
-          )}
-          ${glYN('multiState','Optional — Do you have locations at multiple states?')}
-          ${glYN('lraro','Toggle for LRARO Rating ($100K+ Premium ONLY)',
-            glInput('LRARO Rate Multiplier')
-          )}
-          ${glYN('isRenewal','Is this a Renewal Application?')}
-          ${glYN('bikeDelivery','Do you perform any deliveries via bicycle, scooter or non-automobile transportation?')}
-          ${glYN('tenantConstruct','Tenant Business Under Construction Policy')}
-          ${glYN('manualOverride','Manual Underwriting Override - Policy Level')}
-          ${glQ('Notes from Underwriting Review', glTA('Enter notes...'))}
-          ${glQ('Optional — Renewal Workflow Status', glRadioList([
-            'Not Released - Pending Documents',
-            'Not Released – Review in Progress',
-            'Renewal Approved',
-            'Renewal Denied'
-          ]))}
-        </div>`;
-
-      // ---- Per-section content matching Figma de2RkFYs4KSk1kxYMYN6P9 node 16:3 ----
-      const secContent = {
-        'gl-deductible': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-          ${glYN('deductibleLiab','Deductible Liability Insurance',
-            glQ('Property Damage Liability Deductible', glRadioList(['$500','$1,000','$2,500','$5,000','$10,000','$15,000','$25,000','$50,000','$100,000','$150,000']))
-          )}
-          ${glYN('waiverSpec','Waiver of Subrogation - Specified Named / Organization','','i')}
-          ${glYN('waiverGen','Waiver of Subrogation')}
-          ${glYN('blanketPrimary','Blanket Primary and Non-Contributory Coverage')}
-          ${glYN('cancelNonrenew','Cancellation or Nonrenewal by Us - Notification to Designated Entity',
-            glYN('manuscriptedEnt','Designated Entities - Toggle Manuscripted Entities','','i')
-          )}
-        </div>`,
-        'gl-exclusion': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-          ${glYN('injuryWorker','Exclusion - Injury to Worker')}
-          ${glYN('persAdvExcl','Personal and Advertising Injury Exclusion Option')}
-          ${glYN('playground','Playground Facility Exclusion')}
-          ${glYN('medMalpractice','Exclusion - Medical Malpractice')}
-          ${glYN('participantExcl','Add Participant vs Participant Exclusion')}
-          ${glYN('medExpExcl','Medical Expenses Exclusion Option')}
-          ${glYN('commDisease','Attach Communicable Disease Exclusion Flag')}
-          ${glYN('watercraft','Watercraft Liability')}
-          ${glYN('customExcl','Attach Custom Exclusion - Designated Operations Flag',
-            glTA('Description Box for Exclusion - Custom Designated Operations')
-          )}
-          ${glYN('profServices','Attach Exclusion - Designated Professional Services',
-            glTA('Description Box for Exclusion - Designated Professional Services')
-          )}
-          ${glYN('constructionExcl','Attach Construction Exclusions Flag')}
-          ${glYN('limitBizDesc','Limitation of Coverage to Business Description')}
-          ${glYN('excldProducts','Exclusion - Designated Products')}
-          ${glYN('pollutionFire','Exclusion Pollution Hostile Fire Exception')}
-          ${glYN('limPremises','Limitation of Coverage to Designated Premises, Project or Operation',
-            glYN('manuscriptedPremises','Designated Premises - Toggle Manuscripted Premises','','i')
-          )}
-        </div>`,
-        'gl-limits': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-          ${glQ('How many locations does your business have?', glRadioList(['1','2','3','4','5','6','7','8','9','10+']))}
-        </div>`,
-        'gl-addl-ins': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-          ${glYN('blanketAddlIns','Blanket Additional Insured by Contract coverage','','i')}
-          ${glYN('addlIns','Add Additional Insureds to your GL policy (e.g. Landlord, Franchisor, Municipality, Venue)','','i')}
-          ${glYN('addlInsControl','Additional Insured - Controlling Interest coverage')}
-          ${glYN('addlInsCoOwner','Additional Insured - Co-Owner of Insured Premises coverage')}
-          ${glYN('addlInsLessor','Additional Insured - Lessor of Leased Equipment', glTA('Lessor of Leased Equipment - Name Of Additional Insured Person(s) Or Organization(s)'))}
-          ${glYN('addlInsLand','Additional Insured - Owners Or Other Interests From Whom Land Has Been Leased (Blanket)')}
-          ${glYN('mgrLessors','Additional Insured - Managers Or Lessors Of Premises (Blanket)', glTA("Designation of Premises (leave blank for blanket coverage)"))}
-          ${glYN('grantorFranchise','Additional Insured - Grantor of Franchise coverage')}
-          ${glYN('stateGov','Additional Insured - State Gov Agency Subdivision Political Subdivision (Blanket)')}
-          ${glYN('vendors','Additional Insured - Vendors', glTA('Vendors - Name Of Additional Insured Person(s) Or Organization(s)'))}
-          ${glYN('namedInsureds','Add Named Insureds','','i')}
-        </div>`,
-        'gl-addons': `<div style="display:flex;flex-direction:column;gap:var(--sp-4)">
-          ${glSecHead('Sexual Abuse & Molestation (SAM)')}
-          ${glYN('sam','Sexual Abuse & Molestation (SAM) Coverage')}
-          ${glYN('sexualAbuse','Sexual Abuse and Sexual Molestation Exclusion')}
-          ${glSecHead('Auto')}
-          ${glYN('delivery','Does your restaurant offer in-house delivery service (not including third-party apps)?',
-            glYN('deliveryAuto','Do you have an active commercial auto policy?')
-          )}
-          ${glYN('bikeDelivery','Do you perform deliveries via bicycle, scooter, or non-automobile transportation?')}
-          ${glYN('hnoa','Hired Auto and Nonowned Auto Liability','','i')}
-          ${glSecHead('Tenant Legal Liability')}
-          ${glYN('tenantLegal','Tenant\'s Legal Liability Coverage','','i')}
-          ${glYN('tenantConstruct','Tenant Business Under Construction Policy')}
-          ${glSecHead('Employee Benefits (EBL)')}
-          ${glYN('ebl','Employee Benefits Liability Coverage','','i')}
-          ${glQ('EBL Limit ($300K/$600K  /  $500K/$1M  /  $1M/$2M)', glRadioList(['$300,000 / $600,000','$500,000 / $1,000,000','$1,000,000 / $2,000,000']))}
-          ${glYN('priorActs','Prior Acts Coverage - Employee Benefits Liability','','i')}
-        </div>`,
-        'uw-toolbox-uwq': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-          ${glQ('Describe your Business', glInput('Business description','bizDesc'))}
-          ${glYN('isRenewal','Is this a Renewal Application?')}
-          ${glYN('manualOverride','Manual Underwriting Override - Policy Level')}
-          ${glQ('Notes from Underwriting Review', glTA('Enter notes...'))}
-          ${glQ('Renewal Workflow Status', glRadioList(['Not Released - Pending Documents','Not Released – Review in Progress','Renewal Approved','Renewal Denied']))}
-          ${glYN('lraro','Toggle for LRARO Rating ($100K+ Premium ONLY)',
-            glInput('LRARO Rate Multiplier')
-          )}
-        </div>`,
-        'liq-uwq': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-          ${glQ('Annual Alcohol Sales Percentage',`<div class="uwq-pct-row"><input class="uwq-pct-input" type="text" inputmode="decimal" data-uwq-field="alcoholPct" value="${q.alcoholPct??0}"/><span class="uwq-pct-unit">%</span></div>`)}
-        </div>`,
-        'liq-exclusion': `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-          ${glYN('cannabis','Cannabis Exclusion with Hemp Exception')}
-          ${glYN('pfas','Exclusion - Perfluoroalkyl and Polyfluoroalkyl Substances (PFAS)')}
-        </div>`,
-      };
-
-      const activeName = COV_TYPES.find(t => t.id === State.activeCovType)?.label || 'General Liability';
-      const isGL = State.activeCovType === 'gl';
-      const placeholderContent = `
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-3);padding:var(--sp-6) 0;color:var(--fg-muted)">
-          <i class="ph ph-shield-check" style="font-size:40px;color:var(--border)"></i>
-          <div style="font-size:15px;font-weight:500;color:var(--fg)">${activeName}</div>
-          <div style="font-size:13px">Questions for this coverage type will appear here.</div>
-        </div>`;
-      // Account Info card field helper matching Figma 165:28493
-      const acField = (ico, label, val, ph='', extraClass='', errorMsg='') => `
-        <div style="border:1px solid ${extraClass?'var(--err)':'var(--border)'};border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface)">
+      const acField = (ico, label, val, ph='') => `
+        <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface);margin-bottom:var(--sp-2)">
           <i class="ph ${ico}" style="font-size:16px;color:var(--fg-muted);flex-shrink:0;margin-top:2px"></i>
           <div style="flex:1;min-width:0">
             <div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">${label}</div>
-            <input type="text" data-quote-field="${ph}" value="${val}" placeholder="${ph||label}"
-              style="border:0;outline:0;font:inherit;font-size:14px;color:var(--fg);background:transparent;width:100%"/>
-          </div>
-        </div>
-        ${errorMsg ? `<div style="font-size:12px;color:var(--err);margin-top:2px">${errorMsg}</div>` : ''}`;
-      const basicInfoContent = `
-        <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
-          <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Account Info</h2>
-          <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-            ${acField('ph-user',     'Name',           bi2.fullName||'',        'fullName')}
-            ${acField('ph-phone',    'Phone Number',   bi2.phone||'',           'phone', phoneMissing2?'error':'', phoneMissing2?'Missing required field':'')}
-            ${acField('ph-map-pin',  'Mailing Address',bi2.mailingAddress||'',  'mailingAddress')}
-            ${acField('ph-map-pin',  'Unit #',         bi2.unit||'',            'unit')}
-            ${acField('ph-threads-logo','Business name',bi2.businessName||'',   'businessName')}
-            ${acField('ph-briefcase','Business Type',  bi2.businessType||'',    'businessType')}
+            <input type="text" data-quote-field="${ph}" value="${val}" style="border:0;outline:0;font:inherit;font-size:14px;color:var(--fg);background:transparent;width:100%"/>
           </div>
         </div>`;
-      const polInfoTop = bdeSection('pol-info-cov', 'Policy Information', `
-        <div style="display:flex;flex-direction:column;gap:var(--sp-3);padding:var(--sp-3)">
-          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Selected Premium</span><input id="bde-selected-premium-cov" type="text" value="${ind2.selected.toLocaleString('en-US')}"/></div></div>
-          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">General Liability Limit</span><select id="bde-gl-limit-cov" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%">${BDE_GL_LIMIT_OPTS.map(v=>`<option value="${v}" ${curGL2===v?'selected':''}>${v}</option>`).join('')}</select></div></div>
-          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Prospective Year Annual Sales</span><input type="text" value="${(BDE.indication.prospectiveSales||0).toLocaleString('en-US')}"/></div></div>
-          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Competing/Expiring Premium</span><input type="text" value="${(BDE.indication.competing||0).toLocaleString('en-US')}"/></div></div>
-          <div class="qf-field"><span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span><div class="stack"><span class="label">Deductible per Occurrence</span><select id="bde-deductible-cov" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%">${BDE_DEDUCTIBLE_OPTS.map(v=>`<option value="${v}" ${Number(BDE.indication.deductible)===v?'selected':''}>${v.toLocaleString('en-US')}</option>`).join('')}</select></div></div>
-        </div>`);
-      // ---- Content routing by nav section ----
-      const getBody = () => {
-        switch (ns) {
-          case 'account-info': return basicInfoContent;
-          case 'policy-info':  return `
-            <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
-              <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Policy Info</h2>
-              <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
-                <div class="co-input-icon"><span style="color:var(--fg-muted);font-size:14px;flex-shrink:0">$</span><div style="flex:1"><div style="font-size:11px;color:var(--fg-muted)">Selected Premium</div><input type="text" value="${ind2.selected.toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;width:100%"/></div></div>
-                <div class="co-input-icon"><span style="color:var(--fg-muted);font-size:14px;flex-shrink:0">$</span><div style="flex:1"><div style="font-size:11px;color:var(--fg-muted)">General Liability Limit</div><select id="bde-gl-limit-cov" style="border:0;outline:0;background:transparent;font:inherit;font-size:14px;width:100%">${BDE_GL_LIMIT_OPTS.map(v=>`<option value="${v}" ${curGL2===v?'selected':''}>${v}</option>`).join('')}</select></div></div>
-                <div class="co-input-icon"><span style="color:var(--fg-muted);font-size:14px;flex-shrink:0">$</span><div style="flex:1"><div style="font-size:11px;color:var(--fg-muted)">Prospective Year Annual Sales</div><input type="text" value="${(BDE.indication.prospectiveSales||0).toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;width:100%"/></div></div>
-                <div class="co-input-icon"><span style="color:var(--fg-muted);font-size:14px;flex-shrink:0">$</span><div style="flex:1"><div style="font-size:11px;color:var(--fg-muted)">Competing/Expiring Premium</div><input type="text" value="${(BDE.indication.competing||0).toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;width:100%"/></div></div>
-                <div class="co-input-icon"><span style="color:var(--fg-muted);font-size:14px;flex-shrink:0">$</span><div style="flex:1"><div style="font-size:11px;color:var(--fg-muted)">Deductible per Occurrence</div><select id="bde-deductible-cov" style="border:0;outline:0;background:transparent;font:inherit;font-size:14px;width:100%">${BDE_DEDUCTIBLE_OPTS.map(v=>`<option value="${v}" ${Number(BDE.indication.deductible)===v?'selected':''}>${v.toLocaleString('en-US')}</option>`).join('')}</select></div></div>
-              </div>
-              <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" id="cov-next">Continue</button></div>
-            </div>`;
-          case 'gl-uwq':   return uwqContent;
-          case 'gl-opt-q': return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Optional Questions</h2>${optContent}</div>`;
-          case 'liq-deductible': return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Deductible</h2><p style="color:var(--fg-muted);font-size:13px">No deductible questions for Liquor Liability.</p></div>`;
-          case 'liq-limits':    return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Limits</h2><p style="color:var(--fg-muted);font-size:13px">No limit questions for Liquor Liability.</p></div>`;
-          case 'liq-uwq': case 'uw-toolbox-uwq':
-          case 'gl-addl-ins': case 'gl-deductible': case 'gl-exclusion': case 'gl-limits': case 'gl-addons': case 'liq-exclusion': {
-            if (secContent[ns]) {
-              const titles = {'gl-addl-ins':'Additional Insured','gl-deductible':'Deductible','gl-exclusion':'Exclusion','gl-limits':'Limits','gl-addons':'Add-ons','uw-toolbox-uwq':'Underwriter Toolbox','liq-uwq':'Underwriting Questions','liq-exclusion':'Exclusion'};
-              return `<div style="display:flex;flex-direction:column;gap:var(--sp-4)"><h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">${titles[ns]||ns}</h2>${secContent[ns]}</div>`;
-            }
-          }
-          default: return `<div style="padding:var(--sp-6) 0;text-align:center;color:var(--fg-muted)"><i class="ph ph-shield-check" style="font-size:40px;color:var(--border);display:block;margin-bottom:var(--sp-3)"></i>Questions for this section will appear here.</div>`;
-        }
-      };
-      const body = getBody();
-      const showFooter = !['policy-info'].includes(ns); // policy-info has its own Continue button
 
-      // Sticky footer — shown outside the scrollable cov-main
-      const isFirst = true;
-      const isLast  = ns === 'gl-addons';
-      const footer = showFooter ? `
-        <div class="cov-sticky-foot">
-          ${isLast
-            ? `<button class="btn btn-primary" id="cov-save">Save</button>`
-            : `<button class="btn btn-primary" id="cov-next">Next</button>`}
-        </div>` : '';
-
-      return `
-        <div class="search-input" style="border-radius:8px;margin:var(--sp-3);background:var(--surface)">
-          <i class="ph ph-magnifying-glass" style="font-size:14px;color:var(--fg-muted)"></i>
-          <input type="text" placeholder="Search for anything..."/>
-          <span class="kbd-row"><span class="kbd">⌘</span><span class="kbd">K</span></span>
-        </div>
-        <div class="sec" style="padding:0;display:flex;flex-direction:column">
-          <div class="cov-shell" style="flex:1;overflow:hidden">
-            ${sidebar}
-            <div class="cov-main">
-              ${body}
+      const submInfoContent = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
+          <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Submission Info</h2>
+          <div>
+            <div style="font-size:13px;font-weight:500;color:var(--fg);margin-bottom:var(--sp-3)">Account Information</div>
+            ${acField('ph-user','Name', bi2.fullName||'', 'fullName')}
+            ${acField('ph-phone','Phone Number', bi2.phone||'', 'phone')}
+            ${phoneMissing2 ? `<div style="font-size:12px;color:var(--err);margin-top:-6px;margin-bottom:var(--sp-2)">Missing required field</div>` : ''}
+            ${acField('ph-map-pin','Mailing Address', bi2.mailingAddress||'', 'mailingAddress')}
+            ${acField('ph-map-pin','Unit #', bi2.unit||'', 'unit')}
+            ${acField('ph-threads-logo','Business name', bi2.businessName||'', 'businessName')}
+            ${acField('ph-briefcase','Business Type', bi2.businessType||'', 'businessType')}
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:500;color:var(--fg);margin-bottom:var(--sp-3)">Policy Information</div>
+            <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface);margin-bottom:var(--sp-2)">
+              <span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+              <div style="flex:1"><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Selected Premium</div>
+              <input id="bde-selected-premium-cov" type="text" value="${ind2.selected.toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;color:var(--fg);background:transparent;width:100%"/></div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface);margin-bottom:var(--sp-2)">
+              <span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+              <div style="flex:1"><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">General Liability Limit</div>
+              <select id="bde-gl-limit-cov" style="border:0;outline:0;background:transparent;font:inherit;font-size:14px;color:var(--fg);width:100%">${BDE_GL_LIMIT_OPTS.map(v=>`<option value="${v}" ${curGL2===v?'selected':''}>${v}</option>`).join('')}</select></div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface);margin-bottom:var(--sp-2)">
+              <span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+              <div style="flex:1"><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Prospective Year Annual Sales</div>
+              <input type="text" value="${(BDE.indication.prospectiveSales||0).toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;color:var(--fg);background:transparent;width:100%"/></div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface);margin-bottom:var(--sp-2)">
+              <span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+              <div style="flex:1"><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Competing/Expiring Premium</div>
+              <input type="text" value="${(BDE.indication.competing||0).toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;color:var(--fg);background:transparent;width:100%"/></div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface)">
+              <span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
+              <div style="flex:1"><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Deductible per Occurrence</div>
+              <select id="bde-deductible-cov" style="border:0;outline:0;background:transparent;font:inherit;font-size:14px;color:var(--fg);width:100%">${BDE_DEDUCTIBLE_OPTS.map(v=>`<option value="${v}" ${Number(BDE.indication.deductible)===v?'selected':''}>${v.toLocaleString('en-US')}</option>`).join('')}</select></div>
             </div>
           </div>
-          ${footer}
+        </div>`;
+
+      // ns already declared above
+      const showSubmInfo = ns === 'account-info' || ns === 'policy-info' || ns === 'submission';
+      const mainContent = showSubmInfo ? submInfoContent : `${content}`;
+      const showAnchor  = !showSubmInfo;
+
+      return `
+        <div class="sec" style="padding:0;display:flex;flex-direction:column;height:100%;min-height:0">
+          <div class="cov-shell" style="flex:1;overflow:hidden">
+            ${sidebar}
+            <div class="covq-wrap">
+              <div class="covq-main">
+                ${mainContent}
+              </div>
+              ${showAnchor ? anchorNav : ''}
+            </div>
+          </div>
+          <div class="cov-sticky-foot">
+            <button class="btn btn-primary" id="covq-confirm">Confirm</button>
+          </div>
         </div>`;
     }
 
@@ -7111,6 +6831,22 @@
           const id = el.dataset.covSection;
           if (State.covCollapsed.has(id)) State.covCollapsed.delete(id);
           else State.covCollapsed.add(id);
+          render();
+        };
+      });
+      // Coverage checklist checkboxes
+      $$('[data-covq-chk]').forEach(el => {
+        el.onclick = () => {
+          const id = el.dataset.covqChk;
+          if (State.glChecked.has(id)) State.glChecked.delete(id);
+          else State.glChecked.add(id);
+          render();
+        };
+      });
+      // Flat nav items (no sub-tree)
+      $$('[data-cov-nav-flat]').forEach(el => {
+        el.onclick = () => {
+          State.covNavSection = el.dataset.covNavFlat;
           render();
         };
       });
