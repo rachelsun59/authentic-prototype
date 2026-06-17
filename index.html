@@ -5633,8 +5633,12 @@
           ${flatNav('auto', 0, 'Auto Liability', activeNav==='auto')}
           ${flatNav('epl', 0, 'Employment Practice Liability', activeNav==='epl')}
           ${flatNav('uw-toolbox', 0, 'Underwriter toolbox', activeNav==='uw-toolbox'||activeNav==='uw-toolbox-uwq')}
-          ${addableNav('prop','Property Liability')}
-          ${addableNav('excess','Excess Liability')}
+          ${State.coverageTypes.has('prop')
+              ? flatNav('prop', 0, 'Property Liability', activeNav==='prop')
+              : addableNav('prop','Property Liability')}
+          ${State.coverageTypes.has('excess')
+              ? flatNav('excess', 0, 'Excess Liability', activeNav==='excess')
+              : addableNav('excess','Excess Liability')}
         </div>`;
 
       // ─── Right anchor nav ─────────────────────────────────────
@@ -6957,8 +6961,7 @@
             }
           } else {
             State.coverageTypes.add(id);
-            State.activeCovType = id;
-            State.coverageStep = 'uwq';
+            State.covNavSection = id; // navigate to new section
           }
           render();
         };
