@@ -5364,6 +5364,7 @@
                 <th style="min-width:120px">Limits</th>
                 <th class="r" style="min-width:100px">Deductible ($)</th>
                 <th class="r" style="min-width:100px">Premium ($)</th>
+                <th style="min-width:100px">Carrier</th>
                 <th style="width:36px"></th>
               </tr>
             </thead>
@@ -5394,6 +5395,7 @@
                   ${cSelect(i, 'lim1',      r.lim1 || '1M / 2M',    LIMITS_OPTIONS)}
                   ${cNum (i, 'ded',   r.ded)}
                   ${cNum (i, 'prem',  r.prem, true)}
+                  <td style="padding:var(--sp-2) var(--sp-3);font-size:13px;color:var(--fg-muted)">${r.st === 'NY' ? 'Greenwood' : 'Everspan'}</td>
                   <td style="text-align:center;padding:0 4px">
                     <button class="icon-btn exp-del-row" data-exp-del="${i}" title="Delete location" style="width:28px;height:28px;color:var(--fg-muted)"><i class="ph ph-trash" style="font-size:14px"></i></button>
                   </td>
