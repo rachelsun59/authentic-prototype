@@ -5628,6 +5628,8 @@
           ${flatNav('submission', 100, 'Submission Info', activeNav==='submission'||activeNav==='account-info'||activeNav==='policy-info')}
           ${flatNav('gl', covPct2.gl, 'General Liability', activeNav==='gl'||activeNav?.startsWith('gl-'), 'Everspan/Greenwood')}
           ${flatNav('liq', covPct2.liq, 'Liquor Liability', activeNav==='liq'||activeNav?.startsWith('liq-'))}
+          ${flatNav('auto', 0, 'Auto Liability', activeNav==='auto')}
+          ${flatNav('epl', 0, 'Employment Practice Liability', activeNav==='epl')}
           ${flatNav('uw-toolbox', 0, 'Underwriter toolbox', activeNav==='uw-toolbox'||activeNav==='uw-toolbox-uwq')}
           ${addableNav('prop','Property Liability')}
           ${addableNav('excess','Excess Liability')}
@@ -5664,12 +5666,10 @@
         )}
 
         ${csec('opt-q','Optional Questions',
-          ci('hnoa','Hired Auto and Nonowned Auto Liability') +
-          ci('epl','Employment Practices Liability (EPL) Coverage') +
-          ci('bikeDelivery','Do you perform deliveries via bicycle, scooter, or non-automobile transportation?') +
-          ci('lraro','Toggle for LRARO Rating ($100K+ Premium ONLY)') +
-          ci('isRenewal','Is this a Renewal Application?') +
-          ci('manualOverride','Manual Underwriting Override - Policy Level')
+          ci('blanketPrimary2','Blanket Additional Insured by Written Contract') +
+          ci('limitingOp','Is your primary operation a motorized food truck or mobile restaurant?') +
+          ci('mechAmusement2','Mechanically Operated Amusement Device Exclusion') +
+          ci('incidentalMed2','Incidental Medical Malpractice')
         )}
 
         ${csec('deductible','Deductible',
@@ -5827,14 +5827,46 @@
           )}
         </div>`;
 
+      // ─── Auto Liability content ───────────────────────────
+      const autoContent = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
+          <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Auto Liability</h2>
+          ${csec('auto-req','Required Questions',
+            ci('delivery','Does your restaurant offer in-house delivery service (not including third-party apps)?') +
+            ci('bikeDelivery','Do you perform deliveries via bicycle, scooter, or non-automobile transportation?')
+          )}
+          ${csec('auto-opt','Optional Questions',
+            ci('hnoa','Hired Auto and Nonowned Auto Liability')
+          )}
+        </div>`;
+
+      // ─── Employment Practice Liability content ────────────
+      const eplContent = `
+        <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
+          <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Employment Practice Liability</h2>
+          ${csec('epl-req','Required Questions',
+            ci('epl','Employment Practices Liability (EPL) Coverage')
+          )}
+          ${csec('epl-deductible','Deductible',
+            cselect(['$2,500','$5,000','$10,000','$25,000'],'EPL Deductible ($2.5K/$5K/$10K/$25K)')
+          )}
+          ${csec('epl-excl','Exclusion',
+            ci('excldDiscrim','Exclusion – Discrimination')
+          )}
+        </div>`;
+
       const showSubmInfo = ns === 'account-info' || ns === 'policy-info' || ns === 'submission';
       const showLiq      = ns === 'liq' || ns?.startsWith('liq-');
       const showUwTool   = ns === 'uw-toolbox' || ns === 'uw-toolbox-uwq';
+      const showAuto     = ns === 'auto';
+      const showEpl      = ns === 'epl';
       const mainContent  = showSubmInfo ? submInfoContent
                          : showLiq      ? liqContent
                          : showUwTool   ? uwToolboxContent
+                         : showAuto     ? autoContent
+                         : showEpl      ? eplContent
                          : content;
-      const showAnchor   = !showSubmInfo && !showLiq && !showUwTool;
+      const showAnchor   = !showSubmInfo && !showLiq && !showUwTool && !showAuto && !showEpl;
 
       return `
         <div class="sec" style="padding:0;display:flex;flex-direction:column;height:100%;min-height:0">
@@ -6878,9 +6910,14 @@
       $$('[data-covq-chk]').forEach(el => {
         el.onclick = () => {
           const id = el.dataset.covqChk;
-          if (State.glChecked.has(id)) State.glChecked.delete(id);
-          else State.glChecked.add(id);
+          const isOn = !State.glChecked.has(id);
+          if (isOn) State.glChecked.add(id); else State.glChecked.delete(id);
+          // Preserve scroll position — update DOM directly first, then re-render
+          const main = document.querySelector('.covq-main');
+          const scrollTop = main ? main.scrollTop : 0;
           render();
+          const main2 = document.querySelector('.covq-main');
+          if (main2) main2.scrollTop = scrollTop;
         };
       });
       // Flat nav items (no sub-tree)
