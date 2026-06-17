@@ -5651,7 +5651,7 @@
       const content = `
         <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display);margin-bottom:var(--sp-4)">Coverage Questions</h2>
 
-        ${csec('uwq','Underwriting Questions',
+        ${csec('uwq','',
           ci('blanketPrimary','Blanket Primary and Non-Contributory Coverage') +
           ci('cancelNonrenew','Cancellation or Nonrenewal – Notification to Designated Entity') +
           ci('mechAmusement','Mechanically Operated Amusement Device Exclusion') +
@@ -5820,7 +5820,7 @@
       const uwToolboxContent = `
         <div style="display:flex;flex-direction:column;gap:var(--sp-4)">
           <h2 style="font-size:22px;font-weight:600;font-family:var(--font-display)">Underwriter Toolbox</h2>
-          ${csec('uw-underwriting','Underwriting',
+          ${csec('uw-underwriting','',
             ci('isRenewal','Is this a Renewal Application?') +
             ci('manualOverride','Manual Underwriting Override - Policy Level') +
             ci('lraro','Toggle for LRARO Rating ($100K+ Premium ONLY)')
