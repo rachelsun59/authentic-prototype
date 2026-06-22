@@ -5749,11 +5749,11 @@
       const phoneMissing2 = !bi2.phone;
 
       const acField = (ico, label, val, ph='') => `
-        <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface);margin-bottom:var(--sp-2)">
-          <i class="ph ${ico}" style="font-size:16px;color:var(--fg-muted);flex-shrink:0;margin-top:2px"></i>
+        <div class="co-input-icon" style="margin-bottom:var(--sp-2)">
+          <i class="ph ${ico}" style="font-size:16px;color:var(--fg-muted);flex-shrink:0"></i>
           <div style="flex:1;min-width:0">
-            <div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">${label}</div>
-            <input type="text" data-quote-field="${ph}" value="${val}" style="border:0;outline:0;font:inherit;font-size:14px;color:var(--fg);background:transparent;width:100%"/>
+            <div style="font-size:11px;color:var(--fg-muted);margin-bottom:1px">${label}</div>
+            <input type="text" data-quote-field="${ph}" value="${val}" placeholder="${label}"/>
           </div>
         </div>`;
 
@@ -5772,30 +5772,40 @@
           </div>
           <div>
             <div style="font-size:13px;font-weight:500;color:var(--fg);margin-bottom:var(--sp-3)">Policy Information</div>
-            <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface);margin-bottom:var(--sp-2)">
+            <div class="co-input-icon" style="margin-bottom:var(--sp-2)">
               <span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
-              <div style="flex:1"><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Selected Premium</div>
-              <input id="bde-selected-premium-cov" type="text" value="${ind2.selected.toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;color:var(--fg);background:transparent;width:100%"/></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11px;color:var(--fg-muted);margin-bottom:1px">Selected Premium</div>
+                <input id="bde-selected-premium-cov" type="text" value="${ind2.selected.toLocaleString('en-US')}"/>
+              </div>
             </div>
-            <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface);margin-bottom:var(--sp-2)">
+            <div class="co-input-icon" style="margin-bottom:var(--sp-2)">
               <span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
-              <div style="flex:1"><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">General Liability Limit</div>
-              <select id="bde-gl-limit-cov" style="border:0;outline:0;background:transparent;font:inherit;font-size:14px;color:var(--fg);width:100%">${BDE_GL_LIMIT_OPTS.map(v=>`<option value="${v}" ${curGL2===v?'selected':''}>${v}</option>`).join('')}</select></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11px;color:var(--fg-muted);margin-bottom:1px">General Liability Limit</div>
+                <select id="bde-gl-limit-cov" style="border:0;outline:0;background:transparent;font:inherit;font-size:13px;color:var(--fg);width:100%">${BDE_GL_LIMIT_OPTS.map(v=>`<option value="${v}" ${curGL2===v?'selected':''}>${v}</option>`).join('')}</select>
+              </div>
             </div>
-            <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface);margin-bottom:var(--sp-2)">
+            <div class="co-input-icon" style="margin-bottom:var(--sp-2)">
               <span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
-              <div style="flex:1"><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Prospective Year Annual Sales</div>
-              <input type="text" value="${(BDE.indication.prospectiveSales||0).toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;color:var(--fg);background:transparent;width:100%"/></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11px;color:var(--fg-muted);margin-bottom:1px">Prospective Year Annual Sales</div>
+                <input type="text" value="${(BDE.indication.prospectiveSales||0).toLocaleString('en-US')}"/>
+              </div>
             </div>
-            <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface);margin-bottom:var(--sp-2)">
+            <div class="co-input-icon" style="margin-bottom:var(--sp-2)">
               <span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
-              <div style="flex:1"><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Competing/Expiring Premium</div>
-              <input type="text" value="${(BDE.indication.competing||0).toLocaleString('en-US')}" style="border:0;outline:0;font:inherit;font-size:14px;color:var(--fg);background:transparent;width:100%"/></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11px;color:var(--fg-muted);margin-bottom:1px">Competing/Expiring Premium</div>
+                <input type="text" value="${(BDE.indication.competing||0).toLocaleString('en-US')}"/>
+              </div>
             </div>
-            <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:var(--sp-2);background:var(--surface)">
+            <div class="co-input-icon">
               <span style="font-size:14px;color:var(--fg-muted);flex-shrink:0">$</span>
-              <div style="flex:1"><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Deductible per Occurrence</div>
-              <select id="bde-deductible-cov" style="border:0;outline:0;background:transparent;font:inherit;font-size:14px;color:var(--fg);width:100%">${BDE_DEDUCTIBLE_OPTS.map(v=>`<option value="${v}" ${Number(BDE.indication.deductible)===v?'selected':''}>${v.toLocaleString('en-US')}</option>`).join('')}</select></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11px;color:var(--fg-muted);margin-bottom:1px">Deductible per Occurrence</div>
+                <select id="bde-deductible-cov" style="border:0;outline:0;background:transparent;font:inherit;font-size:13px;color:var(--fg);width:100%">${BDE_DEDUCTIBLE_OPTS.map(v=>`<option value="${v}" ${Number(BDE.indication.deductible)===v?'selected':''}>${v.toLocaleString('en-US')}</option>`).join('')}</select>
+              </div>
             </div>
           </div>
         </div>`;
