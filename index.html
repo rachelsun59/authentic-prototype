@@ -2630,7 +2630,10 @@
           <span class="nav-ico"><i class="ph ph-house"></i></span><span class="nav-label">Home</span>
         </button>
         <button class="nav-item active" data-nav="growth">
-          <span class="nav-ico"><i class="ph ph-trend-up"></i></span><span class="nav-label">Growth</span>
+          <span class="nav-ico"><i class="ph ph-trend-up"></i></span><span class="nav-label">Submissions</span>
+        </button>
+        <button class="nav-item" data-nav="applications">
+          <span class="nav-ico"><i class="ph ph-file-arrow-up"></i></span><span class="nav-label">Applications</span>
         </button>
         <button class="nav-item" data-nav="policies">
           <span class="nav-ico"><i class="ph ph-file-text"></i></span><span class="nav-label">Policies</span>
@@ -2643,6 +2646,9 @@
         </button>
         <button class="nav-item" data-nav="dashboards">
           <span class="nav-ico"><i class="ph ph-chart-line"></i></span><span class="nav-label">Dashboards</span>
+        </button>
+        <button class="nav-item" data-nav="actuarial">
+          <span class="nav-ico"><i class="ph ph-calculator"></i></span><span class="nav-label">Actuarial Controls</span>
         </button>
         <button class="nav-item" data-nav="settings">
           <span class="nav-ico"><i class="ph ph-gear"></i></span><span class="nav-label">Settings</span>
@@ -3981,7 +3987,7 @@
          · 12:12297 chip row showing applied filter + Clear / Save View
        ------------------------------------------------------------------------ */
     const GROWTH_COLS = [
-      { key: 'type',    label: 'Type',          filter: 'multi',   filterKey: 'type',    recField: 'type',    valueLabel: v => v, sortable: true  },
+      // Type column removed per design
       { key: 'product', label: 'Product',       filter: 'multi',   filterKey: 'product', recField: 'product', valueLabel: v => v, sortable: true  },
       { key: 'name',    label: 'Business name', filter: null,                                                                       sortable: true  },
       { key: 'status',  label: 'Status',        filter: 'multi',   filterKey: 'status',  recField: 'status',  valueLabel: v => v, sortable: true  },
@@ -4129,7 +4135,16 @@
       `;
     }
 
-    function renderGrowth() {
+    function renderApplications() {
+      // Applications page — shows only APP-type rows from GROWTH_ROWS
+      const appRows = GROWTH_ROWS.filter(r => r.type === 'APP');
+      const _savedRows = GROWTH_ROWS.splice(0, GROWTH_ROWS.length, ...appRows);
+      const html = renderGrowth('Applications');
+      GROWTH_ROWS.splice(0, GROWTH_ROWS.length, ..._savedRows);
+      return html;
+    }
+
+    function renderGrowth(pageTitle = 'Submissions') {
       const filtered = applyGrowthFilters(GROWTH_ROWS);
       const pipelinePremium = filtered.reduce((sum, r) => sum + (r.premium || 0), 0);
       const uwReviewCount   = filtered.filter(r => r.status === 'Reviewing').length;
@@ -4137,7 +4152,7 @@
       const newCount        = filtered.filter(r => r.status === 'Created').length;
       const rows = filtered.map(r => `
         <tr data-open-rec="${r.id || ''}">
-          <td><span class="type-tag ${r.type === 'Sub' ? 'sub' : 'app'}">${r.type}</span></td>
+          
           <td>${r.product}</td>
           <td class="biz">
             <span class="name">${r.name}</span>
@@ -4162,9 +4177,9 @@
         <div class="home-action-row">
           <div>
             <div class="breadcrumb">
-              <span>Growth</span><i class="ph ph-caret-right" style="font-size:10px"></i>
+              <span>${pageTitle}</span><i class="ph ph-caret-right" style="font-size:10px"></i>
             </div>
-            <h2 class="h2">Growth</h2>
+            <h2 class="h2">${pageTitle}</h2>
           </div>
           <button class="btn btn-primary"><i class="ph ph-plus"></i>New</button>
         </div>
@@ -4240,7 +4255,7 @@
           <div style="flex:1;min-width:0">
             <!-- Breadcrumb -->
             <div class="breadcrumb">
-              <button class="crumb-link" data-nav="growth">Growth</button>
+              <button class="crumb-link" data-nav="growth">Submissions</button>
               <i class="ph ph-caret-right" style="font-size:10px"></i>
               <span class="crumb-cur">${rec.name}</span>
             </div>
@@ -6036,6 +6051,7 @@
       main.className = 'main' + (State.page === 'detail' ? ' detail-mode' : '');
       if      (State.page === 'home')           main.innerHTML = renderHome();
       else if (State.page === 'detail')         main.innerHTML = renderDetail();
+      else if (State.page === 'applications')   main.innerHTML = renderApplications();
       else                                       main.innerHTML = renderGrowth();
       if (prevScroll > 0) {
         const dm = document.querySelector('.detail-main');
@@ -6062,7 +6078,9 @@
         const t = n.dataset.nav;
         n.classList.toggle('active',
           (State.page === 'home' && t === 'home') ||
-          (State.page !== 'home' && t === 'growth'));
+          (State.page === 'applications' && t === 'applications') ||
+          (State.page === 'actuarial' && t === 'actuarial') ||
+          ((State.page === 'growth' || State.page === 'detail') && t === 'growth'));
       });
 
       wireEvents();
@@ -6276,7 +6294,9 @@
       $$('.nav-item[data-nav], .crumb-link[data-nav]').forEach(n => {
         n.onclick = () => {
           const t = n.dataset.nav;
-          if (t === 'home' || t === 'growth') { State.page = t; State.currentId = null; State.mobileNavOpen = false; render(); }
+          if (t === 'home' || t === 'growth' || t === 'applications' || t === 'actuarial') {
+            State.page = t; State.currentId = null; State.mobileNavOpen = false; render();
+          }
         };
       });
 
