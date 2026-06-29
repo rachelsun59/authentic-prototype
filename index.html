@@ -1630,22 +1630,24 @@
     /* Tab strip — pill-style with rounded background */
     .tabs {
       display: flex; align-items: center; gap: 0;
-      background: var(--bg);
-      border-radius: var(--r-full);
-      padding: 4px;
-      width: fit-content;
-      max-width: 100%;
+      background: transparent;
+      border-bottom: 1px solid var(--border-soft);
+      padding: 0;
+      width: 100%;
     }
     .tab {
       display: inline-flex; align-items: center; gap: var(--sp-2);
-      padding: 6px 16px; height: 32px;
-      border-radius: var(--r-full);
+      padding: 10px 20px; height: 40px;
+      border-radius: 0;
       background: transparent; border: 0;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
       color: var(--fg-muted);
-      font-size: var(--fs-sm); line-height: 16px; font-weight: 500;
-      transition: background var(--transition-base), color var(--transition-base), box-shadow var(--transition-base);
+      font-size: 14px; line-height: 1; font-weight: 400;
+      cursor: pointer;
+      transition: color var(--transition-base), border-color var(--transition-base);
     }
-    .tab.active { background: var(--surface); color: var(--fg); box-shadow: var(--shadow-sm); }
+    .tab.active { color: var(--fg); font-weight: 500; border-bottom-color: var(--tertiary); }
     .tab:hover { color: var(--fg); }
 
     /* Section card — used by Indication roll-up, Loss run detail, Indication form, Adjust application, Quote */
