@@ -4913,21 +4913,7 @@
         <div class="sec" style="margin-top:var(--sp-5)">
           <div class="sec-head">
             <div class="left">
-              <strong>Loss run detail</strong>
-              <span class="meta-vsep"></span>
-              <span class="sub">${rec.claims.length} claims</span>
-              ${(() => {
-                const years = [...new Set(rec.claims.map(c => c.ay).filter(Boolean))];
-                if (years.length < 1) return '';
-                const avg = (rec.claims.length / years.length).toFixed(1);
-                // Trending loss type — most common event description
-                const freq = {};
-                rec.claims.forEach(c => { if (c.ev) freq[c.ev] = (freq[c.ev]||0) + 1; });
-                const topType = Object.entries(freq).sort((a,b) => b[1]-a[1])[0]?.[0] || '';
-                const trending = topType ? topType.replace(/\s*-\s*OTHER$/i,'').replace(/SLIP\s*\/\s*TRIP\s*\/\s*FALL/i,'Slip & Fall').replace(/SLIP\s*\/\s*FALL/i,'Slip & Fall').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()) : '';
-                return `<span class="meta-vsep"></span><span class="sub" title="Total claims ÷ accident years">Avg Claim Expectancy: ${avg}/yr</span>`
-                  + (trending ? `<span class="meta-vsep"></span><span class="sub">Trending Loss Type: ${trending}</span>` : '');
-              })()}
+              <strong>Claims</strong>
             </div>
           </div>
           <div style="overflow-x:auto">
