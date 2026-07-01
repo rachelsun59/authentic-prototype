@@ -5923,7 +5923,7 @@
             </div>
           </div>
           <div class="cov-sticky-foot">
-            ${['prop','excess','auto','epl'].includes(ns) ? `
+            ${ns && ns !== 'gl' && !['submission','account-info','policy-info','uw-toolbox','uw-toolbox-uwq'].includes(ns) && State.coverageTypes.has(ns.split('-')[0]) ? `
               <button class="text-btn" id="covq-remove" style="color:var(--err)">Remove coverage</button>
             ` : ''}
             <button class="btn btn-primary" id="covq-confirm">${State.protoUser === 'broker' ? 'Save' : 'Confirm'}</button>
