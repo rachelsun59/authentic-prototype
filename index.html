@@ -5923,6 +5923,9 @@
             </div>
           </div>
           <div class="cov-sticky-foot">
+            ${['prop','excess','auto','epl'].includes(ns) ? `
+              <button class="text-btn" id="covq-remove" style="color:var(--err)">Remove coverage</button>
+            ` : ''}
             <button class="btn btn-primary" id="covq-confirm">${State.protoUser === 'broker' ? 'Save' : 'Confirm'}</button>
           </div>
         </div>`;
@@ -6969,6 +6972,16 @@
         };
       });
       // Flat nav items (no sub-tree)
+      // Remove coverage button
+      const covqRemove = document.getElementById('covq-remove');
+      if (covqRemove) covqRemove.onclick = () => {
+        const id = State.covNavSection;
+        if (id && State.coverageTypes.has(id)) {
+          State.coverageTypes.delete(id);
+          State.covNavSection = 'submission'; // navigate back
+        }
+        render();
+      };
       $$('[data-cov-nav-flat]').forEach(el => {
         el.onclick = () => {
           State.covNavSection = el.dataset.covNavFlat;
