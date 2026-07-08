@@ -4135,6 +4135,96 @@
       `;
     }
 
+
+    // ── Policies page ────────────────────────────────────────
+    const POLICY_ROWS = [
+      { name:'BDE Florida, LLC',       email:'h.carroll@authentic.com',  classCode:'Restaurant - Fast Food',   status:'Active',   product:['GL','PL','LL'], premium:290000, policyNo:'85257260626BDEFL001', effDate:'2026-06-29', build:'HUB International' },
+      { name:'Iron & Oak Crossfit',    email:'pushpress-api',             classCode:'Fitness Center',           status:'Active',   product:['GL','PL'],      premium:68000,  policyNo:'85257260626IOAK001', effDate:'2026-06-01', build:'PushPress' },
+      { name:'Hibachi Holdings LLC',   email:'jacko@hubca.com',           classCode:'Restaurant - Full Service',status:'Upcoming', product:['GL','LL'],      premium:128000, policyNo:'85257260626HIBI001', effDate:'2026-07-15', build:'Assured Partner' },
+      { name:'Dance Studio LLC',       email:'p.han@authentic.com',       classCode:'Dance Studio',             status:'Upcoming', product:['GL'],           premium:45000,  policyNo:'85257260626DANS001', effDate:'2026-07-01', build:'Assured Partner' },
+      { name:'Pulse Fitness Co.',      email:'p.han@authentic.com',       classCode:'Fitness Center',           status:'Active',   product:['GL','PL'],      premium:130000, policyNo:'85257260626PULS001', effDate:'2026-05-20', build:'Mindbody' },
+      { name:'Bellwether Bistro',      email:'p.han@authentic.com',       classCode:'Restaurant - Full Service',status:'Active',   product:['GL','LL'],      premium:75500,  policyNo:'85257260626BELL001', effDate:'2026-08-01', build:'Hilb Grocery' },
+      { name:'Lighthouse Hospitality', email:'h.carroll@authentic.com',   classCode:'Hotel & Hospitality',      status:'Upcoming', product:['GL','PL','LL'], premium:168000, policyNo:'85257260626LIGH001', effDate:'2026-09-01', build:'Assured Partner' },
+      { name:'Sunrise Yoga Studio',    email:'p.han@authentic.com',       classCode:'Spa & Wellness',           status:'Active',   product:['GL'],           premium:35000,  policyNo:'85257260626SUNS001', effDate:'2026-05-20', build:'Mindbody' },
+      { name:'Greenline Logistic INC', email:'h.carroll@authentic.com',   classCode:'Logistics',                status:'Active',   product:['GL','PL'],      premium:84500,  policyNo:'85257260626GRLN001', effDate:'2026-05-24', build:'Assured Partner' },
+      { name:'Caliber Athletics',      email:'pushpress-api',             classCode:'Fitness Center',           status:'Upcoming', product:['GL'],           premium:52000,  policyNo:'85257260626CALI001', effDate:'2026-08-15', build:'PushPress' },
+    ];
+    let _policySearch = '';
+
+    function renderPolicies() {
+      const filtered = POLICY_ROWS.filter(r =>
+        !_policySearch ||
+        r.name.toLowerCase().includes(_policySearch.toLowerCase()) ||
+        r.email.toLowerCase().includes(_policySearch.toLowerCase()) ||
+        r.policyNo.toLowerCase().includes(_policySearch.toLowerCase())
+      );
+      const badgeMap = { GL:'cov-badge-gl', PL:'cov-badge-pl', LL:'cov-badge-ll' };
+      const rows = filtered.map(r => `
+        <tr>
+          <td class="biz">
+            <span class="name">${r.name}</span>
+            <span class="sub">${r.email}</span>
+          </td>
+          <td><span style="background:#ede9fe;color:#4c1d95;font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;white-space:nowrap">${r.classCode}</span></td>
+          <td>${r.status === 'Active'
+            ? '<span class="pill success no-dot">Active</span>'
+            : '<span class="pill info no-dot">Upcoming</span>'}</td>
+          <td>${r.product.map(p=>`<span class="cov-badge ${badgeMap[p]||'cov-badge-gl'}">${p}</span>`).join('')}</td>
+          <td class="r">$${r.premium.toLocaleString('en-US')}</td>
+          <td style="font-size:11px;color:var(--fg-muted)">${r.policyNo}</td>
+          <td>${r.effDate}</td>
+          <td style="color:var(--fg-muted)">${r.build}</td>
+        </tr>`).join('');
+
+      return `
+        <div class="growth-wrap">
+          <div class="growth-action-row">
+            <div>
+              <h2 class="h2">Policies</h2>
+              <div style="display:flex;gap:var(--sp-5);margin-top:var(--sp-2)">
+                <div><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Policies</div><div style="font-size:22px;font-weight:700;color:var(--fg)">${POLICY_ROWS.length.toLocaleString('en-US')}</div></div>
+                <div><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Total Premium</div><div style="font-size:22px;font-weight:700;color:var(--fg)">$${POLICY_ROWS.reduce((s,r)=>s+r.premium,0).toLocaleString('en-US',{minimumFractionDigits:2})}</div></div>
+              </div>
+            </div>
+            <button class="btn"><i class="ph ph-download-simple"></i>Download CSV</button>
+          </div>
+
+          <div class="filter-row">
+            <div class="search-pill">
+              <i class="ph ph-magnifying-glass" style="font-size:14px;color:var(--fg-muted)"></i>
+              <input id="policy-search" type="text" placeholder="Search by invoice, policy, insured..." value="${_policySearch}"/>
+            </div>
+            <button class="btn"><i class="ph ph-funnel-simple"></i>Filter</button>
+          </div>
+
+          <div class="tbl-wrap">
+            <table class="gtable">
+              <thead>
+                <tr>
+                  <th><div class="th-inner"><span class="th-label">Business Name</span></div></th>
+                  <th><div class="th-inner"><span class="th-label">Class Code</span></div></th>
+                  <th><div class="th-inner"><span class="th-label">Status</span></div></th>
+                  <th><div class="th-inner"><span class="th-label">Product</span></div></th>
+                  <th><div class="th-inner"><span class="th-label">Premium</span></div></th>
+                  <th><div class="th-inner"><span class="th-label">Policy number</span></div></th>
+                  <th><div class="th-inner"><span class="th-label">Effective Date</span></div></th>
+                  <th><div class="th-inner"><span class="th-label">Build</span></div></th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+            <div class="tbl-foot">
+              <span>Rows per page: <select><option>10</option><option>25</option><option>50</option></select></span>
+              <span>1 / ${Math.max(1, Math.ceil(filtered.length / 10))}</span>
+              <span class="pg-nav">
+                <button class="pg-btn"><i class="ph ph-caret-left" style="font-size:14px"></i></button>
+                <button class="pg-btn"><i class="ph ph-caret-right" style="font-size:14px"></i></button>
+              </span>
+            </div>
+          </div>
+        </div>`;
+    }
+
     function renderApplications() {
       // Applications page — shows only APP-type rows from GROWTH_ROWS
       const appRows = GROWTH_ROWS.filter(r => r.type === 'APP');
@@ -6037,6 +6127,7 @@
       if      (State.page === 'home')           main.innerHTML = renderHome();
       else if (State.page === 'detail')         main.innerHTML = renderDetail();
       else if (State.page === 'applications')   main.innerHTML = renderApplications();
+      else if (State.page === 'policies')        main.innerHTML = renderPolicies();
       else                                       main.innerHTML = renderGrowth();
       if (prevScroll > 0) {
         const dm = document.querySelector('.detail-main');
@@ -6064,6 +6155,7 @@
         n.classList.toggle('active',
           (State.page === 'home' && t === 'home') ||
           (State.page === 'applications' && t === 'applications') ||
+          (State.page === 'policies' && t === 'policies') ||
           (State.page === 'actuarial' && t === 'actuarial') ||
           ((State.page === 'growth' || State.page === 'detail') && t === 'growth'));
       });
@@ -6279,7 +6371,7 @@
       $$('.nav-item[data-nav], .crumb-link[data-nav]').forEach(n => {
         n.onclick = () => {
           const t = n.dataset.nav;
-          if (t === 'home' || t === 'growth' || t === 'applications' || t === 'actuarial') {
+          if (t === 'home' || t === 'growth' || t === 'applications' || t === 'actuarial' || t === 'policies') {
             State.page = t; State.currentId = null; State.mobileNavOpen = false; render();
           }
         };
@@ -6969,6 +7061,8 @@
       });
       // Flat nav items (no sub-tree)
       // Remove coverage button
+      const policySearch = document.getElementById("policy-search");
+      if (policySearch) policySearch.oninput = () => { _policySearch = policySearch.value; document.querySelector("#main").innerHTML = renderPolicies(); wireEvents(); };
       const covqRemove = document.getElementById('covq-remove');
       if (covqRemove) covqRemove.onclick = () => {
         const id = State.covNavSection;
