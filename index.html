@@ -4159,68 +4159,71 @@
         r.policyNo.toLowerCase().includes(_policySearch.toLowerCase())
       );
       const badgeMap = { GL:'cov-badge-gl', PL:'cov-badge-pl', LL:'cov-badge-ll' };
+      const totalPremium = POLICY_ROWS.reduce((s,r)=>s+r.premium,0);
+      const activeCount  = POLICY_ROWS.filter(r=>r.status==='Active').length;
+
       const rows = filtered.map(r => `
         <tr>
+          <td style="color:var(--fg-muted);font-size:13px">${r.build}</td>
           <td class="biz">
             <span class="name">${r.name}</span>
             <span class="sub">${r.email}</span>
           </td>
-          <td><span style="background:#ede9fe;color:#4c1d95;font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;white-space:nowrap">${r.classCode}</span></td>
           <td>${r.status === 'Active'
-            ? '<span class="pill success no-dot">Active</span>'
-            : '<span class="pill info no-dot">Upcoming</span>'}</td>
+            ? '<span class="pill success">Active</span>'
+            : '<span class="pill info">Upcoming</span>'}</td>
+          <td>$${r.premium.toLocaleString('en-US')}</td>
           <td>${r.product.map(p=>`<span class="cov-badge ${badgeMap[p]||'cov-badge-gl'}">${p}</span>`).join('')}</td>
-          <td class="r">$${r.premium.toLocaleString('en-US')}</td>
-          <td style="font-size:11px;color:var(--fg-muted)">${r.policyNo}</td>
+          <td style="font-size:12px;color:var(--fg-muted)">${r.policyNo}</td>
           <td>${r.effDate}</td>
-          <td style="color:var(--fg-muted)">${r.build}</td>
         </tr>`).join('');
 
       return `
-        <div class="growth-wrap">
-          <div class="growth-action-row">
-            <div>
-              <h2 class="h2">Policies</h2>
-              <div style="display:flex;gap:var(--sp-5);margin-top:var(--sp-2)">
-                <div><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Policies</div><div style="font-size:22px;font-weight:700;color:var(--fg)">${POLICY_ROWS.length.toLocaleString('en-US')}</div></div>
-                <div><div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Total Premium</div><div style="font-size:22px;font-weight:700;color:var(--fg)">$${POLICY_ROWS.reduce((s,r)=>s+r.premium,0).toLocaleString('en-US',{minimumFractionDigits:2})}</div></div>
-              </div>
-            </div>
-            <button class="btn"><i class="ph ph-download-simple"></i>Download CSV</button>
+        <div class="home-action-row">
+          <div>
+            <div class="breadcrumb"><span>Policies</span><i class="ph ph-caret-right" style="font-size:10px"></i></div>
+            <h2 class="h2">Policies</h2>
           </div>
+          <button class="btn btn-primary"><i class="ph ph-plus"></i>New</button>
+        </div>
 
-          <div class="filter-row">
-            <div class="search-pill">
-              <i class="ph ph-magnifying-glass" style="font-size:14px;color:var(--fg-muted)"></i>
-              <input id="policy-search" type="text" placeholder="Search by invoice, policy, insured..." value="${_policySearch}"/>
-            </div>
-            <button class="btn"><i class="ph ph-funnel-simple"></i>Filter</button>
+        <div class="metric-strip">
+          <div class="metric"><span class="label">Policies</span><span class="value">${POLICY_ROWS.length.toLocaleString('en-US')}</span></div>
+          <div class="metric"><span class="label">Total Premium</span><span class="value">$${totalPremium.toLocaleString('en-US')}</span></div>
+          <div class="metric"><span class="label">Active</span><span class="value">${activeCount}</span></div>
+        </div>
+
+        <div class="filter-row">
+          <div class="search-pill">
+            <i class="ph ph-magnifying-glass" style="font-size:14px;color:var(--fg-muted)"></i>
+            <input id="policy-search" type="text" placeholder="Search by invoice, policy, insured..." value="${_policySearch}"/>
           </div>
+          <button class="btn"><i class="ph ph-funnel-simple"></i>Filter</button>
+          <button class="btn"><i class="ph ph-download-simple"></i>Download CSV</button>
+        </div>
 
-          <div class="tbl-wrap">
-            <table class="gtable">
-              <thead>
-                <tr>
-                  <th><div class="th-inner"><span class="th-label">Business Name</span></div></th>
-                  <th><div class="th-inner"><span class="th-label">Class Code</span></div></th>
-                  <th><div class="th-inner"><span class="th-label">Status</span></div></th>
-                  <th><div class="th-inner"><span class="th-label">Product</span></div></th>
-                  <th><div class="th-inner"><span class="th-label">Premium</span></div></th>
-                  <th><div class="th-inner"><span class="th-label">Policy number</span></div></th>
-                  <th><div class="th-inner"><span class="th-label">Effective Date</span></div></th>
-                  <th><div class="th-inner"><span class="th-label">Build</span></div></th>
-                </tr>
-              </thead>
-              <tbody>${rows}</tbody>
-            </table>
-            <div class="tbl-foot">
-              <span>Rows per page: <select><option>10</option><option>25</option><option>50</option></select></span>
-              <span>1 / ${Math.max(1, Math.ceil(filtered.length / 10))}</span>
-              <span class="pg-nav">
-                <button class="pg-btn"><i class="ph ph-caret-left" style="font-size:14px"></i></button>
-                <button class="pg-btn"><i class="ph ph-caret-right" style="font-size:14px"></i></button>
-              </span>
-            </div>
+        <div class="tbl-wrap">
+          <table class="gtable">
+            <thead>
+              <tr>
+                <th><div class="th-inner"><span class="th-label">Build</span></div></th>
+                <th><div class="th-inner"><span class="th-label">Business Name</span></div></th>
+                <th><div class="th-inner"><span class="th-label">Status</span></div></th>
+                <th><div class="th-inner"><span class="th-label">Premium</span></div></th>
+                <th><div class="th-inner"><span class="th-label">Product</span></div></th>
+                <th><div class="th-inner"><span class="th-label">Policy Number</span></div></th>
+                <th><div class="th-inner"><span class="th-label">Effective Date</span></div></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div class="tbl-foot">
+            <span>Rows per page: <select><option>10</option><option>25</option><option>50</option></select></span>
+            <span>1 / ${Math.max(1, Math.ceil(filtered.length / 10))}</span>
+            <span class="pg-nav">
+              <button class="pg-btn"><i class="ph ph-caret-left" style="font-size:14px"></i></button>
+              <button class="pg-btn"><i class="ph ph-caret-right" style="font-size:14px"></i></button>
+            </span>
           </div>
         </div>`;
     }
