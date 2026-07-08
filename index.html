@@ -4231,63 +4231,74 @@
 
     function renderPolicyDetail() {
       const policy = POLICY_ROWS.find(r => r.policyNo === State.policyId) || POLICY_ROWS[0];
-      const prodNames = { GL:'General Liability', PL:'Professional Liability', LL:'Liquor Liability' };
-      const rawWeights = { GL: 0.85, PL: 0.10, LL: 0.05 };
-      const totalRaw = policy.product.reduce((s,p) => s + (rawWeights[p]||0.1), 0);
-      const covBreakdown = policy.product.map(p => ({
-        name: prodNames[p]||p,
-        amt: Math.round(policy.premium * (rawWeights[p]||0.1) / totalRaw)
-      }));
-      const covRows = covBreakdown.map(c => `
+      const statusKind = policy.status === 'Active' ? 'success' : 'info';
+      const carrier = (policy.build === 'Mindbody' || policy.build === 'PushPress') ? 'Everspan' : 'Greenwood';
+
+      // Coverages breakdown: GL + LL + Umbrella(External) matching Figma
+      const covLines = [];
+      if (policy.product.includes('GL')) covLines.push({ name:'General Liability',       amt: Math.round(policy.premium * 0.855), external:false });
+      if (policy.product.includes('LL')) covLines.push({ name:'Liquor Liability',         amt: Math.round(policy.premium * 0.014), external:false });
+      if (policy.product.includes('PL')) covLines.push({ name:'Professional Liability',   amt: Math.round(policy.premium * 0.038), external:false });
+      covLines.push(                                   { name:'Umbrella',                 amt: Math.round(policy.premium * 0.093), external:true  });
+      const covRows = covLines.map(c => `
         <tr>
-          <td style="padding:12px 16px;border-bottom:1px solid var(--border-soft);font-size:14px;color:var(--fg)">${c.name}</td>
-          <td style="padding:12px 16px;border-bottom:1px solid var(--border-soft);font-size:14px;color:var(--fg);text-align:right">$${c.amt.toLocaleString('en-US')}</td>
+          <td style="padding:12px 16px;border-bottom:1px solid var(--border-soft);font-size:14px;color:var(--fg)">
+            ${c.name}${c.external ? ' <span class="pill info no-dot" style="font-size:11px;padding:2px 7px;margin-left:6px">External</span>' : ''}
+          </td>
+          <td style="padding:12px 16px;border-bottom:1px solid var(--border-soft);font-size:14px;color:var(--fg);text-align:right">
+            $${c.amt.toLocaleString('en-US', {minimumFractionDigits:2})}
+          </td>
         </tr>`).join('');
 
-      const activities = [
-        { type:'user', av:'BV', avCls:'blue',   name:'Bobby Vo',      verb:'generated', item:'New Certificate of Insurance', time:'3 mins ago',  detail:[] },
-        { type:'user', av:'HC', avCls:'orange', name:'Hunt Carroll',  verb:'made an endorsement', item:'', time:'Just now',    detail:['added  location address','added  location address','added  location address','deleted  location address'] },
-        { type:'sys',  status:'success', verb:'Policy status updated to', item:'Bound',        time:'15 mins ago', detail:[] },
-        { type:'user', av:'BV', avCls:'blue',   name:'Bobby Vo',      verb:'uploaded',  item:'New Documents', time:'15 mins ago', detail:[] },
-        { type:'sys',  status:'success', verb:'Policy status updated to', item:'Active',       time:'15 mins ago', detail:[] },
-        { type:'sys',  status:'warn',    verb:'Policy status updated',    item:'Pending bind', time:'30 mins ago', detail:[] },
-        { type:'sys',  status:'muted',   verb:'Policy created from',      item:'Application#', time:'3 days ago',  detail:[] },
+      // Activities timeline
+      const acts = [
+        { type:'user', av:'BO', avCls:'blue',   name:'Bobby',       verb:'generated',         item:'New Endorsement Packet',        time:'Just now',    detail:[] },
+        { type:'user', av:'HC', avCls:'orange', name:'Hunt Carroll', verb:'made an endorsement', item:'',                            time:'Just now',
+          detail:['added','added','added','added','added','deleted'].map((v,i,a) => ({ verb:v, label:'location address' })) },
+        { type:'user', av:'BV', avCls:'blue',   name:'Bobby Vo',    verb:'generated',         item:'New Certificate of Insurance',  time:'3 mins ago',  detail:[] },
+        { type:'user', av:'BV', avCls:'blue',   name:'Bobby Vo',    verb:'generated',         item:'New Certificate of Insurance',  time:'3 mins ago',  detail:[] },
+        { type:'sys',  pillKind:'success',      verb:'Policy status updated',                 item:'Bound',        time:'15 mins ago' },
+        { type:'user', av:'BV', avCls:'blue',   name:'Bobby Vo',    verb:'uploaded',          item:'New Documents',                 time:'15 mins ago', detail:[] },
+        { type:'sys',  pillKind:'success',      verb:'Policy status updated to',              item:'Active',       time:'15 mins ago' },
+        { type:'sys',  pillKind:'warn',         verb:'Policy status updated',                 item:'Pending bind', time:'15 mins ago' },
       ];
-      const actItems = activities.map(a => {
+      const actItems = acts.map(a => {
         if (a.type === 'sys') {
-          const dotC = a.status === 'success' ? 'var(--ok)' : a.status === 'warn' ? '#f59e0b' : 'var(--fg-muted)';
-          const itemC = a.status === 'success' ? 'var(--ok)' : a.status === 'warn' ? '#f59e0b' : 'var(--primary)';
-          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-soft)">
-            <div style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <i class="ph ph-check-circle" style="font-size:13px;color:${dotC}"></i>
-            </div>
-            <span style="font-size:13px;color:var(--fg-muted);flex:1">${a.verb} <span style="color:${itemC};font-weight:500">${a.item ? '● '+a.item : ''}</span></span>
-            <span style="font-size:12px;color:var(--fg-muted);white-space:nowrap">${a.time}</span>
-          </div>`;
+          const dotC = a.pillKind === 'success' ? 'var(--ok)' : 'var(--warn)';
+          return `
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border-soft)">
+              <div style="width:28px;height:28px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <i class="ph ph-check-circle" style="font-size:13px;color:${dotC}"></i>
+              </div>
+              <span style="font-size:13px;color:var(--fg-muted);flex:1">${a.verb} <span class="pill ${a.pillKind}" style="font-size:11px;padding:2px 8px;margin-left:2px">${a.item}</span></span>
+              <span style="font-size:12px;color:var(--fg-muted);white-space:nowrap">${a.time}</span>
+            </div>`;
         }
-        const detailHtml = a.detail.map(d => `
-          <div style="margin:2px 0 2px 16px;padding-left:12px;border-left:2px solid var(--border-soft);font-size:12px;color:var(--fg-muted)">${d}</div>`).join('');
-        return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-soft)">
-          <div class="avatar sm ${a.avCls}" style="flex-shrink:0">${a.av}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px">
-              <span style="font-weight:500;color:var(--fg)">${a.name}</span>
-              <span style="color:var(--fg-muted)"> ${a.verb} </span>
-              ${a.item ? `<span style="font-weight:500;color:var(--fg)">${a.item}</span>` : ''}
-              <span style="font-size:12px;color:var(--fg-muted);margin-left:6px">${a.time}</span>
+        const detailRows = (a.detail||[]).map(d =>
+          `<div style="display:flex;align-items:center;gap:6px;padding:2px 0 2px 12px;border-left:2px solid var(--border-soft);margin-left:16px;font-size:12px">
+            <span style="color:var(--fg-muted)">${d.verb}</span>
+            <span style="color:var(--fg)">${d.label}</span>
+          </div>`).join('');
+        return `
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--border-soft)">
+            <div class="avatar sm ${a.avCls}" style="flex-shrink:0">${a.av}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;line-height:1.5">
+                <span style="font-weight:500;color:var(--fg)">${a.name}</span>
+                <span style="color:var(--fg-muted)"> ${a.verb} </span>
+                ${a.item ? `<span style="font-weight:500;color:var(--fg)">${a.item}</span>` : ''}
+                <span style="font-size:12px;color:var(--fg-muted);margin-left:4px">${a.time}</span>
+              </div>
+              ${detailRows}
             </div>
-            ${detailHtml}
-          </div>
-        </div>`;
+          </div>`;
       }).join('');
 
-      const statusColor = policy.status === 'Active' ? 'var(--ok)' : '#f59e0b';
-
       return `
-        <!-- Endorsement banner -->
+        <!-- Info banner -->
         <div style="background:#eff6ff;border-bottom:1px solid #bfdbfe;padding:10px 24px;display:flex;align-items:center;justify-content:space-between">
           <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#1d4ed8">
-            <i class="ph ph-info" style="font-size:16px"></i>
+            <i class="ph ph-info" style="font-size:15px"></i>
             There is a pending endorsement
           </div>
           <button style="background:none;border:0;font-size:13px;color:#1d4ed8;cursor:pointer;display:flex;align-items:center;gap:4px">
@@ -4295,39 +4306,48 @@
           </button>
         </div>
 
-        <div style="padding:20px 24px 0">
-          <!-- Breadcrumb + actions -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div class="breadcrumb" id="back-to-policies" style="cursor:pointer">
-              <span>Policies</span>
+        <div style="padding:16px 24px 0">
+          <!-- Breadcrumb + status + actions -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="breadcrumb" style="margin-bottom:0">
+              <button class="crumb-link" id="back-to-policies">Policies</button>
               <i class="ph ph-caret-right" style="font-size:10px"></i>
-              <span style="color:var(--fg)">${policy.name}</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--fg-muted)">
-                <span style="font-size:8px;color:${statusColor}">●</span>${policy.status}
-              </div>
-              <button class="btn" style="padding:6px 8px"><i class="ph ph-download-simple" style="font-size:15px"></i></button>
-              <button class="btn" style="padding:6px 8px"><i class="ph ph-chat-centered-dots" style="font-size:15px"></i></button>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:13px;color:var(--fg-muted);display:flex;align-items:center;gap:6px">
+                Status: <span class="pill ${statusKind}">${policy.status}</span>
+              </span>
+              <button class="btn" style="padding:7px 9px"><i class="ph ph-chat-centered-dots" style="font-size:15px"></i></button>
               <button class="btn btn-primary">Actions</button>
             </div>
           </div>
 
           <!-- Title -->
-          <h1 style="font-size:22px;font-weight:700;color:var(--fg);margin:0 0 10px">${policy.name}</h1>
+          <h1 style="font-family:var(--font-display);font-size:28px;font-weight:400;color:var(--fg);margin:0 0 8px;line-height:1.15">${policy.name}</h1>
 
-          <!-- Sub-meta row -->
-          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-bottom:20px">
-            <span style="font-size:13px;color:var(--fg-muted);padding-right:14px;border-right:1px solid var(--border-soft)">${policy.policyNo}</span>
-            <span style="font-size:13px;color:var(--fg-muted);padding:0 14px;border-right:1px solid var(--border-soft)">${policy.build}</span>
-            <span style="font-size:13px;color:var(--fg-muted);padding:0 14px;border-right:1px solid var(--border-soft);display:flex;align-items:center;gap:6px">Broker: <span class="avatar sm orange" style="font-size:9px">KM</span> Kevin Ma</span>
-            <span style="font-size:13px;color:var(--fg-muted);padding:0 14px;display:flex;align-items:center;gap:6px">Sales Rep: <span class="avatar sm blue" style="font-size:9px">BV</span> Bobby Vo</span>
+          <!-- Sub meta row -->
+          <div class="meta-row" style="font-size:13px;margin-bottom:18px">
+            <span class="meta-pair">${policy.policyNo}</span>
+            <span class="meta-vsep"></span>
+            <span class="meta-pair">${policy.build}</span>
+            <span class="meta-vsep"></span>
+            <span class="meta-pair" style="gap:5px">
+              <span class="meta-k">Broker:</span>
+              <span class="avatar sm orange" style="font-size:9px">KM</span>
+              Kevin Ma
+            </span>
+            <span class="meta-vsep"></span>
+            <span class="meta-pair" style="gap:5px">
+              <span class="meta-k">Sales Rep:</span>
+              <span class="avatar sm blue" style="font-size:9px">BV</span>
+              Bobby Vo
+            </span>
           </div>
 
-          <!-- Premium box -->
-          <div style="background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--r-lg);padding:16px 20px;display:inline-block;margin-bottom:24px;min-width:200px">
-            <div style="font-size:11px;color:var(--fg-muted);margin-bottom:4px">Total Premium</div>
-            <div style="font-size:26px;font-weight:700;color:var(--fg)">$${policy.premium.toLocaleString('en-US')}</div>
+          <!-- Premium -->
+          <div style="margin-bottom:22px">
+            <div style="font-size:11px;color:var(--fg-muted);margin-bottom:2px">Total Premium</div>
+            <div style="font-size:32px;font-weight:700;color:var(--fg);line-height:1.1">$${policy.premium.toLocaleString('en-US')}</div>
             <div style="font-size:12px;color:var(--fg-muted);margin-top:4px">Pending endorsement: $${Math.round(policy.premium * 0.93).toLocaleString('en-US')}</div>
           </div>
 
@@ -4341,58 +4361,70 @@
           </div>
         </div>
 
-        <!-- Tab content (Overview) -->
-        <div style="padding:24px;max-width:860px">
+        <!-- Tab content -->
+        <div style="padding:24px 24px 48px;max-width:920px">
 
-          <!-- Overview section -->
-          <div style="margin-bottom:32px">
-            <h3 style="font-size:15px;font-weight:600;color:var(--fg);margin:0 0 16px">Overview</h3>
-            <div style="display:grid;grid-template-columns:200px 1fr;row-gap:14px;font-size:14px">
+          <!-- Policy Information -->
+          <section style="margin-bottom:28px">
+            <h3 style="font-size:14px;font-weight:600;color:var(--fg);margin:0 0 14px">Policy Information</h3>
+            <div style="display:grid;grid-template-columns:200px 1fr;row-gap:16px;font-size:14px">
               <span style="color:var(--fg-muted)">Business Type</span>
-              <span style="color:var(--fg)">${policy.classCode}</span>
+              <span>${policy.classCode}</span>
+              <span style="color:var(--fg-muted)">Carrier</span>
+              <span>${carrier}</span>
               <span style="color:var(--fg-muted)">Policy Start Date</span>
-              <span style="color:var(--fg)">${policy.effDate}</span>
+              <span>${policy.effDate}</span>
             </div>
-          </div>
+          </section>
+
+          <hr style="border:0;border-top:1px solid var(--border-soft);margin:0 0 28px">
 
           <!-- Primary Insured -->
-          <div style="margin-bottom:32px">
-            <h3 style="font-size:15px;font-weight:600;color:var(--fg);margin:0 0 16px">Primary Insured</h3>
-            <div style="display:grid;grid-template-columns:200px 1fr;row-gap:14px;font-size:14px">
+          <section style="margin-bottom:28px">
+            <h3 style="font-size:14px;font-weight:600;color:var(--fg);margin:0 0 14px">Primary Insured</h3>
+            <div style="display:grid;grid-template-columns:200px 1fr;row-gap:16px;font-size:14px">
               <span style="color:var(--fg-muted)">Name</span>
-              <span style="color:var(--fg)">${policy.name}</span>
+              <span>Wes Baker</span>
               <span style="color:var(--fg-muted)">Email</span>
-              <a href="mailto:${policy.email}" style="color:var(--primary);text-decoration:none">${policy.email}</a>
+              <a href="mailto:wes.baker@rtpecialty.com" style="color:var(--primary);text-decoration:none">wes.baker@rtpecialty.com</a>
               <span style="color:var(--fg-muted)">Number</span>
-              <span style="color:var(--fg)">(954) 732-7168</span>
+              <span>(954) 732-7168</span>
               <span style="color:var(--fg-muted)">Mailing Address</span>
-              <span style="color:var(--fg)">11701 Bee Caves Rd, 110, Austin, TX 78738, US</span>
+              <span>11701 Bee Caves Rd, 110, Austin, TX 78738, US</span>
             </div>
-          </div>
+          </section>
+
+          <hr style="border:0;border-top:1px solid var(--border-soft);margin:0 0 28px">
 
           <!-- Coverages -->
-          <div style="margin-bottom:32px">
-            <h3 style="font-size:15px;font-weight:600;color:var(--fg);margin:0 0 16px">Coverages</h3>
-            <div style="border:1px solid var(--border-soft);border-radius:var(--r-lg);overflow:hidden">
-              <table style="width:100%;border-collapse:collapse">
+          <section style="margin-bottom:28px">
+            <h3 style="font-size:14px;font-weight:600;color:var(--fg);margin:0 0 14px">Coverages</h3>
+            <div class="tbl-wrap">
+              <table class="gtable">
                 <thead>
-                  <tr style="background:var(--bg)">
-                    <th style="padding:10px 16px;text-align:left;font-size:13px;font-weight:500;color:var(--fg-muted);border-bottom:1px solid var(--border-soft)">Coverage</th>
-                    <th style="padding:10px 16px;text-align:right;font-size:13px;font-weight:500;color:var(--fg-muted);border-bottom:1px solid var(--border-soft)">
-                      Premium <span style="font-size:11px;font-weight:400;margin-left:8px">Taxes and fees are not included</span>
+                  <tr>
+                    <th><div class="th-inner"><span class="th-label">Coverage</span></div></th>
+                    <th style="text-align:right">
+                      <div class="th-inner" style="justify-content:flex-end">
+                        <span class="th-label">Premium</span>
+                        <i class="ph ph-info" style="font-size:11px;color:var(--fg-muted)"></i>
+                        <span style="font-weight:400;font-size:12px;color:var(--fg-muted)">Taxes and fees are not included</span>
+                      </div>
                     </th>
                   </tr>
                 </thead>
                 <tbody>${covRows}</tbody>
               </table>
             </div>
-          </div>
+          </section>
+
+          <hr style="border:0;border-top:1px solid var(--border-soft);margin:0 0 28px">
 
           <!-- Activities -->
-          <div>
-            <h3 style="font-size:15px;font-weight:600;color:var(--fg);margin:0 0 8px">Activities</h3>
+          <section>
+            <h3 style="font-size:14px;font-weight:600;color:var(--fg);margin:0 0 4px">Activities</h3>
             <div>${actItems}</div>
-          </div>
+          </section>
 
         </div>`;
     }
