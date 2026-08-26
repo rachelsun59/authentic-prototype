@@ -3810,6 +3810,8 @@
       selectedClaims:    [],
       watchlistFilters:  { account:'', product:'' },
       watchlistSelected: [],
+      globalSearch:      { open:false, query:'' },
+      claimDetailDates:  { claim:'', loss:'' },
     };
 
     // Home queue — sorted by urgency (Today first), per Figma 2:1829.
@@ -6236,9 +6238,12 @@
           </div>
         </div>`;
 
-      const incurredTable = (title) => `
+      const incurredTable = (title, dateKey) => `
         <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0">
-          <div style="font:500 16px/22px var(--font);color:#252424">${title}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="font:500 16px/22px var(--font);color:#252424">${title}</div>
+            <input type="date" id="cd-${dateKey}-date" value="${(State.claimDetailDates||{})[dateKey]||''}" style="border:1px solid #cfcece;border-radius:6px;padding:5px 8px;font:400 13px/18px var(--font);color:#252424;background:white;cursor:pointer" />
+          </div>
           <div style="border:1px solid #cfcece;border-radius:8px;overflow:hidden;background:white">
             <table style="width:100%;border-collapse:collapse">
               <thead>
@@ -6338,8 +6343,8 @@
               ${detailRow('Supervisor Email', 'roland.david@carrier.com')}
             </div>
           </div>
-          ${incurredTable('Claim Incurred Summary')}
-          ${incurredTable('Loss Incurred Summary')}
+          ${incurredTable('Claim Incurred Summary', 'claim')}
+          ${incurredTable('Loss Incurred Summary', 'loss')}
         </div>`;
     }
 
@@ -9225,6 +9230,102 @@
       });
     }
 
+    function renderGlobalSearch() {
+      const gs = State.globalSearch || {};
+      if (!gs.open) return '';
+      const q = (gs.query || '').toLowerCase().trim();
+
+      const pill = (text, type) => {
+        const styles = {
+          blue:    'background:#ebf2fb;border:1px solid #afccef;color:#2e69ae',
+          purple:  'background:#f1ecf9;border:1px solid #c8b3e9;color:#6136a2',
+          green:   'background:#eaf5ef;border:1px solid #abd7bf;color:#277e4f',
+          neutral: 'background:#fbfbfb;border:1px solid #cfcece;color:#252424',
+          amber:   'background:#fff3e0;border:1px solid #ffcc80;color:#b45309',
+        };
+        return `<span style="display:inline-flex;align-items:center;${styles[type]||styles.neutral};border-radius:999px;padding:2px 8px;font:400 12px/14px var(--font);white-space:nowrap">${text}</span>`;
+      };
+
+      const statusBadge = (text, color) => {
+        const c = color==='green'?'#2e7d32':color==='red'?'#a31e17':color==='blue'?'#2e69ae':'#868585';
+        const bg = color==='green'?'#2e7d32':color==='red'?'#a31e17':color==='blue'?'#2e69ae':'#868585';
+        return `<span style="display:inline-flex;align-items:center;gap:4px;font:400 12px/14px var(--font);color:${c};white-space:nowrap;flex-shrink:0"><span style="width:6px;height:6px;border-radius:50%;background:${bg}"></span>${text}</span>`;
+      };
+
+      const item = (icon, name, tags, badge, dataType, dataId) => `
+        <div class="gs-item" data-gs-type="${dataType}" data-gs-id="${dataId||''}" style="display:flex;align-items:center;gap:8px;padding:4px 8px;min-height:49px;cursor:pointer;border-radius:4px">
+          <i class="${icon}" style="font-size:16px;color:#868585;flex-shrink:0"></i>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="font:500 14px/15px var(--font);color:#252424;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">${tags}</div>
+          </div>
+          ${badge}
+        </div>`;
+
+      const sectionHeader = (label) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;height:40px;flex-shrink:0">
+          <span style="font:500 14px/15px var(--font);color:#868585">${label}</span>
+          <button style="display:inline-flex;align-items:center;gap:4px;border:0;background:none;cursor:pointer;font:400 14px/15px var(--font);color:#252424;padding:4px 8px;border-radius:4px">See All <i class="ph ph-caret-right" style="font-size:12px"></i></button>
+        </div>`;
+
+      const divider = `<div style="height:1px;background:#ebebeb;margin:0 8px"></div>`;
+
+      // ── New Business (submissions) ──
+      const subRows = GROWTH_ROWS
+        .filter(r => r.type === 'Sub')
+        .filter(r => !q || r.name.toLowerCase().includes(q) || r.broker.toLowerCase().includes(q) || r.product.toLowerCase().includes(q));
+      const subItems = subRows.slice(0,3).map(r => {
+        const premFmt = '$' + (r.premium/1000).toFixed(0) + 'K';
+        const statusColor = r.status==='Bound'?'green':r.status==='Cancelled'?'red':'blue';
+        const tags = pill(premFmt,'blue') + pill(r.product,'purple') + pill(r.broker,'neutral');
+        return item('ph ph-note-pencil', r.name, tags, statusBadge(r.status, statusColor), 'sub', r.id);
+      }).join('');
+
+      // ── Accounts ──
+      const allAccounts = [...new Set(ALL_CLAIMS_DATA.map(c=>c.account))].sort();
+      const acctRows = allAccounts.filter(a => !q || a.toLowerCase().includes(q));
+      const acctItems = acctRows.slice(0,3).map(a => {
+        const claimsForAcct = ALL_CLAIMS_DATA.filter(c=>c.account===a);
+        const openCount = claimsForAcct.filter(c=>c.status==='Open').length;
+        const tags = pill(openCount + ' open claims','blue') + pill('GL','purple');
+        return item('ph ph-file-text', a, tags, statusBadge('Active','green'), 'account', a);
+      }).join('');
+
+      // ── Claims ──
+      const claimRows = ALL_CLAIMS_DATA.filter(c => !q ||
+        c.id.toLowerCase().includes(q) || c.insured.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q));
+      const claimItems = claimRows.slice(0,3).map(c => {
+        const statusColor = c.status==='Open'?'blue':'green';
+        const tags = pill(c.incurred,'blue') + pill(c.product,'purple') + pill(c.id,'neutral');
+        return item('ph ph-warning-circle', c.insured, tags, statusBadge(c.status,statusColor), 'claim', c.id);
+      }).join('');
+
+      const hasResults = subItems || acctItems || claimItems;
+
+      return `
+        <div id="gs-overlay" style="position:fixed;inset:0;background:rgba(13,12,12,0.4);z-index:1000;display:flex;align-items:center;justify-content:center">
+          <div style="width:884px;max-width:calc(100vw - 48px);background:#fbfbfb;border:1px solid #ebebeb;border-radius:8px;box-shadow:0 8px 10px rgba(13,12,12,0.04);display:flex;flex-direction:column;max-height:568px;overflow:hidden">
+            <div style="background:#fbfbfb;border-bottom:1px solid #cfcece;padding:8px;flex-shrink:0">
+              <div style="background:white;border:1px solid #cfcece;border-radius:4px;padding:6px 8px;display:flex;align-items:center;gap:8px">
+                <i class="ph ph-magnifying-glass" style="font-size:14px;color:#868585;flex-shrink:0"></i>
+                <input id="gs-input" type="text" value="${gs.query||''}" placeholder="Search for anything" autocomplete="off" style="flex:1;border:0;outline:0;font:400 14px/15px var(--font);color:#252424;background:transparent" />
+                <div style="display:flex;gap:2px;flex-shrink:0">
+                  <kbd style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid #cfcece;border-radius:4px;font:400 10px/13px var(--font);color:#868585;background:white">⌘</kbd>
+                  <kbd style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid #cfcece;border-radius:4px;font:500 10px/13px var(--font);color:#868585;background:white">K</kbd>
+                </div>
+              </div>
+            </div>
+            <div style="overflow-y:auto;flex:1;padding:4px 8px 8px">
+              ${!hasResults ? `<div style="text-align:center;padding:40px;font:400 14px/20px var(--font);color:#868585">No results for "${gs.query}"</div>` : `
+              ${subItems ? sectionHeader('New Business') + subItems : ''}
+              ${acctItems ? divider + sectionHeader('Accounts') + acctItems : ''}
+              ${claimItems ? divider + sectionHeader('Claims') + claimItems : ''}
+              `}
+            </div>
+          </div>
+        </div>`;
+    }
+
     function render() {
       const main = $('#main');
       // Preserve scroll position on the detail page so actions don't jump to top
@@ -9257,7 +9358,7 @@
       else hideToast(true);
       // Render the New Submission modal into a dedicated overlay container so
       // it sits above page content but participates in the same render cycle.
-      $('#ns-root').innerHTML = renderNewSubmission() + renderUwDecision() + renderBindModal() + renderBrokerBindModal() + renderHiddenFieldModal();
+      $('#ns-root').innerHTML = renderNewSubmission() + renderUwDecision() + renderBindModal() + renderBrokerBindModal() + renderHiddenFieldModal() + renderGlobalSearch();
       renderUserChip();
 
       // Agent chat button — hidden on Chat page, visible everywhere else
@@ -12335,6 +12436,60 @@ Standalone PL: Answering Service, Wedding Consultant, Copying/Duplicating, Court
         };
         // Defer attach so the click that opened it doesn't immediately close
         setTimeout(() => document.addEventListener('mousedown', close, true), 0);
+      }
+
+      // Claim detail — incurred table date pickers
+      const cdClaimDate = document.getElementById('cd-claim-date');
+      const cdLossDate  = document.getElementById('cd-loss-date');
+      if (cdClaimDate) cdClaimDate.onchange = () => { State.claimDetailDates.claim = cdClaimDate.value; render(); };
+      if (cdLossDate)  cdLossDate.onchange  = () => { State.claimDetailDates.loss  = cdLossDate.value;  render(); };
+
+      // Global search — input, overlay click, item click, close button
+      const gsInput = document.getElementById('gs-input');
+      if (gsInput) {
+        gsInput.oninput = () => {
+          State.globalSearch.query = gsInput.value;
+          render();
+          const el = document.getElementById('gs-input');
+          if (el) { const len = el.value.length; el.focus(); el.setSelectionRange(len, len); }
+        };
+        setTimeout(() => { if (gsInput) gsInput.focus(); }, 0);
+      }
+      const gsOverlay = document.getElementById('gs-overlay');
+      if (gsOverlay) gsOverlay.onclick = (e) => {
+        if (e.target === gsOverlay) { State.globalSearch.open = false; State.globalSearch.query = ''; render(); }
+      };
+      document.querySelectorAll('.gs-item').forEach(el => {
+        el.onmouseenter = () => el.style.background = '#f4f4f4';
+        el.onmouseleave = () => el.style.background = '';
+        el.onclick = () => {
+          const type = el.dataset.gsType;
+          const id   = el.dataset.gsId;
+          State.globalSearch.open = false;
+          State.globalSearch.query = '';
+          if (type === 'claim') { State.page = 'claims'; State.claimsTab = 'report'; State.claimsReportClaim = id; }
+          else if (type === 'account') { State.page = 'claims'; State.claimsTab = 'report'; State.claimsReport.account = id; }
+          else if (type === 'sub') { State.page = 'growth'; }
+          render();
+        };
+      });
+
+      // Global keyboard shortcut — ⌘K / Ctrl+K — wire once
+      if (!window._gsKBound) {
+        window._gsKBound = true;
+        document.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            State.globalSearch.open = !State.globalSearch.open;
+            if (!State.globalSearch.open) State.globalSearch.query = '';
+            render();
+          }
+          if (e.key === 'Escape' && State.globalSearch.open) {
+            State.globalSearch.open = false;
+            State.globalSearch.query = '';
+            render();
+          }
+        });
       }
     }
 
