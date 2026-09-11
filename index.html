@@ -3624,7 +3624,7 @@
           <span class="nav-ico"><i class="ph ph-calendar-dot"></i></span><span class="nav-label">Renewals</span>
         </button>
         <button class="nav-item" data-nav="claims">
-          <span class="nav-ico"><i class="ph ph-warning-circle"></i></span><span class="nav-label">Claims</span>
+          <span class="nav-ico"><i class="ph ph-chart-bar"></i></span><span class="nav-label">Insight</span>
         </button>
         <button class="nav-item" data-nav="radar">
           <span class="nav-ico"><i class="ph ph-chart-line"></i></span><span class="nav-label">Radar</span>
@@ -3812,6 +3812,7 @@
       watchlistSelected: [],
       globalSearch:      { open:false, query:'' },
       claimDetailDates:  { claim:'', loss:'' },
+      insightTab:        'premium',
     };
 
     // Home queue — sorted by urgency (Today first), per Figma 2:1829.
@@ -6448,23 +6449,443 @@
         </div>`;
     }
 
+    // ── Insight page data ─────────────────────────────────────────
+    const INSIGHT_SALESPERSONS = {
+      hilbgrocery: 'Ryan Ruffo', hubca: 'Lee Breitmayer', 'ima-rrma': 'Drew Torrey',
+      rtrestaurants: 'Jared Paquette', hubsmb: 'Sam Rosenblum', unleashed: 'Alex Cebek',
+      gallagher: 'Bailey Voto', mcgriff: 'Ryan Ruffo', mindbody: 'Lee Breitmayer',
+      borg: 'Drew Torrey', alliantsmb: 'Jared Paquette', morstan: 'Sam Rosenblum',
+      pushpress: 'Alex Cebek', withcoverage: 'Bailey Voto', alliantgrocery: 'Ryan Ruffo'
+    };
+    const INSIGHT_RENEWAL_ROWS = [
+      { account:'hilbgrocery',    exp:'2026-09-15', premium:'$9.31M', status:'Renewing',   statusKind:'ok'  },
+      { account:'hubca',          exp:'2026-10-01', premium:'$8.05M', status:'In Review',  statusKind:'warn' },
+      { account:'ima-rrma',       exp:'2026-09-30', premium:'$7.35M', status:'Renewing',   statusKind:'ok'  },
+      { account:'rtrestaurants',  exp:'2026-11-01', premium:'$5.58M', status:'Renewing',   statusKind:'ok'  },
+      { account:'alliantgrocery', exp:'2026-10-15', premium:'$5.11M', status:'Non-Renew',  statusKind:'err' },
+      { account:'hubsmb',         exp:'2026-12-01', premium:'$3.23M', status:'In Review',  statusKind:'warn' },
+      { account:'unleashed',      exp:'2026-09-20', premium:'$3.01M', status:'Renewing',   statusKind:'ok'  },
+    ];
+    const INSIGHT_TX_ROWS = [
+      { date:'Aug 04, 2026', type:'New Business', account:'BDE Florida LLC',       policy:'6210629BDE-GL1', product:'GL', premium:'$290,000', eff:'2026-06-29', status:'Bound'    },
+      { date:'Aug 01, 2026', type:'Renewal',      account:'hilbgrocery',           policy:'6210629HLB-GL1', product:'GL', premium:'$9,312,041', eff:'2026-09-15', status:'Renewing' },
+      { date:'Jul 28, 2026', type:'New Business', account:'Iron & Oak Crossfit',   policy:'6210629IOK-GL1', product:'GL', premium:'$12,200',   eff:'2026-06-01', status:'Quoted'   },
+      { date:'Jul 15, 2026', type:'Endorsement',  account:'hubca',                 policy:'6210629HCA-GL4', product:'GL', premium:'$8,050,000', eff:'2026-07-01', status:'Active'   },
+      { date:'Jul 12, 2026', type:'Renewal',      account:'ima-rrma',              policy:'6210629IMA-GL1', product:'GL', premium:'$7,350,000', eff:'2026-09-30', status:'Renewing' },
+      { date:'Jul 08, 2026', type:'Cancellation', account:'alliantgrocery',        policy:'6210629ALG-GL1', product:'GL', premium:'$5,110,000', eff:'2026-10-15', status:'Non-Renew'},
+      { date:'Jul 02, 2026', type:'New Business', account:'Sunrise Yoga Studio',   policy:'6210629SYS-GL1', product:'GL', premium:'$75,500',    eff:'2026-05-20', status:'Bound'    },
+      { date:'Jun 30, 2026', type:'Endorsement',  account:'rtrestaurants',         policy:'6210629RTR-GL1', product:'GL', premium:'$5,580,000', eff:'2026-11-01', status:'Active'   },
+      { date:'Jun 22, 2026', type:'New Business', account:'Bellwether Bistro',     policy:'6210629BBT-GL1', product:'GL', premium:'$75,500',    eff:'2026-08-01', status:'Quoted'   },
+    ];
+
+    function insightChartIcon() {
+      return `<div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+        <button style="border:1px solid #cfcece;background:white;border-radius:4px;padding:4px;cursor:pointer;display:flex;align-items:center"><i class="ph ph-funnel-simple" style="font-size:14px;color:#868585"></i></button>
+        <button style="border:1px solid #cfcece;background:white;border-radius:4px;padding:4px;cursor:pointer;display:flex;align-items:center"><i class="ph ph-pencil-simple" style="font-size:14px;color:#868585"></i></button>
+        <button style="border:1px solid #cfcece;background:white;border-radius:4px;padding:4px;cursor:pointer;display:flex;align-items:center"><i class="ph ph-dots-three" style="font-size:14px;color:#868585"></i></button>
+      </div>`;
+    }
+    function insightKpiCard(title, val, sub) {
+      return `<div style="flex:1;min-width:0;background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">${insightChartIcon()}<span style="font:500 14px/15px var(--font);color:#3d3d3d">${title}</span></div>
+        <div>
+          <div style="font:400 24px/26px var(--font);color:#3d3d3d">${val}</div>
+          <div style="font:400 14px/15px var(--font);color:#868585;margin-top:4px">${sub}</div>
+        </div>
+      </div>`;
+    }
+    function insightKpiCardLeft(title, val, sub) {
+      return `<div style="flex:1;min-width:0;background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span style="font:500 14px/15px var(--font);color:#3d3d3d">${title}</span>${insightChartIcon()}</div>
+        <div>
+          <div style="font:400 24px/26px var(--font);color:#3d3d3d">${val}</div>
+          <div style="font:400 14px/15px var(--font);color:#868585;margin-top:4px">${sub}</div>
+        </div>
+      </div>`;
+    }
+    function insightChartCard(title, val, sub, svgContent, legendHtml) {
+      return `<div style="flex:1;min-width:0;background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div><div style="font:500 14px/15px var(--font);color:#3d3d3d">${title}</div>
+          <div style="font:400 24px/26px var(--font);color:#3d3d3d;margin-top:4px">${val}</div>
+          <div style="font:400 14px/15px var(--font);color:#868585;margin-top:2px">${sub}</div></div>
+          ${insightChartIcon()}
+        </div>
+        <div class="claims-chart-area" style="flex:1">${svgContent}</div>
+        ${legendHtml ? `<div class="claims-chart-legend">${legendHtml}</div>` : ''}
+      </div>`;
+    }
+
+    function insightAreaSvg(data, color) {
+      const W=480,H=180,pL=40,pR=16,pT=14,pB=26;
+      const cW=W-pL-pR,cH=H-pT-pB,n=data.length;
+      const maxV=Math.max(...data.map(d=>d.v));
+      const xc=i=>pL+(i/(n-1))*cW;
+      const yc=v=>pT+cH-(v/maxV)*cH;
+      const pts=data.map((d,i)=>`${xc(i).toFixed(1)},${yc(d.v).toFixed(1)}`).join(' ');
+      const area=`${pts} ${(pL+(n-1)/(n-1)*cW).toFixed(1)},${pT+cH} ${pL},${pT+cH}`;
+      const xl=data.map((d,i)=>`<text x="${xc(i).toFixed(1)}" y="${H-5}" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#868585">${d.label}</text>`).join('');
+      return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#f8fafc"/><polygon points="${area}" fill="${color}" fill-opacity="0.25"/><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${xl}</svg>`;
+    }
+    function insightBarSvg(data, color) {
+      const W=480,H=180,pL=40,pR=16,pT=14,pB=26;
+      const cW=W-pL-pR,cH=H-pT-pB,n=data.length;
+      const maxV=Math.max(...data.map(d=>d.v));
+      const bW=((cW/n)-4).toFixed(1);
+      const bars=data.map((d,i)=>{
+        const x=(pL+i*(cW/n)+2).toFixed(1);
+        const bh=((d.v/maxV)*cH).toFixed(1);
+        const y=(pT+cH-(d.v/maxV)*cH).toFixed(1);
+        return `<rect x="${x}" y="${y}" width="${bW}" height="${bh}" fill="${color}" rx="2"/>`;
+      }).join('');
+      const xl=data.map((d,i)=>`<text x="${(pL+(i+0.5)*(cW/n)).toFixed(1)}" y="${H-5}" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#868585">${d.label}</text>`).join('');
+      return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#f8fafc"/>${bars}${xl}</svg>`;
+    }
+
+    const INSIGHT_MONTHLY = [
+      {label:'Jul',v:2.1},{label:'Aug',v:2.8},{label:'Sep',v:3.1},{label:'Oct',v:3.5},
+      {label:'Nov',v:3.9},{label:'Dec',v:4.7},{label:'Jan',v:5.2},{label:'Feb',v:5.8},
+      {label:'Mar',v:6.3},{label:'Apr',v:7.1},{label:'May',v:8.4},{label:'Jun',v:9.2}
+    ];
+
+    function renderInsightPremium() {
+      const lrBadge = lr => {
+        const ok = lr < 60;
+        return `<span style="display:inline-block;background:${ok?'#e8f5e9':'#fce4ec'};color:${ok?'#2e7d32':'#c62828'};border-radius:4px;padding:2px 8px;font-size:12px;font-weight:500;">${lr.toFixed(1)}%</span>`;
+      };
+      const comboSvg   = claimsComboSvg(CLAIMS_PORT_PERIODS, 0.60);
+      const stackedSvg = claimsStackedSvg(CLAIMS_PORT_PERIODS);
+      const acctBars   = claimsHorizBarsHtml(CLAIMS_PORT_ACCTS,  '#4b7174');
+      const stateBars  = claimsHorizBarsHtml(CLAIMS_PORT_STATES, '#2e69ae');
+      const premAreaSvg = insightAreaSvg(INSIGHT_MONTHLY, '#4b7174');
+      const rows = CLAIMS_ACCT_ROWS.map(r=>{
+        const sp = INSIGHT_SALESPERSONS[r.id] || '—';
+        const initials = sp.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        return `<tr class="claims-tbl-row">
+          <td class="claims-full-td" style="font-weight:500">${r.name}</td>
+          <td class="claims-full-td r mono">${r.gwp}</td>
+          <td class="claims-full-td r mono">${r.prem}</td>
+          <td class="claims-full-td r mono">${r.incurred}</td>
+          <td class="claims-full-td r mono">${r.claims}</td>
+          <td class="claims-full-td r mono">${r.open}</td>
+          <td class="claims-full-td">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:22px;height:22px;border-radius:12px;background:#f2e7e7;display:flex;align-items:center;justify-content:center;font:500 10px/13px var(--font);color:#640b0b;flex-shrink:0">${initials}</div>
+              <span style="font:400 14px/15px var(--font);color:#252424">${sp}</span>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+      return `
+        <div class="claims-filter-row">
+          <div class="claims-filter-sel"><span>All Builds</span><i class="ph ph-caret-down" style="font-size:11px;color:#868585"></i></div>
+          <div class="claims-filter-sel"><span>All Coverage</span><i class="ph ph-caret-down" style="font-size:11px;color:#868585"></i></div>
+          <div style="flex:1"></div>
+          <button class="claims-dl-btn"><i class="ph ph-export" style="font-size:14px"></i> Export</button>
+          <button class="claims-dl-btn"><i class="ph ph-download-simple" style="font-size:14px"></i> Download</button>
+        </div>
+        <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font:500 14px/15px var(--font);color:#3d3d3d">Written Premium</div>
+            <div style="font:400 24px/26px var(--font);color:#3d3d3d;margin-top:6px">$34.5M</div>
+            <div style="font:400 14px/15px var(--font);color:#868585;margin-top:4px">YTD 2026</div></div>
+            ${insightChartIcon()}
+          </div>
+          <div class="claims-chart-area">${premAreaSvg}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          ${insightChartCard('Earned Premium & Ultimate LR%', '$34.5M', 'Pro-Rata to Jun 2026', comboSvg,
+            `<div class="legend-item"><div class="legend-swatch" style="background:#bdd0d2"></div>Earned Premium</div>
+             <div class="legend-item"><svg class="legend-line" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#cf5c3f" stroke-width="2"/></svg>Loss Ratio</div>`)}
+          <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font:500 14px/15px var(--font);color:#3d3d3d">Written Premium by Coverage</div>
+              ${insightChartIcon()}
+            </div>
+            <div style="padding:4px 0">${claimsHorizBarsHtml([
+              {label:'GL',val:24.3,display:'$24.3M',v:24.3},
+              {label:'PL',val:7.8,display:'$7.8M',v:7.8},
+              {label:'LL',val:2.4,display:'$2.4M',v:2.4}
+            ].map(x=>({label:x.label,val:x.val,display:x.display})), '#4b7174')}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font:500 14px/15px var(--font);color:#3d3d3d">Top Accounts by Written Premium</div>
+              ${insightChartIcon()}
+            </div>
+            <div style="padding:4px 0">${acctBars}</div>
+          </div>
+          <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font:500 14px/15px var(--font);color:#3d3d3d">Top States by Written Premium</div>
+              ${insightChartIcon()}
+            </div>
+            <div style="padding:4px 0">${stateBars}</div>
+          </div>
+        </div>
+        <div class="claims-tbl-section">
+          <div class="claims-tbl-section-head">
+            <span class="claims-tbl-section-title">All Builds by Earned Premium</span>
+            <div style="display:flex;gap:6px">
+              ${insightChartIcon()}
+              <button class="claims-dl-btn"><i class="ph ph-download-simple" style="font-size:13px"></i> Download CSV</button>
+            </div>
+          </div>
+          <table class="claims-full-tbl">
+            <thead><tr>
+              <th class="claims-full-th">Build</th>
+              <th class="claims-full-th r">Written Premium</th>
+              <th class="claims-full-th r">Earned Premium</th>
+              <th class="claims-full-th r">Lost Premium</th>
+              <th class="claims-full-th r">Written Locations</th>
+              <th class="claims-full-th r">Bound Locations</th>
+              <th class="claims-full-th">Salesperson</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function renderInsightRenewal() {
+      const renewSvgData = [{label:'Jul',v:2.8},{label:'Aug',v:3.5},{label:'Sep',v:3.2},{label:'Oct',v:3.8},{label:'Nov',v:4.1},{label:'Dec',v:3.47}];
+      const cancelSvgData = [{label:'Jul',v:0.9},{label:'Aug',v:1.1},{label:'Sep',v:0.8},{label:'Oct',v:1.3},{label:'Nov',v:1.0},{label:'Dec',v:1.4}];
+      const statusBadge = (s, k) => {
+        const bg = k==='ok'?'#e8f5e9':k==='err'?'#fce4ec':'#fff3e0';
+        const co = k==='ok'?'#2e7d32':k==='err'?'#c62828':'#b45309';
+        return `<span style="background:${bg};color:${co};border-radius:4px;padding:2px 8px;font:500 12px/15px var(--font)">${s}</span>`;
+      };
+      const rows = INSIGHT_RENEWAL_ROWS.map(r => `
+        <tr class="claims-tbl-row">
+          <td class="claims-full-td" style="font-weight:500">${r.account}</td>
+          <td class="claims-full-td r mono">${r.exp}</td>
+          <td class="claims-full-td r mono">${r.premium}</td>
+          <td class="claims-full-td">${statusBadge(r.status, r.statusKind)}</td>
+          <td class="claims-full-td">
+            <button style="background:none;border:1px solid #cfcece;border-radius:6px;padding:4px 10px;font:400 13px/18px var(--font);color:#252424;cursor:pointer">Review</button>
+          </td>
+        </tr>`).join('');
+      return `
+        <div class="claims-filter-row">
+          <div class="claims-filter-sel"><span>Last 6 Months</span><i class="ph ph-caret-down" style="font-size:11px;color:#868585"></i></div>
+          <div style="flex:1"></div>
+          <button class="claims-dl-btn"><i class="ph ph-export" style="font-size:14px"></i> Export</button>
+          <button class="claims-dl-btn"><i class="ph ph-download-simple" style="font-size:14px"></i> Download</button>
+        </div>
+        <div style="display:flex;gap:12px">
+          ${insightKpiCardLeft('Renewed Premium', '$3.47M', 'August')}
+          ${insightKpiCardLeft('Cancelled Premium', '$1.4M', 'August')}
+          ${insightKpiCardLeft('Upcoming Renewal', '$1.47M', 'next 30 days')}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          ${insightChartCard('Renewed Premium', '$3.47M', 'August', insightAreaSvg(renewSvgData,'#4b7174'), '')}
+          ${insightChartCard('Cancelled Premium', '$1.4M', 'August', insightAreaSvg(cancelSvgData,'#cf5c3f'), '')}
+        </div>
+        <div class="claims-tbl-section">
+          <div class="claims-tbl-section-head">
+            <span class="claims-tbl-section-title">Renewal Pipeline</span>
+            <div style="display:flex;gap:6px">
+              ${insightChartIcon()}
+              <button class="claims-dl-btn"><i class="ph ph-download-simple" style="font-size:13px"></i> Download CSV</button>
+            </div>
+          </div>
+          <table class="claims-full-tbl">
+            <thead><tr>
+              <th class="claims-full-th">Account</th>
+              <th class="claims-full-th r">Expiration Date</th>
+              <th class="claims-full-th r">Written Premium</th>
+              <th class="claims-full-th">Status</th>
+              <th class="claims-full-th">Actions</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function renderInsightTransactions() {
+      const txAreaSvg = insightAreaSvg([
+        {label:'Jan',v:1.2},{label:'Feb',v:1.8},{label:'Mar',v:2.1},{label:'Apr',v:1.9},
+        {label:'May',v:2.6},{label:'Jun',v:3.1},{label:'Jul',v:2.8},{label:'Aug',v:3.5},
+        {label:'Sep',v:3.0},{label:'Oct',v:3.8},{label:'Nov',v:4.2},{label:'Dec',v:4.7}
+      ], '#2e69ae');
+      const typeBadge = t => {
+        const map = {'New Business':['#e3f1fa','#1a6596'],'Renewal':['#e8f5e9','#2e7d32'],'Endorsement':['#fff3e0','#b45309'],'Cancellation':['#fce4ec','#c62828']};
+        const [bg,co] = map[t]||['#f5f5f5','#5a5a5a'];
+        return `<span style="background:${bg};color:${co};border-radius:4px;padding:2px 8px;font:500 12px/15px var(--font)">${t}</span>`;
+      };
+      const statusBadge = s => {
+        const map = {Bound:['#e8f5e9','#2e7d32'],Renewing:['#e3f1fa','#1a6596'],Quoted:['#fff3e0','#b45309'],Active:['#e8f5e9','#2e7d32'],'Non-Renew':['#fce4ec','#c62828']};
+        const [bg,co] = map[s]||['#f5f5f5','#5a5a5a'];
+        return `<span style="background:${bg};color:${co};border-radius:4px;padding:2px 8px;font:500 12px/15px var(--font)">${s}</span>`;
+      };
+      const rows = INSIGHT_TX_ROWS.map(r=>`
+        <tr class="claims-tbl-row">
+          <td class="claims-full-td mono" style="color:#868585">${r.date}</td>
+          <td class="claims-full-td">${typeBadge(r.type)}</td>
+          <td class="claims-full-td" style="font-weight:500">${r.account}</td>
+          <td class="claims-full-td mono" style="color:#868585;font-size:12px">${r.policy}</td>
+          <td class="claims-full-td"><span style="background:#e3f1fa;color:#1a6596;border-radius:4px;padding:2px 8px;font:500 12px/15px var(--font)">${r.product}</span></td>
+          <td class="claims-full-td r mono">${r.premium}</td>
+          <td class="claims-full-td r mono">${r.eff}</td>
+          <td class="claims-full-td">${statusBadge(r.status)}</td>
+        </tr>`).join('');
+      return `
+        <div class="claims-filter-row">
+          <div class="claims-filter-sel"><span>All Types</span><i class="ph ph-caret-down" style="font-size:11px;color:#868585"></i></div>
+          <div class="claims-filter-sel"><span>All Products</span><i class="ph ph-caret-down" style="font-size:11px;color:#868585"></i></div>
+          <div style="flex:1"></div>
+          <button class="claims-dl-btn"><i class="ph ph-export" style="font-size:14px"></i> Export</button>
+          <button class="claims-dl-btn"><i class="ph ph-download-simple" style="font-size:14px"></i> Download</button>
+        </div>
+        <div style="display:flex;gap:12px">
+          ${insightKpiCardLeft('Total Transactions', '187', 'YTD 2026')}
+          ${insightKpiCardLeft('Transaction Volume', '$47.2M', 'YTD 2026')}
+        </div>
+        <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font:500 14px/15px var(--font);color:#3d3d3d">Transaction Volume by Month</div>
+            <div style="font:400 24px/26px var(--font);color:#3d3d3d;margin-top:6px">$47.2M</div>
+            <div style="font:400 14px/15px var(--font);color:#868585;margin-top:4px">YTD 2026</div></div>
+            ${insightChartIcon()}
+          </div>
+          <div class="claims-chart-area">${txAreaSvg}</div>
+        </div>
+        <div class="claims-tbl-section">
+          <div class="claims-tbl-section-head">
+            <span class="claims-tbl-section-title">All Transactions</span>
+            <div style="display:flex;gap:6px">
+              ${insightChartIcon()}
+              <button class="claims-dl-btn"><i class="ph ph-download-simple" style="font-size:13px"></i> Download CSV</button>
+            </div>
+          </div>
+          <table class="claims-full-tbl">
+            <thead><tr>
+              <th class="claims-full-th">Date</th>
+              <th class="claims-full-th">Type</th>
+              <th class="claims-full-th">Account</th>
+              <th class="claims-full-th">Policy</th>
+              <th class="claims-full-th">Product</th>
+              <th class="claims-full-th r">Premium</th>
+              <th class="claims-full-th r">Effective</th>
+              <th class="claims-full-th">Status</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function renderInsightClaims() {
+      if (State.claimsReportClaim) return renderClaimDetail(State.claimsReportClaim);
+      const claimsTab = State.claimsTab || 'overview';
+      const wlCount = (State.watchlist||[]).length;
+      const subTabBar = `<div style="display:flex;gap:0;border-bottom:1px solid #ebebeb;margin-bottom:12px">
+        <button class="claims-tab-btn ${claimsTab==='overview'?'active':''}" data-ctab="overview" style="border-radius:0;border-bottom:none">Overview</button>
+        <button class="claims-tab-btn ${claimsTab==='report'?'active':''}" data-ctab="report" style="border-radius:0;border-bottom:none">Claim Report</button>
+        <button class="claims-tab-btn ${claimsTab==='watchlist'?'active':''}" data-ctab="watchlist" style="border-radius:0;border-bottom:none;display:inline-flex;align-items:center;gap:6px">
+          Watchlist${wlCount>0?`<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;background:#cf5c3f;border-radius:999px;font:500 11px/14px var(--font);color:white">${wlCount}</span>`:''}
+        </button>
+      </div>`;
+      if (claimsTab === 'report') return subTabBar + renderClaimsReport();
+      if (claimsTab === 'watchlist') return subTabBar + renderWatchlist();
+      // Overview
+      const comboSvg   = claimsComboSvg(CLAIMS_PORT_PERIODS, 0.60);
+      const stackedSvg = claimsStackedSvg(CLAIMS_PORT_PERIODS);
+      const lrBadge = lr => {
+        const ok = lr < 60;
+        return `<span style="display:inline-block;background:${ok?'#e8f5e9':'#fce4ec'};color:${ok?'#2e7d32':'#c62828'};border-radius:4px;padding:2px 8px;font-size:12px;font-weight:500;">${lr.toFixed(1)}%</span>`;
+      };
+      const acctRows = CLAIMS_ACCT_ROWS.map(r=>`
+        <tr class="claims-tbl-row" data-claims-account="${r.id}" style="cursor:pointer">
+          <td class="claims-full-td" style="font-weight:500">${r.name}</td>
+          <td class="claims-full-td r mono">${r.open}</td>
+          <td class="claims-full-td r mono">${r.closed}</td>
+          <td class="claims-full-td r mono">${r.claims}</td>
+          <td class="claims-full-td r mono">${r.incurred}</td>
+          <td class="claims-full-td r mono">${r.gwp}</td>
+          <td class="claims-full-td r">${lrBadge(r.lr)}</td>
+          <td class="claims-full-td r mono">${r.ultimate}</td>
+          <td class="claims-full-td r"><span style="font-size:16px">${r.lr<60?'↘':'↗'}</span></td>
+        </tr>`).join('');
+      return `${subTabBar}
+        <div style="display:flex;gap:12px">
+          ${insightKpiCardLeft('Earned Premium', '$34.47M', 'YTD')}
+          ${insightKpiCardLeft('Total Incurred', '$5.47M', 'YTD')}
+          ${insightKpiCardLeft('EST. Ultimate Loss', '$15.47M', 'YTD')}
+          ${insightKpiCardLeft('IBNR', '$13.47M', 'YTD')}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font:500 14px/15px var(--font);color:#3d3d3d">Earned Premium & Ultimate LR% by Month</div>
+              ${insightChartIcon()}
+            </div>
+            <div class="claims-chart-area">${comboSvg}</div>
+            <div class="claims-chart-legend">
+              <div class="legend-item"><div class="legend-swatch" style="background:#bdd0d2"></div>Earned Premium</div>
+              <div class="legend-item"><svg class="legend-line" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#cf5c3f" stroke-width="2"/></svg>Loss Ratio</div>
+            </div>
+          </div>
+          <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font:500 14px/15px var(--font);color:#3d3d3d">Claims by Month</div>
+              ${insightChartIcon()}
+            </div>
+            <div class="claims-chart-area">${stackedSvg}</div>
+            <div class="claims-chart-legend">
+              <div class="legend-item"><div class="legend-swatch" style="background:#2e69ae"></div>Open</div>
+              <div class="legend-item"><div class="legend-swatch" style="background:#afccef"></div>Closed</div>
+            </div>
+          </div>
+        </div>
+        <div class="claims-tbl-section">
+          <div class="claims-tbl-section-head">
+            <span class="claims-tbl-section-title">Claims by Account</span>
+            <div style="display:flex;gap:6px">
+              ${insightChartIcon()}
+              <button class="claims-dl-btn"><i class="ph ph-download-simple" style="font-size:13px"></i> Download CSV</button>
+            </div>
+          </div>
+          <table class="claims-full-tbl">
+            <thead><tr>
+              <th class="claims-full-th">Account</th>
+              <th class="claims-full-th r">Open Claims</th>
+              <th class="claims-full-th r">Closed Claims</th>
+              <th class="claims-full-th r">Total Claims</th>
+              <th class="claims-full-th r">Incurred</th>
+              <th class="claims-full-th r">Written Premium</th>
+              <th class="claims-full-th r">LR%</th>
+              <th class="claims-full-th r">EST. Ultimate</th>
+              <th class="claims-full-th r">Trend</th>
+            </tr></thead>
+            <tbody>${acctRows}</tbody>
+          </table>
+        </div>`;
+    }
+
     function renderClaims() {
       if (State.claimsAccount) return renderClaimsDetail(State.claimsAccount);
-      if (State.claimsReportClaim) return renderClaimDetail(State.claimsReportClaim);
-      const tab = State.claimsTab;
-      const wlCount = (State.watchlist||[]).length;
+      const itab = State.insightTab || 'premium';
+      const tabs = [
+        {key:'premium', label:'Premium'},
+        {key:'renewal', label:'Renewal'},
+        {key:'transactions', label:'Transactions'},
+        {key:'claims', label:'Claims'},
+      ];
+      const tabBar = `<div class="claims-tab-bar">
+        ${tabs.map(t=>`<button class="claims-tab-btn ${itab===t.key?'active':''}" data-itab="${t.key}">${t.label}</button>`).join('')}
+        <button class="claims-tab-btn" style="color:#868585"><i class="ph ph-plus" style="font-size:13px"></i></button>
+      </div>`;
+      let content;
+      if (itab === 'renewal') content = renderInsightRenewal();
+      else if (itab === 'transactions') content = renderInsightTransactions();
+      else if (itab === 'claims') content = renderInsightClaims();
+      else content = renderInsightPremium();
       return `
         <div class="claims-page">
-          <div style="font-family:var(--font-display);font-size:24px;line-height:26px;font-weight:400;color:#252424;flex-shrink:0">Claims</div>
-          <div class="claims-tab-bar">
-            <button class="claims-tab-btn ${tab==='performance'?'active':''}" data-ctab="performance">Total Account Performance</button>
-            <button class="claims-tab-btn ${tab==='report'?'active':''}" data-ctab="report">Claim Report</button>
-            <button class="claims-tab-btn ${tab==='watchlist'?'active':''}" data-ctab="watchlist" style="display:inline-flex;align-items:center;gap:6px">
-              Watchlist
-              ${wlCount > 0 ? `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;background:#cf5c3f;border-radius:999px;font:500 11px/14px var(--font);color:white">${wlCount}</span>` : ''}
-            </button>
-          </div>
-          ${tab === 'report' ? renderClaimsReport() : tab === 'watchlist' ? renderWatchlist() : renderClaimsPerformance()}
+          <div style="font-family:var(--font-display);font-size:24px;line-height:26px;font-weight:400;color:#252424;flex-shrink:0">Insight</div>
+          ${tabBar}
+          ${content}
         </div>`;
     }
     function renderRadar() {
@@ -11048,11 +11469,21 @@ Standalone PL: Answering Service, Wedding Consultant, Copying/Duplicating, Court
 
       // Claims page
       if (State.page === 'claims') {
-        // Top-level tab switching
+        // Insight top-level tab switching (Premium/Renewal/Transactions/Claims)
+        document.querySelectorAll('[data-itab]').forEach(btn => {
+          btn.onclick = () => {
+            State.insightTab = btn.dataset.itab;
+            State.claimsAccount = null;
+            State.claimsReportClaim = null;
+            render();
+          };
+        });
+        // Claims sub-tab switching (Overview/Claim Report/Watchlist)
         document.querySelectorAll('[data-ctab]').forEach(btn => {
           btn.onclick = () => {
             State.claimsTab = btn.dataset.ctab;
             State.claimsAccount = null;
+            State.claimsReportClaim = null;
             render();
           };
         });
@@ -11089,7 +11520,7 @@ Standalone PL: Answering Service, Wedding Consultant, Copying/Duplicating, Court
         const cdClaimsBack = document.getElementById('claimdetail-claims-back');
         if (cdClaimsBack) cdClaimsBack.onclick = () => {
           State.claimsReportClaim = null;
-          State.claimsTab = 'performance';
+          State.claimsTab = 'overview';
           render();
         };
         const cdReportBack = document.getElementById('claimdetail-report-back');
