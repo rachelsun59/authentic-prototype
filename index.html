@@ -38,6 +38,10 @@
   <script src="vendor/papaparse.min.js"></script>
   <script src="vendor/xlsx.full.min.js"></script>
   <script src="vendor/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-is/18.3.1/umd/react-is.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/recharts@3.10.1/umd/Recharts.js"></script>
   <script>
     if (window['pdfjsLib']) {
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
@@ -3807,7 +3811,7 @@
       claimsReport: { account:'', product:'', status:'', page:1, severeOnly:false, dateFrom:'', dateTo:'' },
       claimsReportClaim: null,
       watchlist:         [],
-      selectedClaims:    [],
+      selectedReportClaims: [],
       watchlistFilters:  { account:'', product:'' },
       watchlistSelected: [],
       globalSearch:      { open:false, query:'' },
@@ -5719,52 +5723,11 @@
 
     // ── Claims SVG / HTML chart helpers ───────────────────────────
     function claimsComboSvg(periods, targetLr, prefix) {
-      const W=480,H=180,pL=44,pR=20,pT=14,pB=26;
-      const cW=W-pL-pR, cH=H-pT-pB, n=periods.length;
-      const maxP=Math.max(...periods.map(p=>p.premium));
-      const xc=i=>pL+(i+0.5)*(cW/n);
-      const yL=v=>pT+cH-v*cH;
-      const bW=((cW/n)-6).toFixed(1);
-      const pfx = prefix || 'cp';
-      if (!window._CLAIMS_CTT) window._CLAIMS_CTT = {};
-      const bars=periods.map((p,i)=>{
-        const x=(pL+i*(cW/n)+3).toFixed(1);
-        const bh=((p.premium/maxP)*cH).toFixed(1);
-        const y=(pT+cH-(p.premium/maxP)*cH).toFixed(1);
-        const id = pfx+i;
-        window._CLAIMS_CTT[id] = { type:'combo', label:p.label, premium:p.premium, lr:p.lr, open:p.open, closed:p.closed||0, total:(p.open||0)+(p.closed||0) };
-        return `<rect x="${x}" y="${y}" width="${bW}" height="${bh}" fill="#bdd0d2" rx="2"/>
-<rect x="${x}" y="${pT}" width="${bW}" height="${cH}" fill="transparent" data-ctt="${id}" class="ctt-hz"/>`;
-      }).join('');
-      const pts=periods.map((p,i)=>`${xc(i).toFixed(1)},${yL(p.lr).toFixed(1)}`).join(' ');
-      const dots=periods.map((p,i)=>`<circle cx="${xc(i).toFixed(1)}" cy="${yL(p.lr).toFixed(1)}" r="3" fill="#cf5c3f" pointer-events="none"/>`).join('');
-      const ty=yL(targetLr).toFixed(1);
-      const xl=periods.map((p,i)=>`<text x="${xc(i).toFixed(1)}" y="${H-5}" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#868585" pointer-events="none">${p.label}</text>`).join('');
-      return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#f8fafc"/>${bars}<line x1="${pL}" y1="${ty}" x2="${W-pR}" y2="${ty}" stroke="#868585" stroke-width="1.5" stroke-dasharray="5,3" pointer-events="none"/><polyline points="${pts}" fill="none" stroke="#cf5c3f" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/>${dots}${xl}</svg>`;
+      return rcPlaceholder('combo', periods, { targetLr: targetLr || 0.60 });
     }
 
     function claimsStackedSvg(periods, prefix) {
-      const W=480,H=180,pL=44,pR=20,pT=14,pB=26;
-      const cW=W-pL-pR, cH=H-pT-pB, n=periods.length;
-      const maxT=Math.max(...periods.map(p=>p.open+p.closed));
-      const bW=((cW/n)-6).toFixed(1);
-      const pfx = prefix || 'cs';
-      if (!window._CLAIMS_CTT) window._CLAIMS_CTT = {};
-      const bars=periods.map((p,i)=>{
-        const x=(pL+i*(cW/n)+3).toFixed(1);
-        const ch=((p.closed/maxT)*cH).toFixed(1);
-        const cy=(pT+cH-(p.closed/maxT)*cH).toFixed(1);
-        const oh=((p.open/maxT)*cH).toFixed(1);
-        const oy=(pT+cH-(p.closed/maxT)*cH-(p.open/maxT)*cH).toFixed(1);
-        const id = pfx+i;
-        window._CLAIMS_CTT[id] = { type:'stacked', label:p.label, open:p.open, closed:p.closed, total:p.open+p.closed };
-        return `<rect x="${x}" y="${cy}" width="${bW}" height="${ch}" fill="#afccef" rx="2"/>
-<rect x="${x}" y="${oy}" width="${bW}" height="${oh}" fill="#2e69ae" rx="2"/>
-<rect x="${x}" y="${pT}" width="${bW}" height="${cH}" fill="transparent" data-ctt="${id}" class="ctt-hz"/>`;
-      }).join('');
-      const xc=i=>pL+(i+0.5)*(cW/n);
-      const xl=periods.map((p,i)=>`<text x="${xc(i).toFixed(1)}" y="${H-5}" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#868585" pointer-events="none">${p.label}</text>`).join('');
-      return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#f8fafc"/>${bars}${xl}</svg>`;
+      return rcPlaceholder('stacked', periods, {});
     }
 
     function claimsHorizBarsHtml(items, color, prefix) {
@@ -6104,7 +6067,7 @@
       const tableRows = pageClaims.map(c=>`
         <tr class="claims-tbl-row" data-claim-id="${c.id}" style="cursor:pointer">
           <td class="claims-full-td" style="padding-left:16px" onclick="event.stopPropagation()">
-            <input type="checkbox" class="cr-claim-cb" data-select-claim="${c.id}" ${(State.selectedClaims||[]).includes(c.id)?'checked':''} style="width:16px;height:16px;cursor:pointer;accent-color:#cf5c3f;flex-shrink:0" />
+            <input type="checkbox" class="cr-claim-cb" data-select-claim="${c.id}" ${(State.selectedReportClaims||[]).includes(c.id)?'checked':''} style="width:16px;height:16px;cursor:pointer;accent-color:#cf5c3f;flex-shrink:0" />
           </td>
           <td class="claims-full-td" style="font-weight:500;white-space:nowrap">${c.account}</td>
           <td class="claims-full-td" style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.insured}">${c.insured}</td>
@@ -6517,29 +6480,10 @@
     }
 
     function insightAreaSvg(data, color) {
-      const W=480,H=180,pL=40,pR=16,pT=14,pB=26;
-      const cW=W-pL-pR,cH=H-pT-pB,n=data.length;
-      const maxV=Math.max(...data.map(d=>d.v));
-      const xc=i=>pL+(i/(n-1))*cW;
-      const yc=v=>pT+cH-(v/maxV)*cH;
-      const pts=data.map((d,i)=>`${xc(i).toFixed(1)},${yc(d.v).toFixed(1)}`).join(' ');
-      const area=`${pts} ${(pL+(n-1)/(n-1)*cW).toFixed(1)},${pT+cH} ${pL},${pT+cH}`;
-      const xl=data.map((d,i)=>`<text x="${xc(i).toFixed(1)}" y="${H-5}" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#868585">${d.label}</text>`).join('');
-      return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#f8fafc"/><polygon points="${area}" fill="${color}" fill-opacity="0.25"/><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${xl}</svg>`;
+      return rcPlaceholder('area', data, { color });
     }
     function insightBarSvg(data, color) {
-      const W=480,H=180,pL=40,pR=16,pT=14,pB=26;
-      const cW=W-pL-pR,cH=H-pT-pB,n=data.length;
-      const maxV=Math.max(...data.map(d=>d.v));
-      const bW=((cW/n)-4).toFixed(1);
-      const bars=data.map((d,i)=>{
-        const x=(pL+i*(cW/n)+2).toFixed(1);
-        const bh=((d.v/maxV)*cH).toFixed(1);
-        const y=(pT+cH-(d.v/maxV)*cH).toFixed(1);
-        return `<rect x="${x}" y="${y}" width="${bW}" height="${bh}" fill="${color}" rx="2"/>`;
-      }).join('');
-      const xl=data.map((d,i)=>`<text x="${(pL+(i+0.5)*(cW/n)).toFixed(1)}" y="${H-5}" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#868585">${d.label}</text>`).join('');
-      return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect width="${W}" height="${H}" fill="#f8fafc"/>${bars}${xl}</svg>`;
+      return rcPlaceholder('bar', data, { color });
     }
 
     const INSIGHT_MONTHLY = [
@@ -6549,85 +6493,144 @@
     ];
 
     function renderInsightPremium() {
-      const lrBadge = lr => {
-        const ok = lr < 60;
-        return `<span style="display:inline-block;background:${ok?'#e8f5e9':'#fce4ec'};color:${ok?'#2e7d32':'#c62828'};border-radius:4px;padding:2px 8px;font-size:12px;font-weight:500;">${lr.toFixed(1)}%</span>`;
+      // ── Main "Bound Premium" bar chart ────────────────────────────────────
+      const boundPremData = [
+        {label:'Jan',v:6.2,d:'$6.2M'},{label:'Feb',v:5.1,d:'$5.1M'},{label:'Mar',v:3.8,d:'$3.8M'},
+        {label:'Apr',v:5.1,d:'$5.1M'},{label:'May',v:5.8,d:'$5.8M'},{label:'Jun',v:8.4,d:'$8.4M'}
+      ];
+      const boundPremBarSvg = () => rcPlaceholder('bar', boundPremData, { color:'#bdd0d2', showLabel:true, height:200, name:'Bound Premium' });
+
+      // ── Leads/Quotes/Binds line chart ─────────────────────────────────────
+      const leadsLineChartSvg = () => {
+        const labels = ['Jan','Feb','Mar','Apr','May','Jun'];
+        const leads  = [42,38,51,47,55,49];
+        const quotes = [28,22,31,27,33,31];
+        const binds  = [14,12,18,14,19,16];
+        const data = labels.map((label,i) => ({ label, lead:leads[i], quote:quotes[i], bind:binds[i] }));
+        return rcPlaceholder('multiline', data, {
+          height: 170,
+          lines: [
+            { key:'lead',  color:'#640b0b', name:'Lead'  },
+            { key:'quote', color:'#ca9d9d', name:'Quote' },
+            { key:'bind',  color:'#4b7174', name:'Bind'  },
+          ]
+        });
       };
-      const comboSvg   = claimsComboSvg(CLAIMS_PORT_PERIODS, 0.60);
-      const stackedSvg = claimsStackedSvg(CLAIMS_PORT_PERIODS);
-      const acctBars   = claimsHorizBarsHtml(CLAIMS_PORT_ACCTS,  '#4b7174');
-      const stateBars  = claimsHorizBarsHtml(CLAIMS_PORT_STATES, '#2e69ae');
-      const premAreaSvg = insightAreaSvg(INSIGHT_MONTHLY, '#4b7174');
-      const rows = CLAIMS_ACCT_ROWS.map(r=>{
-        const sp = INSIGHT_SALESPERSONS[r.id] || '—';
-        const initials = sp.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-        return `<tr class="claims-tbl-row">
-          <td class="claims-full-td" style="font-weight:500">${r.name}</td>
-          <td class="claims-full-td r mono">${r.gwp}</td>
-          <td class="claims-full-td r mono">${r.prem}</td>
-          <td class="claims-full-td r mono">${r.incurred}</td>
-          <td class="claims-full-td r mono">${r.claims}</td>
-          <td class="claims-full-td r mono">${r.open}</td>
-          <td class="claims-full-td">
-            <div style="display:flex;align-items:center;gap:6px">
-              <div style="width:22px;height:22px;border-radius:12px;background:#f2e7e7;display:flex;align-items:center;justify-content:center;font:500 10px/13px var(--font);color:#640b0b;flex-shrink:0">${initials}</div>
-              <span style="font:400 14px/15px var(--font);color:#252424">${sp}</span>
-            </div>
-          </td>
-        </tr>`;
+
+      // ── Legend dot helper ─────────────────────────────────────────────────
+      const ldot=(color,label)=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:6px;height:6px;border-radius:999px;background:${color};flex-shrink:0"></div><span style="font:450 10px/13px Inter,sans-serif;color:#868585">${label}</span></div>`;
+
+      // ── Top Builds bars ───────────────────────────────────────────────────
+      const buildBarItems=[
+        {label:'hilbgrocery',pct:100},{label:'hubca',pct:93.7},{label:'ima-rrma',pct:85.6},
+        {label:'rtrestaurants',pct:64.9},{label:'alliantgrocery',pct:59.5},{label:'hubsmb',pct:37.6}
+      ];
+      const topBuildBarsHtml=buildBarItems.map(it=>`<div style="display:flex;gap:8px;align-items:center;overflow:hidden"><span style="font:400 11px/normal Inter,sans-serif;color:#252424;width:80px;flex-shrink:0">${it.label}</span><div style="flex:1;min-width:0;height:14px;position:relative"><div style="position:absolute;left:0;top:0;height:14px;width:${it.pct}%;background:#bdd0d2;border-radius:3px"></div></div></div>`).join('');
+
+      // ── Top States bars ───────────────────────────────────────────────────
+      const stateBarItems=[
+        {label:'NY',pct:100},{label:'FL',pct:65.9},{label:'CA',pct:28.5},
+        {label:'TX',pct:26.7},{label:'NJ',pct:14.8},{label:'GA',pct:13.4}
+      ];
+      const topStateBarsHtml=stateBarItems.map(it=>`<div style="display:flex;gap:8px;align-items:center;overflow:hidden"><span style="font:400 11px/normal Inter,sans-serif;color:#252424;width:80px;flex-shrink:0">${it.label}</span><div style="flex:1;min-width:0;height:14px;position:relative"><div style="position:absolute;left:0;top:0;height:14px;width:${it.pct}%;background:#c8b3e9;border-radius:3px"></div></div></div>`).join('');
+
+      // ── Table rows ────────────────────────────────────────────────────────
+      const tableData=[
+        {id:'hilbgrocery',   name:'Hilb Grocery',    gwp:'$9.2M', earned:'$7.8M', lost:'$0.9M', wLoc:'183', bLoc:'157'},
+        {id:'hubca',         name:'Hub CA',           gwp:'$8.7M', earned:'$7.2M', lost:'$0.8M', wLoc:'164', bLoc:'141'},
+        {id:'ima-rrma',      name:'IMA/RRMA',         gwp:'$7.9M', earned:'$6.5M', lost:'$1.1M', wLoc:'142', bLoc:'119'},
+        {id:'rtrestaurants', name:'RT Restaurants',   gwp:'$6.0M', earned:'$4.9M', lost:'$0.7M', wLoc:'112', bLoc:'95' },
+        {id:'alliantgrocery',name:'Alliant Grocery',  gwp:'$5.5M', earned:'$4.4M', lost:'$0.5M', wLoc:'99',  bLoc:'84' },
+        {id:'hubsmb',        name:'Hub SMB',          gwp:'$3.5M', earned:'$2.8M', lost:'$0.4M', wLoc:'71',  bLoc:'62' },
+        {id:'unleashed',     name:'Unleashed',        gwp:'$2.1M', earned:'$1.7M', lost:'$0.3M', wLoc:'43',  bLoc:'38' },
+        {id:'gallagher',     name:'Gallagher',        gwp:'$1.8M', earned:'$1.4M', lost:'$0.2M', wLoc:'37',  bLoc:'31' },
+        {id:'mcgriff',       name:'McGriff',          gwp:'$1.5M', earned:'$1.2M', lost:'$0.2M', wLoc:'31',  bLoc:'27' },
+        {id:'mindbody',      name:'Mindbody',         gwp:'$1.3M', earned:'$1.0M', lost:'$0.1M', wLoc:'26',  bLoc:'23' },
+        {id:'borg',          name:'Borg',             gwp:'$1.1M', earned:'$0.9M', lost:'$0.1M', wLoc:'22',  bLoc:'20' },
+        {id:'alliantsmb',    name:'Alliant SMB',      gwp:'$0.9M', earned:'$0.7M', lost:'$0.1M', wLoc:'18',  bLoc:'16' },
+        {id:'morstan',       name:'Morstan',          gwp:'$0.8M', earned:'$0.6M', lost:'$0.1M', wLoc:'16',  bLoc:'14' },
+        {id:'pushpress',     name:'PushPress',        gwp:'$0.6M', earned:'$0.5M', lost:'$0.1M', wLoc:'12',  bLoc:'11' },
+        {id:'withcoverage',  name:'With Coverage',   gwp:'$0.5M', earned:'$0.4M', lost:'$0.1M', wLoc:'10',  bLoc:'9'  },
+      ];
+      const rows=tableData.map(r=>{
+        const sp=INSIGHT_SALESPERSONS[r.id]||'—';
+        const initials=sp.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        return `<tr class="claims-tbl-row"><td class="claims-full-td" style="font-weight:500">${r.name}</td><td class="claims-full-td r mono">${r.gwp}</td><td class="claims-full-td r mono">${r.earned}</td><td class="claims-full-td r mono">${r.lost}</td><td class="claims-full-td r mono">${r.wLoc}</td><td class="claims-full-td r mono">${r.bLoc}</td><td class="claims-full-td"><div style="display:flex;align-items:center;gap:6px"><div style="width:22px;height:22px;border-radius:12px;background:#f2e7e7;display:flex;align-items:center;justify-content:center;font:500 10px/13px var(--font);color:#640b0b;flex-shrink:0">${initials}</div><span style="font:400 14px/15px var(--font);color:#252424">${sp}</span></div></td></tr>`;
       }).join('');
+
       return `
         <div class="claims-filter-row">
           <div class="claims-filter-sel"><span>All Builds</span><i class="ph ph-caret-down" style="font-size:11px;color:#868585"></i></div>
           <div class="claims-filter-sel"><span>All Coverage</span><i class="ph ph-caret-down" style="font-size:11px;color:#868585"></i></div>
-          <div style="flex:1"></div>
-          <button class="claims-dl-btn"><i class="ph ph-export" style="font-size:14px"></i> Export</button>
-          <button class="claims-dl-btn"><i class="ph ph-download-simple" style="font-size:14px"></i> Download</button>
+          <div class="claims-filter-sel"><span>YTD</span><i class="ph ph-caret-down" style="font-size:11px;color:#868585"></i></div>
         </div>
-        <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <div><div style="font:500 14px/15px var(--font);color:#3d3d3d">Written Premium</div>
-            <div style="font:400 24px/26px var(--font);color:#3d3d3d;margin-top:6px">$34.5M</div>
-            <div style="font:400 14px/15px var(--font);color:#868585;margin-top:4px">YTD 2026</div></div>
+        <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between">
+            <div>
+              <div style="font:400 20px/28px var(--font);color:#3d3d3d">Bound Premium</div>
+              <div style="font:normal 48px/68px var(--font-display);color:#3d3d3d;margin-top:4px">$34.4M</div>
+              <div style="font:400 14px/15px var(--font);color:#868585;margin-top:4px">YTD</div>
+            </div>
             ${insightChartIcon()}
           </div>
-          <div class="claims-chart-area">${premAreaSvg}</div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          ${insightChartCard('Earned Premium & Ultimate LR%', '$34.5M', 'Pro-Rata to Jun 2026', comboSvg,
-            `<div class="legend-item"><div class="legend-swatch" style="background:#bdd0d2"></div>Earned Premium</div>
-             <div class="legend-item"><svg class="legend-line" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#cf5c3f" stroke-width="2"/></svg>Loss Ratio</div>`)}
-          <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div style="font:500 14px/15px var(--font);color:#3d3d3d">Written Premium by Coverage</div>
-              ${insightChartIcon()}
-            </div>
-            <div style="padding:4px 0">${claimsHorizBarsHtml([
-              {label:'GL',val:24.3,display:'$24.3M',v:24.3},
-              {label:'PL',val:7.8,display:'$7.8M',v:7.8},
-              {label:'LL',val:2.4,display:'$2.4M',v:2.4}
-            ].map(x=>({label:x.label,val:x.val,display:x.display})), '#4b7174')}</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="height:200px">${boundPremBarSvg()}</div>
+            <div style="display:flex;align-items:center;gap:6px;padding:8px 24px">${ldot('#640b0b','Bound Premium')}</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div style="font:500 14px/15px var(--font);color:#3d3d3d">Top Accounts by Written Premium</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          ${insightKpiCardLeft('Written Premium','$2.4M','Last Month')}
+          ${insightKpiCardLeft('Bound Premium','$1.4M','Last Month')}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between">
+              <div style="font:400 20px/28px var(--font);color:#3d3d3d">Unique Leads, Quotes, and Binds</div>
               ${insightChartIcon()}
             </div>
-            <div style="padding:4px 0">${acctBars}</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="height:170px">${leadsLineChartSvg()}</div>
+              <div style="display:flex;align-items:center;gap:6px;padding:8px 24px;flex-wrap:wrap">
+                ${ldot('#640b0b','Lead')}${ldot('#ca9d9d','Quote')}${ldot('#4b7174','Bind')}
+              </div>
+            </div>
           </div>
-          <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div style="font:500 14px/15px var(--font);color:#3d3d3d">Top States by Written Premium</div>
+          <div style="background:white;border:1px solid #cfcece;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between">
+              <div style="font:400 20px/28px var(--font);color:#3d3d3d">Unique Leads, Quotes, and Binds this month</div>
               ${insightChartIcon()}
             </div>
-            <div style="padding:4px 0">${stateBars}</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex:1;justify-content:center">
+              <div style="width:100%;background:#cfcece;border-radius:4px;height:56px;display:flex;align-items:center;justify-content:center"><span style="font:500 16px/22px var(--font);color:#252424">4100</span></div>
+              <div style="display:flex;align-items:center;justify-content:center;padding:6px 0"><span style="font:500 10px/13px var(--font);color:#252424">57% conversion</span></div>
+              <div style="width:67%;background:#afccef;border-radius:4px;height:56px;display:flex;align-items:center;justify-content:center"><span style="font:500 16px/22px var(--font);color:#252424">2380</span></div>
+              <div style="display:flex;align-items:center;justify-content:center;padding:6px 0"><span style="font:500 10px/13px var(--font);color:#252424">41% conversion</span></div>
+              <div style="width:24%;background:#abd7bf;border-radius:4px;height:56px;display:flex;align-items:center;justify-content:center"><span style="font:500 16px/22px var(--font);color:#252424">1015</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;padding:8px 24px;flex-wrap:wrap">
+              ${ldot('#cfcece','Lead')}${ldot('#afccef','Quote')}${ldot('#abd7bf','Bind')}
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div style="background:white;border:1px solid #cfcece;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:16px;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font:400 20px/28px var(--font);color:#3d3d3d">Top Builds by Written Premium</div>
+              ${insightChartIcon()}
+            </div>
+            ${topBuildBarsHtml}
+          </div>
+          <div style="background:white;border:1px solid #cfcece;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:16px;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font:400 20px/28px var(--font);color:#3d3d3d">Top States by Written Premium</div>
+              ${insightChartIcon()}
+            </div>
+            ${topStateBarsHtml}
           </div>
         </div>
         <div class="claims-tbl-section">
           <div class="claims-tbl-section-head">
-            <span class="claims-tbl-section-title">All Builds by Earned Premium</span>
+            <span class="claims-tbl-section-title">All Builds by Written Premium</span>
             <div style="display:flex;gap:6px">
               ${insightChartIcon()}
               <button class="claims-dl-btn"><i class="ph ph-download-simple" style="font-size:13px"></i> Download CSV</button>
@@ -9747,7 +9750,105 @@
         </div>`;
     }
 
+    /* =====================================================================
+       Recharts integration — chart registry + mount system
+       ===================================================================== */
+    window._chartDefs = {};
+    let _chartUid = 0;
+
+    function rcPlaceholder(type, data, opts) {
+      const id = 'rc-' + (++_chartUid);
+      window._chartDefs[id] = { type, data, ...opts };
+      const hStyle = opts.height ? `height:${opts.height}px` : 'height:100%';
+      return `<div id="${id}" style="width:100%;${hStyle}"></div>`;
+    }
+
+    function buildChart(def) {
+      const R = window.Recharts;
+      if (!R || typeof React === 'undefined') return null;
+      const ce = React.createElement;
+      const font = { fontSize: 10, fill: '#868585', fontFamily: 'DM Sans, sans-serif' };
+      const tip  = { contentStyle: { fontSize: 12, fontFamily: 'DM Sans, sans-serif', borderRadius: 6, border: '1px solid #ebebeb' }, cursor: { fill: 'rgba(0,0,0,0.04)' } };
+      const h    = def.height || '100%';
+
+      if (def.type === 'bar') {
+        return ce(R.ResponsiveContainer, { width: '100%', height: h },
+          ce(R.BarChart, { data: def.data, margin: { top: 24, right: 0, bottom: 4, left: 0 }, barCategoryGap: '20%' },
+            ce(R.XAxis, { dataKey: 'label', tick: font, axisLine: false, tickLine: false }),
+            ce(R.Tooltip, { ...tip, formatter: (v, _n, entry) => [entry.payload.d || v, def.name || 'Value'] }),
+            ce(R.Bar, { dataKey: 'v', fill: def.color || '#bdd0d2', radius: [3,3,0,0],
+              label: def.showLabel ? { position: 'top', fontSize: 10, fontFamily: 'DM Sans, sans-serif', fill: '#252424', formatter: (_v, _k, { index }) => def.data[index].d || _v } : false
+            })
+          )
+        );
+      }
+
+      if (def.type === 'area') {
+        return ce(R.ResponsiveContainer, { width: '100%', height: h },
+          ce(R.AreaChart, { data: def.data, margin: { top: 8, right: 0, bottom: 4, left: 0 } },
+            ce(R.XAxis, { dataKey: 'label', tick: font, axisLine: false, tickLine: false }),
+            ce(R.Tooltip, { ...tip }),
+            ce(R.Area, { type: 'monotone', dataKey: 'v', stroke: def.color || '#4b7174', fill: def.color || '#4b7174', fillOpacity: 0.18, strokeWidth: 2, dot: false })
+          )
+        );
+      }
+
+      if (def.type === 'multiline') {
+        const lines = def.lines.map(l =>
+          ce(R.Line, { key: l.key, type: 'monotone', dataKey: l.key, stroke: l.color, strokeWidth: 1.5, dot: false, name: l.name })
+        );
+        return ce(R.ResponsiveContainer, { width: '100%', height: h },
+          ce(R.LineChart, { data: def.data, margin: { top: 8, right: 0, bottom: 4, left: 0 } },
+            ce(R.XAxis, { dataKey: 'label', tick: font, axisLine: false, tickLine: false }),
+            ce(R.Tooltip, { ...tip }),
+            ...lines
+          )
+        );
+      }
+
+      if (def.type === 'combo') {
+        return ce(R.ResponsiveContainer, { width: '100%', height: h },
+          ce(R.ComposedChart, { data: def.data, margin: { top: 8, right: 40, bottom: 4, left: 0 } },
+            ce(R.CartesianGrid, { vertical: false, stroke: '#f0f0f0' }),
+            ce(R.XAxis, { dataKey: 'label', tick: font, axisLine: false, tickLine: false }),
+            ce(R.YAxis, { yAxisId: 'bar', hide: true }),
+            ce(R.YAxis, { yAxisId: 'line', orientation: 'right', domain: [0, 1.2], tickFormatter: v => (v*100).toFixed(0)+'%', tick: font, axisLine: false, tickLine: false, width: 36 }),
+            ce(R.Tooltip, { ...tip, formatter: (v, name) => name === 'lr' ? [(v*100).toFixed(1)+'%', 'Loss Ratio'] : ['$'+v+'M', 'Earned Premium'] }),
+            ce(R.ReferenceLine, { yAxisId: 'line', y: def.targetLr || 0.60, stroke: '#868585', strokeDasharray: '5 3', strokeWidth: 1.5 }),
+            ce(R.Bar, { yAxisId: 'bar', dataKey: 'premium', fill: '#bdd0d2', radius: [2,2,0,0], name: 'premium' }),
+            ce(R.Line, { yAxisId: 'line', type: 'monotone', dataKey: 'lr', stroke: '#cf5c3f', strokeWidth: 2, dot: { fill: '#cf5c3f', r: 3 }, name: 'lr' })
+          )
+        );
+      }
+
+      if (def.type === 'stacked') {
+        return ce(R.ResponsiveContainer, { width: '100%', height: h },
+          ce(R.BarChart, { data: def.data, margin: { top: 8, right: 0, bottom: 4, left: 0 }, barCategoryGap: '20%' },
+            ce(R.XAxis, { dataKey: 'label', tick: font, axisLine: false, tickLine: false }),
+            ce(R.Tooltip, { ...tip }),
+            ce(R.Bar, { dataKey: 'closed', stackId: 'a', fill: '#afccef', radius: [0,0,0,0], name: 'Closed' }),
+            ce(R.Bar, { dataKey: 'open', stackId: 'a', fill: '#2e69ae', radius: [2,2,0,0], name: 'Open' })
+          )
+        );
+      }
+
+      return null;
+    }
+
+    function mountCharts() {
+      if (typeof React === 'undefined' || typeof ReactDOM === 'undefined' || !window.Recharts) return;
+      Object.entries(window._chartDefs || {}).forEach(([id, def]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        try { ReactDOM.createRoot(el).render(buildChart(def)); }
+        catch(e) { console.warn('mountChart', id, e); }
+      });
+      window._chartDefs = {};
+    }
+
     function render() {
+      _chartUid = 0;
+      window._chartDefs = {};
       const main = $('#main');
       // Preserve scroll position on the detail page so actions don't jump to top
       const prevScroll = State.page === 'detail'
@@ -9812,6 +9913,7 @@
       });
 
       wireEvents();
+      mountCharts();
     }
 
     /* =========================================================================
@@ -11558,8 +11660,8 @@ Standalone PL: Answering Service, Wedding Consultant, Copying/Duplicating, Court
         document.querySelectorAll('.cr-claim-cb').forEach(cb => {
           cb.onchange = () => {
             const id = cb.dataset.selectClaim;
-            if (cb.checked) { if (!(State.selectedClaims||[]).includes(id)) State.selectedClaims = [...(State.selectedClaims||[]), id]; }
-            else             { State.selectedClaims = (State.selectedClaims||[]).filter(x => x !== id); }
+            if (cb.checked) { if (!(State.selectedReportClaims||[]).includes(id)) State.selectedReportClaims = [...(State.selectedReportClaims||[]), id]; }
+            else             { State.selectedReportClaims = (State.selectedReportClaims||[]).filter(x => x !== id); }
             render();
           };
         });
@@ -11569,21 +11671,21 @@ Standalone PL: Answering Service, Wedding Consultant, Copying/Duplicating, Court
           // visible page claims
           const visibleIds = [...document.querySelectorAll('.cr-claim-cb')].map(cb => cb.dataset.selectClaim);
           if (crSelectAll.checked) {
-            const merged = new Set([...(State.selectedClaims||[]), ...visibleIds]);
-            State.selectedClaims = [...merged];
+            const merged = new Set([...(State.selectedReportClaims||[]), ...visibleIds]);
+            State.selectedReportClaims = [...merged];
           } else {
-            State.selectedClaims = (State.selectedClaims||[]).filter(id => !visibleIds.includes(id));
+            State.selectedReportClaims = (State.selectedReportClaims||[]).filter(id => !visibleIds.includes(id));
           }
           render();
         };
         // Claim Report — Add to watchlist button
         const crAddWl = document.getElementById('cr-add-watchlist');
         if (crAddWl) crAddWl.onclick = () => {
-          const toAdd = State.selectedClaims || [];
+          const toAdd = State.selectedReportClaims || [];
           if (!toAdd.length) return;
           const merged = new Set([...(State.watchlist||[]), ...toAdd]);
           State.watchlist = [...merged];
-          State.selectedClaims = [];
+          State.selectedReportClaims = [];
           render();
         };
         // Claim detail — watchlist toggle button
