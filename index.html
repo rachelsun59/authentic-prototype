@@ -202,7 +202,21 @@
     .nav-item .nav-ico { width: 16px; height: 16px; flex: 0 0 16px; display: inline-flex; align-items: center; justify-content: center; }
     .nav-item:hover { background: var(--bg-accent); }
     .nav-item.active { background: var(--bg-accent); border-left-color: var(--tertiary); }
-    .nav-foot { padding-top: var(--sp-2); border-top: 1px solid var(--border-soft); }
+    .nav-foot { padding-top: var(--sp-2); border-top: 1px solid var(--border-soft); display: flex; flex-direction: column; }
+    .nav-divider { height: 1px; background: var(--border-soft); margin: var(--sp-2) 0; flex: 0 0 auto; }
+    /* User profile card — sidebar-bottom variant of the old topbar user
+       chip (Figma's "User name / Email Address" row); the dropdown itself
+       (.user-menu) opens upward since this sits at the very bottom. */
+    .user-chip-wrap { position: relative; width: 100%; }
+    .user-chip-wrap .user-chip {
+      display: flex; width: 100%; height: auto;
+      padding: var(--sp-2); gap: var(--sp-2);
+    }
+    .user-chip-wrap .user-chip .user-chip-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.3; overflow: hidden; }
+    .user-chip-wrap .user-chip .user-chip-name { font-weight: 500; color: var(--fg); }
+    .user-chip-wrap .user-chip .user-chip-role { font-size: 11px; color: var(--fg-muted); font-weight: 400; }
+    .user-chip-wrap .user-chip .ph-caret-down { margin-left: auto; flex-shrink: 0; }
+    .user-chip-wrap .user-menu { top: auto; bottom: calc(100% + 6px); left: 0; right: 0; }
 
     /* Collapsed sidebar rail — icon-only, ~56px wide.  Hides wordmark + labels
        and centers each nav icon.  Figma 78:25178.
@@ -214,7 +228,9 @@
     .sidebar.is-collapsed .logo-row { justify-content: center; position: relative; }
     .sidebar.is-collapsed .logo .logo-full,
     .sidebar.is-collapsed .nav-label,
-    .sidebar.is-collapsed .nav-foot { display: none; }
+    .sidebar.is-collapsed .nav-foot,
+    .sidebar.is-collapsed .nav-divider,
+    .sidebar.is-collapsed .kbd-row { display: none; }
     .sidebar:not(.is-collapsed) .logo .logo-icon { display: none; }
     .sidebar.is-collapsed .nav-item {
       justify-content: center;
@@ -249,9 +265,12 @@
       display: flex; flex-direction: column;
     }
 
-    /* Top bar */
+    /* Top bar — search/notifications/help/user now live in the sidebar
+       (Figma jBP6d8a4BZQdL0WIfYULLS node 126:13160), so this only exists to
+       host the mobile hamburger button; hidden on desktop entirely and
+       re-shown under the ≤900px mobile breakpoint below. */
     .topbar {
-      display: flex; align-items: center; gap: var(--sp-2);
+      display: none; align-items: center; gap: var(--sp-2);
       padding: var(--sp-2) var(--sp-5);
       height: 48px;
       border-bottom: 1px solid var(--border);
@@ -2612,6 +2631,7 @@
     @media (max-width: 900px) {
       /* Show hamburger, hide the static sidebar slot */
       .mobile-only { display: inline-flex; }
+      .topbar { display: flex; }
       .app-body { padding: 0; height: auto; min-height: 100vh; }
       .surface { border-radius: 0; border-left: 0; border-right: 0; }
       .shell { display: block; }
@@ -2634,6 +2654,8 @@
       .sidebar.is-collapsed .logo .logo-full,
       .sidebar.is-collapsed .nav-label,
       .sidebar.is-collapsed .nav-foot { display: revert; }
+      .sidebar.is-collapsed .nav-divider { display: block; }
+      .sidebar.is-collapsed .kbd-row { display: inline-flex; }
       .sidebar.is-collapsed .logo .logo-icon { display: none; }
       .sidebar.is-collapsed .logo-row { justify-content: space-between; }
       .sidebar.is-collapsed .nav-item { justify-content: flex-start; padding-left: var(--sp-2); padding-right: var(--sp-2); }
@@ -2974,6 +2996,11 @@
       </div>
 
       <div class="nav-list">
+        <button class="nav-item" id="sidebar-search-btn">
+          <span class="nav-ico"><i class="ph ph-magnifying-glass"></i></span><span class="nav-label">Search</span>
+          <span class="kbd-row" style="margin-left:auto"><span class="kbd">⌘</span><span class="kbd">K</span></span>
+        </button>
+        <div class="nav-divider"></div>
         <button class="nav-item" data-nav="home">
           <span class="nav-ico"><i class="ph ph-house"></i></span><span class="nav-label">Home</span>
         </button>
@@ -3001,9 +3028,17 @@
       </div>
 
       <div class="nav-foot">
+        <button class="nav-item" id="sidebar-notif-btn">
+          <span class="nav-ico"><i class="ph ph-bell"></i></span><span class="nav-label">Notifications</span>
+        </button>
         <button class="nav-item">
           <span class="nav-ico"><i class="ph ph-building"></i></span><span class="nav-label">All Organizations</span>
         </button>
+        <button class="nav-item" id="sidebar-help-btn">
+          <span class="nav-ico"><i class="ph ph-question"></i></span><span class="nav-label">Contact Support</span>
+        </button>
+        <div class="nav-divider"></div>
+        <div class="user-chip-wrap" id="user-chip-wrap"></div>
       </div>
     </aside>
 
@@ -3014,15 +3049,6 @@
           <button class="icon-btn mobile-only" id="mobile-nav-toggle" title="Menu" aria-label="Open navigation">
             <i class="ph ph-list" style="font-size:18px"></i>
           </button>
-          <div class="search-input">
-            <i class="ph ph-magnifying-glass" style="font-size:14px;color:var(--fg-muted)"></i>
-            <input type="text" placeholder="Search for anything..." />
-            <span class="kbd-row"><span class="kbd">⌘</span><span class="kbd">K</span></span>
-          </div>
-          <button class="icon-btn" title="Notifications"><i class="ph ph-bell"></i></button>
-          <button class="icon-btn" title="Help"><i class="ph ph-question"></i></button>
-          <span class="v-div"></span>
-          <div class="user-chip-wrap" id="user-chip-wrap"></div>
         </header>
 
         <main class="main" id="main"></main>
@@ -9990,7 +10016,10 @@
       wrap.innerHTML = `
         <button class="user-chip" id="user-chip-btn">
           <span class="avatar ${u.av}">${u.initials}</span>
-          <span>${u.name}</span>
+          <span class="user-chip-text">
+            <span class="user-chip-name">${u.name}</span>
+            <span class="user-chip-role">${u.role}</span>
+          </span>
           <i class="ph ph-caret-down" style="font-size:12px"></i>
         </button>
         ${menu}`;
