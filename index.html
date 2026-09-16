@@ -76,6 +76,7 @@
       --primary-muted:    #CA9D9D;   /* brand200 · primaryMuted */
       --primary-bg:       #F2E7E7;   /* brand50  · primaryBackground */
       --secondary:        #4B7174;   /* teal600  · secondary */
+      --secondary-accent: #2C3E40;   /* teal800  · secondaryAccent — dark chart fills (Insights) */
       --secondary-bg:     #EEF3F4;   /* teal50 */
       --tertiary:         #CF5C3F;   /* ember600 · tertiary  (accent / active-nav rail) */
       --tertiary-accent:  #6E3426;   /* ember800 */
@@ -3163,7 +3164,8 @@
       insightsTableSort: {},               // { [tab]: { key, dir } } — per-tab table column sort
       insightsTableOpenFilter: null,       // "tab:colKey" of the currently open column-filter popover
       insightsWidgetFilters: {},           // { [widgetKey]: { min, max } } — per-widget value-range filter (kebab "Filters" section)
-      insightsMenuFilterOpen: null,        // 'value' | 'date' | null — which Filters sub-row is expanded in the open kebab
+      insightsMenuFilterOpen: null,        // 'show' | 'sort' | 'value' | 'date' | null — which Data/Filters sub-row is expanded in the open kebab
+      insightsWidgetSort: {},              // { [widgetKey]: 'desc' | 'asc' } — bar-list widgets' Sort option (Data section)
       insightsCustomDashboardCreated: false, // has the user clicked "+ dashboard" yet? (adds the "Customized Report" tab)
       insightsCustomReports: [],           // ordered INS_REPORT_CATALOG keys added to the Customized Report dashboard
       insightsAddReportOpen: false,        // "Select Prebuild Report" slide-over open?
@@ -5081,8 +5083,8 @@
     ];
     const INSIGHTS_FUNNEL = [
       { label:'Lead',  value:704,   pct:7,   color:'var(--bg-muted)' },
-      { label:'Quote', value:10453, pct:100, color:'var(--info-muted)', conv:'1485% conversion' },
-      { label:'Bind',  value:413,   pct:4,   color:'var(--ok-muted)',   conv:'4% conversion' },
+      { label:'Quote', value:10453, pct:100, color:'var(--secondary-accent)', conv:'1485% conversion' },
+      { label:'Bind',  value:413,   pct:4,   color:'var(--fg)',   conv:'4% conversion' },
     ];
     const INSIGHTS_TOP_BUILDS = [
       { label:'Hilb Grocery',    pct:100, value:10709154 },
@@ -5553,10 +5555,10 @@
         // aggregate (see the note rendered above it when filtered).
         window.mountLQBLineChart(INSIGHTS_LINE_SERIES, INSIGHTS_MONTHS, view('lqb-trend'), hidden('lqb-trend'));
         window.mountLQBFunnelChart(INSIGHTS_FUNNEL, view('lqb-funnel'), hidden('lqb-funnel'));
-        window.mountBarListChart('ins-top-builds-chart', f.topBuilds, 'var(--secondary-muted)', view('top-builds'), hidden('top-builds'));
+        window.mountBarListChart('ins-top-builds-chart', f.topBuilds, 'var(--secondary-muted)', view('top-builds'), hidden('top-builds'), insWidgetSortDir('top-builds'));
         // Top States has no build dimension in the source data — always
         // the full aggregate (see the note rendered above it when filtered).
-        window.mountBarListChart('ins-top-states-chart', INSIGHTS_TOP_STATES, 'var(--purple-muted)', view('top-states'), hidden('top-states'));
+        window.mountBarListChart('ins-top-states-chart', INSIGHTS_TOP_STATES, 'var(--purple-muted)', view('top-states'), hidden('top-states'), insWidgetSortDir('top-states'));
         window.mountWrittenPremiumChart(insApplyValueRange(f.writtenData, 'written-month'), view('written-month'), hidden('written-month'));
         window.mountBoundMonthChart(insApplyValueRange(f.barData, 'bound-month'), view('bound-month'), hidden('bound-month'));
       } else if (tab === 'custom' && State.insightsCustomReports.length) {
@@ -5575,8 +5577,8 @@
           if (key === 'bound-ytd')                 window.mountBoundPremiumChart(insApplyValueRange(f1.barData, key), view(key), hidden(key));
           else if (key === 'written-month')        window.mountWrittenPremiumChart(insApplyValueRange(f1.writtenData, key), view(key), hidden(key));
           else if (key === 'lqb-trend')             window.mountLQBLineChart(INSIGHTS_LINE_SERIES, INSIGHTS_MONTHS, view(key), hidden(key));
-          else if (key === 'top-builds')            window.mountBarListChart('ins-top-builds-chart', f1.topBuilds, 'var(--secondary-muted)', view(key), hidden(key));
-          else if (key === 'top-states')            window.mountBarListChart('ins-top-states-chart', INSIGHTS_TOP_STATES, 'var(--purple-muted)', view(key), hidden(key));
+          else if (key === 'top-builds')            window.mountBarListChart('ins-top-builds-chart', f1.topBuilds, 'var(--secondary-muted)', view(key), hidden(key), insWidgetSortDir(key));
+          else if (key === 'top-states')            window.mountBarListChart('ins-top-states-chart', INSIGHTS_TOP_STATES, 'var(--purple-muted)', view(key), hidden(key), insWidgetSortDir(key));
           else if (key === 'renewed-premium')       window.mountRenewedPremiumChart(insApplyValueRange(f2.monthly.map(d => ({ m: d.m, value: d.renewed, label: fmtUSDk(d.renewed) })), key), view(key), hidden(key));
           else if (key === 'cancelled-premium')     window.mountCancelledPremiumChart(insApplyValueRange(f2.monthly.map(d => ({ m: d.m, value: d.cancelled, label: fmtUSDk(d.cancelled) })), key), view(key), hidden(key));
           else if (key === 'renewed-retention')     window.mountGroupedBarChart('ins-renewal-grouped-chart', f2.monthly, RENEWAL_RETENTION_SERIES, view(key), hidden(key), key);
@@ -5649,6 +5651,9 @@
     function insWidgetHidden(key) {
       return State.insightsWidgetHidden[key] || [];
     }
+    function insWidgetSortDir(key) {
+      return State.insightsWidgetSort[key] || null;
+    }
 
     // Widgets that get the Figma "Filters" chevron section (per node
     // 150-26661) instead of the plain flat category checklist: a "Premium"
@@ -5716,6 +5721,10 @@
     // required for both to render meaningfully; without it (a widget with
     // no real breakdown to offer) the menu says so plainly instead of
     // showing controls that would do nothing.
+    // Bar-list widgets where reordering by value is meaningful (Figma
+    // 215-34996's "Data" > "Sort" row) — monthly/time-series widgets keep
+    // their natural chronological order instead.
+    const INS_WIDGET_SORTABLE = ['top-builds', 'top-states'];
     function renderInsKebab(key, categories, removable) {
       const open = State.insightsMenuOpen === key;
       const cats = categories || [];
@@ -5724,12 +5733,55 @@
       const filterCfg = INS_WIDGET_FILTER_COLS[key];
       const range = insWidgetValueFilter(key);
       const subOpen = State.insightsMenuFilterOpen;
+      const sortable = INS_WIDGET_SORTABLE.includes(key);
+      const sortDir = State.insightsWidgetSort[key] || 'desc';
       const VIEWS = [
         { key:'bar',    icon:'ph-chart-bar',  label:'Bar chart' },
         { key:'line',   icon:'ph-chart-line', label:'Line chart' },
         { key:'number', icon:'ph-hash',       label:'Number' },
         { key:'table',  icon:'ph-table',      label:'Table' },
       ];
+      // Figma 215-34996: a "Data" section groups "What to show" (the
+      // existing category/series checklist, for widgets with no numeric
+      // Premium axis — filterCfg widgets show the same kind of checklist
+      // under Filters > Effective Date instead, so it isn't duplicated
+      // here) and "Sort" (bar-list widgets only).
+      const showWhatToShow = !filterCfg && cats.length > 0;
+      const dataSection = (showWhatToShow || sortable) ? `
+        <div class="ins-menu-label">Data</div>
+        ${showWhatToShow ? `
+          <button class="ins-menu-item" style="width:100%;border:0;background:transparent;cursor:pointer" data-ins-menu-filter-toggle="show">
+            <i class="ph ph-eye"></i><span>What to show</span><i class="ph ph-caret-right"></i>
+          </button>
+          ${subOpen === 'show' ? `
+            <div class="ins-menu-filter-panel">
+              ${cats.map(c => `
+                <label class="ins-menu-item" style="cursor:pointer">
+                  <input type="checkbox" data-ins-widget-cat="${key}" data-ins-cat-val="${c}" ${hidden.includes(c) ? '' : 'checked'} style="margin-right:8px">
+                  ${c}
+                </label>
+              `).join('')}
+            </div>
+          ` : ''}
+        ` : ''}
+        ${sortable ? `
+          <button class="ins-menu-item" style="width:100%;border:0;background:transparent;cursor:pointer" data-ins-menu-filter-toggle="sort">
+            <i class="ph ph-sort-descending"></i><span>Sort</span><i class="ph ph-caret-right"></i>
+          </button>
+          ${subOpen === 'sort' ? `
+            <div class="ins-menu-filter-panel">
+              ${[
+                { v:'desc', l:'Highest to lowest' },
+                { v:'asc',  l:'Lowest to highest' },
+              ].map(o => `
+                <button class="ins-menu-item" style="width:100%;border:0;background:transparent;cursor:pointer" data-ins-widget-sort="${key}" data-ins-sort-val="${o.v}">
+                  <i class="ph ph-check" style="visibility:${sortDir === o.v ? 'visible' : 'hidden'};color:var(--primary)"></i><span>${o.l}</span>
+                </button>
+              `).join('')}
+            </div>
+          ` : ''}
+        ` : ''}
+      ` : '';
       // Figma 150-26661: widgets with a numeric Premium axis get a "Filters"
       // section with chevron rows ("Premium" / "Effective Date") instead of
       // the plain flat checklist — each expands inline in the same menu.
@@ -5766,17 +5818,10 @@
             </div>
           ` : ''}
         ` : ''}
-      ` : (cats.length ? `
-        <div class="ins-menu-label">Filter</div>
-        ${cats.map(c => `
-          <label class="ins-menu-item" style="cursor:pointer">
-            <input type="checkbox" data-ins-widget-cat="${key}" data-ins-cat-val="${c}" ${hidden.includes(c) ? '' : 'checked'} style="margin-right:8px">
-            ${c}
-          </label>
-        `).join('')}
-      ` : `
+      ` : '';
+      const emptyMsg = (!showWhatToShow && !sortable && !filterCfg) ? `
         <div class="ins-menu-label" style="opacity:.7">No breakdown available for this value</div>
-      `);
+      ` : '';
       // Figma 151-33236: reports living on a custom "Customized Report"
       // dashboard get two extra rows at the bottom of every kebab — a plain
       // "Download" action and a red "Remove from dashboard" action. Widgets
@@ -5806,7 +5851,9 @@
                   `).join('')}
                 </div>
               ` : ''}
+              ${dataSection}
               ${filtersSection}
+              ${emptyMsg}
               ${manageSection}
             </div>
           ` : ''}
@@ -11328,6 +11375,15 @@
           render();
         };
       });
+      $$('[data-ins-widget-sort]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          State.insightsWidgetSort[btn.dataset.insWidgetSort] = btn.dataset.insSortVal;
+          State.insightsMenuOpen = null;
+          State.insightsMenuFilterOpen = null;
+          render();
+        };
+      });
       $$('[data-ins-filter-apply]').forEach(btn => {
         btn.onclick = (e) => {
           e.stopPropagation();
@@ -11751,7 +11807,7 @@
       );
     }
     function mountSeriesChart(containerId, data, viewType, hidden) {
-      mount(containerId, h(SeriesChart, { data, color: cssVar('--secondary-muted'), labelColor: cssVar('--fg-muted'), viewType, hidden }));
+      mount(containerId, h(SeriesChart, { data, color: cssVar('--secondary-accent'), labelColor: cssVar('--fg-muted'), viewType, hidden }));
     }
     window.mountBoundPremiumChart = (data, viewType, hidden) => mountSeriesChart('ins-bound-premium-chart', data, viewType, hidden);
     window.mountTransactionsChart = (data, viewType, hidden) => mountSeriesChart('ins-transactions-chart', data, viewType, hidden);
@@ -11837,8 +11893,9 @@
        is a horizontal ranking, "line" connects the categories in order, and
        "number" lists each one. Hidden categories are dropped from the data
        entirely (there's one bar per category, not one bar per series). ---- */
-    function CategoryChart({ data, color, labelColor, viewType, hidden, tooltipFormatter, numberFormatter }) {
-      const visible = data.filter((d) => !hidden.includes(d.name));
+    function CategoryChart({ data, color, labelColor, viewType, hidden, tooltipFormatter, numberFormatter, sortDir }) {
+      let visible = data.filter((d) => !hidden.includes(d.name));
+      if (sortDir) visible = [...visible].sort((a, b) => sortDir === 'asc' ? a.value - b.value : b.value - a.value);
       if (viewType === 'number') return h(NumberView, { total: visible.length ? sumBy(visible, (d) => d.value) : null, labelColor, formatter: numberFormatter });
       if (viewType === 'table') return h(TableView, {
         rows: visible, labelColor,
@@ -11865,11 +11922,11 @@
         )
       );
     }
-    window.mountBarListChart = (containerId, items, colorVar, viewType, hidden) => {
+    window.mountBarListChart = (containerId, items, colorVar, viewType, hidden, sortDir) => {
       const data = items.map((it) => ({ name: it.label, value: it.value }));
       mount(containerId, h(CategoryChart, {
         data, color: resolveColor(colorVar), labelColor: cssVar('--fg-muted'),
-        viewType: viewType || 'bar', hidden: hidden || [], tooltipFormatter: fmtUSD0, numberFormatter: fmtShort,
+        viewType: viewType || 'bar', hidden: hidden || [], tooltipFormatter: fmtUSD0, numberFormatter: fmtShort, sortDir,
       }));
     };
     window.mountLQBFunnelChart = (items, viewType, hidden) => {
