@@ -5735,11 +5735,17 @@
       const subOpen = State.insightsMenuFilterOpen;
       const sortable = INS_WIDGET_SORTABLE.includes(key);
       const sortDir = State.insightsWidgetSort[key] || 'desc';
+      // Figma 215-34996's format switcher: table, funnel, bar, pie, number
+      // — "line" isn't one of its slots but stays since widgets like the
+      // Lead/Quote/Bind trend already depend on it, so it's slotted in next
+      // to "bar" rather than dropped.
       const VIEWS = [
-        { key:'bar',    icon:'ph-chart-bar',  label:'Bar chart' },
-        { key:'line',   icon:'ph-chart-line', label:'Line chart' },
-        { key:'number', icon:'ph-hash',       label:'Number' },
-        { key:'table',  icon:'ph-table',      label:'Table' },
+        { key:'table',  icon:'ph-table',        label:'Table' },
+        { key:'funnel', icon:'ph-funnel',       label:'Funnel chart' },
+        { key:'bar',    icon:'ph-chart-bar',    label:'Bar chart' },
+        { key:'line',   icon:'ph-chart-line',   label:'Line chart' },
+        { key:'pie',    icon:'ph-chart-pie',    label:'Pie chart' },
+        { key:'number', icon:'ph-hash',         label:'Number' },
       ];
       // Figma 215-34996: a "Data" section groups "What to show" (the
       // existing category/series checklist, for widgets with no numeric
@@ -11730,6 +11736,36 @@
       labelStyle: { color: 'var(--fg-muted)' },
     };
     const LEGEND_WRAPPER_STYLE = { fontSize: 12, color: 'var(--fg-muted)' };
+    // Shared slice/segment colors for the new Pie/Funnel views — cycled by
+    // index for whichever widget's categories/series don't already carry
+    // their own color (most single-series widgets don't, since they only
+    // ever needed one bar color before).
+    const PIE_PALETTE = [
+      '--secondary-accent', '--purple', '--secondary', '--tertiary',
+      '--purple-accent', '--info-muted', '--ok-muted', '--warn-muted', '--purple-muted', '--secondary-muted',
+    ].map((v) => resolveColor(`var(${v})`));
+    // Hand-rolled funnel visual (not Recharts' <Funnel>, which forces each
+    // stage's width from the *previous* stage — it degenerates into an
+    // unreadable sliver on data that isn't monotonically decreasing, e.g.
+    // Lead/Quote/Bind). Each bar is instead sized independently by its own
+    // share of the largest value, which stays readable regardless of order.
+    function FunnelView({ items, labelColor }) {
+      const max = Math.max(1, ...items.map((it) => Math.abs(it.value)));
+      return h('div', { style: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, padding: '4px 8px', boxSizing: 'border-box' } },
+        items.map((it, i) => h('div', { key: i, style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 } },
+          h('div', {
+            style: {
+              width: `${Math.max(12, Math.round((Math.abs(it.value) / max) * 100))}%`,
+              minHeight: 28, borderRadius: 6, boxSizing: 'border-box',
+              background: it.fill || PIE_PALETTE[i % PIE_PALETTE.length],
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--fg-inverted)', fontSize: 13, fontWeight: 500, padding: '4px 8px',
+            },
+          }, it.valueLabel != null ? it.valueLabel : it.value),
+          h('div', { style: { fontSize: 11, color: labelColor } }, it.name)
+        ))
+      );
+    }
 
     function mount(containerId, element) {
       const el = document.getElementById(containerId);
@@ -11792,6 +11828,22 @@
         rows: visible, labelColor,
         columns: [{ key: 'm', label: 'Month' }, { key: 'value', label: 'Value', align: 'right', formatter: formatter || fmtUSD0 }],
       });
+      if (viewType === 'funnel') return h(FunnelView, {
+        labelColor,
+        items: visible.map((d, i) => ({ name: d.m, value: d.value, fill: PIE_PALETTE[i % PIE_PALETTE.length], valueLabel: d.label || (formatter || fmtUSD0)(d.value) })),
+      });
+      if (viewType === 'pie') {
+        const pdata = visible.map((d, i) => ({ name: d.m, value: d.value, fill: PIE_PALETTE[i % PIE_PALETTE.length] }));
+        return h(ResponsiveContainer, { width: '100%', height: '100%' },
+          h(PieChart, {},
+            h(Tooltip, { formatter: formatter || fmtUSD0, ...TOOLTIP_STYLE }),
+            h(Legend, { wrapperStyle: LEGEND_WRAPPER_STYLE }),
+            h(Pie, { data: pdata, dataKey: 'value', nameKey: 'name', outerRadius: '80%' },
+              pdata.map((d, i) => h(Cell, { key: i, fill: d.fill }))
+            )
+          )
+        );
+      }
       const Chart = viewType === 'line' ? LineChart : BarChart;
       return h(ResponsiveContainer, { width: '100%', height: '100%' },
         h(Chart, { data: visible, margin: { top: 24, right: 8, left: 8, bottom: 0 } },
@@ -11838,6 +11890,22 @@
           ...visibleSeries.map((s) => ({ key: s.dataKey, label: s.label, align: 'right', formatter: formatter || fmtUSD0 })),
         ],
       });
+      // Pie/Funnel don't have a time axis to plot, so each *series* becomes
+      // one slice/bar (its total across all months) — e.g. Lead vs Quote vs
+      // Bind's overall split, rather than a month-by-month breakdown.
+      if (viewType === 'funnel' || viewType === 'pie') {
+        const items = visibleSeries.map((s) => ({ name: s.label, value: sumBy(data, (d) => d[s.dataKey] || 0), fill: s.color }));
+        if (viewType === 'funnel') return h(FunnelView, { labelColor, items: items.map((it) => ({ ...it, valueLabel: (formatter || fmtUSD0)(it.value) })) });
+        return h(ResponsiveContainer, { width: '100%', height: '100%' },
+          h(PieChart, {},
+            h(Tooltip, { formatter: formatter || fmtUSD0, ...TOOLTIP_STYLE }),
+            h(Legend, { onClick: (e) => onToggle(e.value), wrapperStyle: { ...LEGEND_WRAPPER_STYLE, cursor: 'pointer' } }),
+            h(Pie, { data: items, dataKey: 'value', nameKey: 'name', outerRadius: '80%' },
+              items.map((d, i) => h(Cell, { key: i, fill: d.fill }))
+            )
+          )
+        );
+      }
       const Chart = viewType === 'line' ? LineChart : BarChart;
       return h(ResponsiveContainer, { width: '100%', height: '100%' },
         h(Chart, { data, margin: { top: 8, right: 8, left: 8, bottom: 0 } },
@@ -11901,6 +11969,22 @@
         rows: visible, labelColor,
         columns: [{ key: 'name', label: 'Name' }, { key: 'value', label: 'Value', align: 'right', formatter: numberFormatter || fmtUSD0 }],
       });
+      if (viewType === 'funnel') return h(FunnelView, {
+        labelColor,
+        items: visible.map((d, i) => ({ name: d.name, value: d.value, fill: d.fill || PIE_PALETTE[i % PIE_PALETTE.length], valueLabel: (numberFormatter || fmtUSD0)(d.value) })),
+      });
+      if (viewType === 'pie') {
+        const pdata = visible.map((d, i) => ({ name: d.name, value: d.value, fill: d.fill || PIE_PALETTE[i % PIE_PALETTE.length] }));
+        return h(ResponsiveContainer, { width: '100%', height: '100%' },
+          h(PieChart, {},
+            h(Tooltip, { formatter: tooltipFormatter, ...TOOLTIP_STYLE }),
+            h(Legend, { wrapperStyle: LEGEND_WRAPPER_STYLE }),
+            h(Pie, { data: pdata, dataKey: 'value', nameKey: 'name', outerRadius: '80%' },
+              pdata.map((d, i) => h(Cell, { key: i, fill: d.fill }))
+            )
+          )
+        );
+      }
       if (viewType === 'line') {
         return h(ResponsiveContainer, { width: '100%', height: '100%' },
           h(LineChart, { data: visible, margin: { top: 8, right: 8, left: 8, bottom: 0 } },
@@ -11998,6 +12082,23 @@
           ...(hidden.includes('Ultimate LR %') ? [] : [{ key: 'lr', label: 'Ultimate LR %', align: 'right', formatter: (v) => v + '%' }]),
         ],
       });
+      // Ultimate LR% is a ratio and Earned Premium is a dollar amount, so
+      // neither a pie nor a funnel can sensibly show both metrics at once —
+      // both views fall back to Earned Premium by month (dropping the LR
+      // line), the one additive number the widget has.
+      if (viewType === 'funnel' || viewType === 'pie') {
+        const items = data.map((d, i) => ({ name: d.m, value: d.earned, fill: PIE_PALETTE[i % PIE_PALETTE.length], valueLabel: fmtUSD0(d.earned) }));
+        if (viewType === 'funnel') return h(FunnelView, { items, labelColor });
+        return h(ResponsiveContainer, { width: '100%', height: '100%' },
+          h(PieChart, {},
+            h(Tooltip, { formatter: fmtUSD0, ...TOOLTIP_STYLE }),
+            h(Legend, { wrapperStyle: LEGEND_WRAPPER_STYLE }),
+            h(Pie, { data: items, dataKey: 'value', nameKey: 'name', outerRadius: '80%' },
+              items.map((d, i) => h(Cell, { key: i, fill: d.fill }))
+            )
+          )
+        );
+      }
       return h(ResponsiveContainer, { width: '100%', height: '100%' },
         h(ComposedChart, { data, margin: { top: 8, right: 8, left: 8, bottom: 0 } },
           h(XAxis, { dataKey: 'm', axisLine: false, tickLine: false, interval: 0, tick: { fill: labelColor, fontSize: 12 } }),
