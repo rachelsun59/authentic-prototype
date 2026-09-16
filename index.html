@@ -30,6 +30,9 @@
 }
 </style>
   <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  <!-- Leaflet — powers the Radar page's US map (renderRadar/initRadarMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- In-browser document parsers for the New Submission flow:
        PapaParse → CSV, SheetJS → XLSX/XLS, PDF.js → PDF text extraction.
        Served from ./vendor/ so the prototype works offline. -->
@@ -2782,6 +2785,157 @@
       .detail-actions .btn-primary span { display: none; }
       .uwq-block { padding: 8px; }
     }
+
+    /* ── Radar page ──────────────────────────────────────────────── */
+    .main.radar-mode { padding: 0; position: relative; overflow: hidden; }
+    .radar-wrap { position: relative; width: 100%; height: 100%; }
+    #radar-map { width: 100%; height: 100%; }
+    #radar-map .leaflet-control-zoom { border: 1px solid #ebebeb !important; border-radius: 6px !important; overflow: hidden; box-shadow: none !important; }
+    #radar-map .leaflet-control-zoom a { color: #252424 !important; border-bottom-color: #ebebeb !important; background: #fbfbfb !important; }
+    #radar-map .leaflet-control-zoom a:hover { background: #f0f0f0 !important; }
+    #radar-map .leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.1); border: 1px solid #ebebeb; padding: 0; }
+    #radar-map .leaflet-popup-content { margin: 12px 14px; }
+    #radar-map .leaflet-popup-tip { background: #fff; }
+
+    .radar-filter {
+      position: absolute;
+      top: 8px; left: 8px;
+      width: 380px;
+      height: calc(100% - 16px);
+      background: #fff;
+      border: 1px solid #ebebeb;
+      border-radius: 8px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 8px rgba(0,0,0,.04), 0 12px 28px rgba(255,255,255,.05);
+      padding: 8px;
+      gap: 12px;
+      overflow: hidden;
+    }
+    .radar-filter.hidden { display: none !important; }
+
+    .radar-filter-header {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 0; flex-shrink: 0;
+    }
+    .radar-filter-header span { font: 500 16px/22px var(--font-text); color: #252424; flex: 1; }
+    .radar-filter-close {
+      background: none; border: 0; cursor: pointer;
+      color: #868585; padding: 4px; border-radius: 4px;
+      display: flex; align-items: center; transition: background .12s;
+    }
+    .radar-filter-close:hover { background: var(--bg-soft); color: #252424; }
+
+    .radar-tabs {
+      background: #ebebeb; border-radius: 999px;
+      padding: 2px; display: flex; flex-shrink: 0;
+    }
+    .radar-tab {
+      flex: 1; padding: 4px 8px; border: 0; border-radius: 999px;
+      font: 400 14px/22px var(--font-text); color: #868585;
+      background: none; cursor: pointer; text-align: center;
+      transition: background .12s, color .12s, font-weight .12s;
+    }
+    .radar-tab.active { background: #fbfbfb; color: #3d3d3d; font-weight: 500; }
+
+    .radar-fields {
+      flex: 1; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .radar-fields::-webkit-scrollbar { width: 3px; }
+    .radar-fields::-webkit-scrollbar-thumb { background: #ebebeb; border-radius: 4px; }
+
+    .radar-field { display: flex; flex-direction: column; gap: 4px; }
+    .radar-label { font: 500 14px/15px var(--font-text); color: #252424; }
+
+    .radar-input {
+      background: #fff; border: 1px solid #ebebeb; border-radius: 4px;
+      padding: 8px; font: 400 14px/15px var(--font-text); color: #252424;
+      width: 100%; box-sizing: border-box; outline: none;
+    }
+    .radar-input::placeholder { color: #868585; }
+    .radar-input:focus { border-color: var(--tertiary); }
+
+    .radar-select {
+      background: #fff; border: 1px solid #ebebeb; border-radius: 4px;
+      padding: 8px; display: flex; align-items: center; gap: 8px; cursor: pointer;
+    }
+    .radar-select span { font: 400 14px/15px var(--font-text); color: #868585; flex: 1; }
+
+    .radar-check-group { display: flex; flex-direction: column; }
+    .radar-check-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 0; cursor: pointer;
+    }
+    .radar-checkbox {
+      width: 16px; height: 16px; border: 1.5px solid #ebebeb;
+      border-radius: 4px; background: #fff; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .12s, border-color .12s;
+    }
+    .radar-checkbox.checked { background: var(--primary); border-color: var(--primary); }
+    .radar-checkbox.checked::after {
+      content: '';
+      display: block; width: 9px; height: 6px;
+      border-left: 2px solid #fff; border-bottom: 2px solid #fff;
+      transform: translateY(-1px) rotate(-45deg);
+    }
+    .radar-check-label { font: 500 14px/15px var(--font-text); color: #252424; }
+
+    .radar-dropdown-menu {
+      position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+      background: #fff; border: 1px solid #ebebeb; border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.08);
+      z-index: 10; overflow: hidden;
+    }
+    .radar-dropdown-item {
+      padding: 8px 10px; font: 400 14px/15px var(--font-text); color: #252424;
+      cursor: pointer; transition: background .1s;
+    }
+    .radar-dropdown-item:hover { background: var(--bg-soft); }
+
+    /* Radar overlay panels (Layer / Alert Severity / Statistic) */
+    .radar-overlay-panel {
+      position: absolute; z-index: 800;
+      background: #fff; border: 1px solid #ebebeb; border-radius: 8px;
+      padding: 8px; display: flex; flex-direction: column; gap: 16px;
+      box-shadow: 0 4px 8px rgba(0,0,0,.04), 0 12px 28px rgba(255,255,255,.05);
+      pointer-events: auto; max-width: 210px; min-width: 180px;
+    }
+    .radar-overlay-label {
+      font: 500 14px/15px var(--font-text); color: #252424; padding: 4px 0 2px;
+    }
+    .radar-overlay-check-group { display: flex; flex-direction: column; gap: 0; }
+    .radar-overlay-check-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 8px; cursor: pointer;
+    }
+    .radar-overlay-checkbox {
+      width: 16px; height: 16px; border: 1.5px solid #868585;
+      border-radius: 4px; background: #fff; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .12s, border-color .12s;
+    }
+    .radar-overlay-checkbox.checked { background: var(--primary); border-color: var(--primary); }
+    .radar-overlay-checkbox.checked::after {
+      content: ''; display: block; width: 9px; height: 6px;
+      border-left: 2px solid #fff; border-bottom: 2px solid #fff;
+      transform: translateY(-1px) rotate(-45deg);
+    }
+    .radar-overlay-check-label { font: 500 14px/15px var(--font-text); color: #252424; }
+    .radar-stat-row {
+      font: 400 14px/15px var(--font-text); color: #252424;
+      padding: 2px 0;
+    }
+    .radar-dropdown-item.selected { font-weight: 500; color: var(--primary); }
+    .radar-icon-btn {
+      background: none; border: 1px solid #ebebeb; border-radius: 4px;
+      padding: 8px; cursor: pointer; color: #868585;
+      display: flex; align-items: center; font-size: 16px;
+      transition: color .12s, border-color .12s; flex-shrink: 0;
+    }
+    .radar-icon-btn:hover { color: #252424; border-color: #cfcece; }
   </style>
 </head>
 <body>
@@ -2835,14 +2989,11 @@
         <button class="nav-item" data-nav="renewals">
           <span class="nav-ico"><i class="ph ph-calendar-dot"></i></span><span class="nav-label">Renewals</span>
         </button>
-        <button class="nav-item" data-nav="loss-runs">
-          <span class="nav-ico"><i class="ph ph-folder-simple"></i></span><span class="nav-label">Loss Runs</span>
-        </button>
         <button class="nav-item" data-nav="insights">
           <span class="nav-ico"><i class="ph ph-chart-line"></i></span><span class="nav-label">Insights</span>
         </button>
-        <button class="nav-item" data-nav="actuarial">
-          <span class="nav-ico"><i class="ph ph-calculator"></i></span><span class="nav-label">Actuarial Controls</span>
+        <button class="nav-item" data-nav="radar">
+          <span class="nav-ico"><i class="ph ph-radar"></i></span><span class="nav-label">Radar</span>
         </button>
         <button class="nav-item" data-nav="settings">
           <span class="nav-ico"><i class="ph ph-gear"></i></span><span class="nav-label">Settings</span>
@@ -6768,6 +6919,1207 @@
       `;
     }
 
+    /* ---------- Radar page ----------
+       A Leaflet.js map of the US with sample account pins (RADAR_PINS),
+       an overlay-panel layer/severity/statistic UI, and a left filter
+       drawer (zip/policy/status/product/premium). Restored from the
+       pre-rebuild main branch — self-contained, no dependency on the
+       Growth/Insights data this session built. ---------- */
+    function renderRadar() {
+      const products = ['General Liability','Healthcare Providers Liability','Liquor Liability','Property','Professional Liability','Umbrella'];
+      return `
+        <div class="radar-wrap">
+          <div id="radar-map"></div>
+
+          <!-- Layer selector panel (top-right) -->
+          <div class="radar-overlay-panel" style="top:28px;right:16px">
+            <div class="radar-overlay-check-group">
+              ${[
+                {id:'layer-exposures', label:'Exposures', checked:true},
+                {id:'layer-alerts',    label:'Alerts',    checked:true},
+                {id:'layer-zipcodes',  label:'Zip Codes', checked:true},
+                {id:'layer-states',    label:'States',    checked:false},
+                {id:'layer-weather',   label:'Weather',   checked:false},
+              ].map(item=>`
+              <label class="radar-overlay-check-row">
+                <div class="radar-overlay-checkbox ${item.checked?'checked':''}"></div>
+                <span class="radar-overlay-check-label">${item.label}</span>
+              </label>`).join('')}
+            </div>
+          </div>
+
+          <!-- Alert Severity panel (middle-right) -->
+          <div class="radar-overlay-panel" style="top:220px;right:16px">
+            <div class="radar-overlay-check-group">
+              <div class="radar-overlay-label">Alert Severity</div>
+              ${[
+                {label:'Extreme (red)',    checked:false},
+                {label:'High (orange)',    checked:true},
+                {label:'Moderate (yellow)',checked:false},
+                {label:'Minor (blue)',     checked:false},
+              ].map(item=>`
+              <label class="radar-overlay-check-row">
+                <div class="radar-overlay-checkbox ${item.checked?'checked':''}"></div>
+                <span class="radar-overlay-check-label">${item.label}</span>
+              </label>`).join('')}
+            </div>
+          </div>
+
+          <!-- Statistic panel (bottom-right) -->
+          <div class="radar-overlay-panel" style="bottom:36px;right:16px">
+            <div class="radar-overlay-check-group">
+              <div class="radar-overlay-label">Statistic</div>
+              <div class="radar-stat-row">Exposure: 1,000</div>
+              <div class="radar-stat-row">Average Premium: $258,786</div>
+              <div class="radar-stat-row">Total Premium: $258,786,000</div>
+            </div>
+          </div>
+
+          <div class="radar-filter">
+            <div class="radar-filter-header">
+              <i class="ph ph-funnel" style="font-size:16px;color:#868585;flex-shrink:0"></i>
+              <span>Filter</span>
+              <button class="radar-filter-close" title="Close"><i class="ph ph-x" style="font-size:16px"></i></button>
+            </div>
+            <div class="radar-tabs">
+              <button class="radar-tab active" data-tab="pins">Pins</button>
+              <button class="radar-tab" data-tab="heatmap">Heat map</button>
+              <button class="radar-tab" data-tab="clusters">Clusters</button>
+            </div>
+            <div class="radar-fields">
+              <div class="radar-field">
+                <label class="radar-label">Builds</label>
+                <div class="radar-select">
+                  <span>All Tenants</span>
+                  <i class="ph ph-caret-down" style="font-size:16px;color:#868585;flex-shrink:0"></i>
+                </div>
+              </div>
+              <div class="radar-field">
+                <label class="radar-label">Zipcode</label>
+                <input id="radar-zip" class="radar-input" placeholder="Search by zipcode"/>
+              </div>
+              <div class="radar-field">
+                <label class="radar-label">Products</label>
+                <div class="radar-check-group">
+                  ${products.map(p => `
+                    <label class="radar-check-row">
+                      <div class="radar-checkbox checked"></div>
+                      <span class="radar-check-label">${p}</span>
+                    </label>`).join('')}
+                </div>
+              </div>
+              <div class="radar-field">
+                <label class="radar-label">Premium</label>
+                <input class="radar-input" placeholder="Minimum"/>
+                <input class="radar-input" style="margin-top:4px" placeholder="Max"/>
+              </div>
+              <div class="radar-field" style="position:relative">
+                <label class="radar-label">Policy Status</label>
+                <div class="radar-select" id="radar-status-btn" style="cursor:pointer;user-select:none">
+                  <span id="radar-status-val" data-value="">All Status</span>
+                  <i class="ph ph-caret-down" style="font-size:16px;color:#868585;flex-shrink:0"></i>
+                </div>
+                <div id="radar-status-menu" class="radar-dropdown-menu" style="display:none">
+                  <div class="radar-dropdown-item" data-val="">All Status</div>
+                  <div class="radar-dropdown-item" data-val="Active">Active</div>
+                  <div class="radar-dropdown-item" data-val="Quoted">Quoted</div>
+                  <div class="radar-dropdown-item" data-val="Bound">Bound</div>
+                </div>
+              </div>
+              <div class="radar-field">
+                <label class="radar-label">Policy Number</label>
+                <input id="radar-policy" class="radar-input" placeholder="Search by policy number"/>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+
+    let radarMap          = null;
+
+    const RADAR_PINS = [
+      { lat:39.47, lng:-75.38, name:'Silver Creek Logistics Co.', products:["Professional Liability", "Umbrella"], premium:'$241,000', status:'Active', zip:'19801', policy:'POL-2024-0001' },
+      { lat:42.08, lng:-71.25, name:'Sable Fitness', products:["Cyber Liability"], premium:'$137,000', status:'Bound', zip:'02108', policy:'POL-2024-0002' },
+      { lat:61.06, lng:-149.64, name:'Emberly Salon Co.', products:["Workers Comp"], premium:'$167,000', status:'Active', zip:'99501', policy:'POL-2024-0003' },
+      { lat:39.42, lng:-84.62, name:'Lone Star Landscaping Inc.', products:["Workers Comp"], premium:'$334,000', status:'Active', zip:'45202', policy:'POL-2024-0004' },
+      { lat:40.11, lng:-75.14, name:'Bayside Holdings', products:["Workers Comp"], premium:'$320,000', status:'Active', zip:'19103', policy:'POL-2024-0005' },
+      { lat:37.22, lng:-77.63, name:'Crescent Holdings Group', products:["Cyber Liability", "Liquor Liability"], premium:'$257,000', status:'Quoted', zip:'23219', policy:'POL-2024-0006' },
+      { lat:34.84, lng:-106.75, name:'Yellowstone Construction Inc.', products:["Liquor Liability"], premium:'$298,000', status:'Quoted', zip:'87102', policy:'POL-2024-0007' },
+      { lat:42.8, lng:-87.98, name:'Vanguard Coffee', products:["Workers Comp"], premium:'$456,000', status:'Active', zip:'53202', policy:'POL-2024-0008' },
+      { lat:42.56, lng:-82.84, name:'Canyon Construction Inc.', products:["Workers Comp"], premium:'$133,000', status:'Quoted', zip:'48226', policy:'POL-2024-0009' },
+      { lat:33.98, lng:-117.95, name:'Copper Hill Yoga Studio Partners', products:["Umbrella"], premium:'$407,000', status:'Quoted', zip:'90012', policy:'POL-2024-0010' },
+      { lat:30.23, lng:-90.15, name:'Oakmont Yoga Studio', products:["General Liability"], premium:'$465,000', status:'Active', zip:'70112', policy:'POL-2024-0011' },
+      { lat:30.51, lng:-87.02, name:'Stonebridge HVAC Inc.', products:["Commercial Auto"], premium:'$295,000', status:'Active', zip:'32501', policy:'POL-2024-0012' },
+      { lat:38.83, lng:-121.83, name:'Crestview Restaurant Group', products:["Workers Comp", "General Liability"], premium:'$175,000', status:'Bound', zip:'95814', policy:'POL-2024-0013' },
+      { lat:32.35, lng:-85.99, name:'Crestview Construction', products:["Professional Liability", "Cyber Liability"], premium:'$345,000', status:'Active', zip:'36104', policy:'POL-2024-0014' },
+      { lat:39.75, lng:-75.76, name:'Evergreen Veterinary Co.', products:["General Liability"], premium:'$331,000', status:'Active', zip:'19801', policy:'POL-2024-0015' },
+      { lat:31.42, lng:-106.19, name:'Heritage Logistics LLC', products:["Professional Liability"], premium:'$68,000', status:'Quoted', zip:'79901', policy:'POL-2024-0016' },
+      { lat:31.98, lng:-106.16, name:'Nova Veterinary Co.', products:["Commercial Auto"], premium:'$306,000', status:'Active', zip:'79901', policy:'POL-2024-0017' },
+      { lat:41.91, lng:-87.55, name:'Riverside Consulting', products:["Property", "Workers Comp"], premium:'$184,000', status:'Bound', zip:'60601', policy:'POL-2024-0018' },
+      { lat:46.97, lng:-114.03, name:'Monarch Wellness Inc.', products:["Professional Liability"], premium:'$198,000', status:'Active', zip:'59802', policy:'POL-2024-0019' },
+      { lat:61.26, lng:-149.84, name:'Summit Holdings LLC', products:["General Liability"], premium:'$465,000', status:'Active', zip:'99501', policy:'POL-2024-0020' },
+      { lat:35.24, lng:-81.0, name:'Juniper Brewing', products:["Commercial Auto"], premium:'$149,000', status:'Bound', zip:'28202', policy:'POL-2024-0021' },
+      { lat:35.93, lng:-96.27, name:'Stonebridge Roofing Inc.', products:["General Liability"], premium:'$369,000', status:'Quoted', zip:'74103', policy:'POL-2024-0022' },
+      { lat:38.07, lng:-81.7, name:'Frontier Salon Inc.', products:["Property"], premium:'$299,000', status:'Bound', zip:'25301', policy:'POL-2024-0023' },
+      { lat:26.66, lng:-80.21, name:'Silver Creek Storage Inc.', products:["Professional Liability"], premium:'$50,000', status:'Quoted', zip:'33401', policy:'POL-2024-0024' },
+      { lat:38.04, lng:-121.94, name:'Emberly Storage Group', products:["Commercial Auto"], premium:'$271,000', status:'Active', zip:'94612', policy:'POL-2024-0025' },
+      { lat:35.75, lng:-97.75, name:'Summit Landscaping Partners', products:["Commercial Auto", "Liquor Liability"], premium:'$241,000', status:'Quoted', zip:'73102', policy:'POL-2024-0026' },
+      { lat:37.44, lng:-121.9, name:'Pioneer Dental Group', products:["General Liability", "Workers Comp", "Liquor Liability"], premium:'$54,000', status:'Active', zip:'95113', policy:'POL-2024-0027' },
+      { lat:47.64, lng:-117.14, name:'Monarch Crossfit LLC', products:["Professional Liability", "Cyber Liability", "Commercial Auto"], premium:'$60,000', status:'Quoted', zip:'99201', policy:'POL-2024-0028' },
+      { lat:37.66, lng:-77.63, name:'Redwood Events', products:["General Liability"], premium:'$342,000', status:'Active', zip:'23219', policy:'POL-2024-0029' },
+      { lat:34.86, lng:-92.24, name:'Liberty Consulting Partners', products:["Workers Comp"], premium:'$147,000', status:'Active', zip:'72201', policy:'POL-2024-0030' },
+      { lat:39.27, lng:-119.71, name:'Copper Hill Auto Group Inc.', products:["Professional Liability"], premium:'$62,000', status:'Quoted', zip:'89501', policy:'POL-2024-0031' },
+      { lat:39.1, lng:-84.77, name:'Sunset Events Inc.', products:["Workers Comp", "Liquor Liability"], premium:'$105,000', status:'Bound', zip:'45202', policy:'POL-2024-0032' },
+      { lat:37.94, lng:-122.19, name:'Westgate Manufacturing LLC', products:["Umbrella"], premium:'$364,000', status:'Active', zip:'94612', policy:'POL-2024-0033' },
+      { lat:26.55, lng:-79.78, name:'Delta Property Mgmt Co.', products:["Property"], premium:'$392,000', status:'Active', zip:'33401', policy:'POL-2024-0034' },
+      { lat:41.63, lng:-81.44, name:'Lakeshore Distillery Partners', products:["General Liability", "Commercial Auto"], premium:'$349,000', status:'Bound', zip:'44114', policy:'POL-2024-0035' },
+      { lat:38.31, lng:-90.31, name:'Magnolia Plumbing Partners', products:["Commercial Auto"], premium:'$307,000', status:'Quoted', zip:'63101', policy:'POL-2024-0036' },
+      { lat:29.99, lng:-90.35, name:'Atlas Events Co.', products:["Workers Comp"], premium:'$323,000', status:'Quoted', zip:'70112', policy:'POL-2024-0037' },
+      { lat:27.29, lng:-82.86, name:'Evergreen Events LLC', products:["Property", "Workers Comp"], premium:'$152,000', status:'Quoted', zip:'34236', policy:'POL-2024-0038' },
+      { lat:30.23, lng:-81.62, name:'Meadowbrook HVAC Co.', products:["Property", "Cyber Liability"], premium:'$108,000', status:'Active', zip:'32202', policy:'POL-2024-0039' },
+      { lat:35.82, lng:-95.82, name:'Frontier Salon Inc.', products:["Property", "Liquor Liability"], premium:'$106,000', status:'Quoted', zip:'74103', policy:'POL-2024-0040' },
+      { lat:30.25, lng:-81.98, name:'Falcon Logistics Group', products:["Commercial Auto", "Liquor Liability"], premium:'$181,000', status:'Active', zip:'32202', policy:'POL-2024-0041' },
+      { lat:39.44, lng:-86.37, name:'Frontier Construction Inc.', products:["Umbrella", "Liquor Liability", "Workers Comp"], premium:'$285,000', status:'Bound', zip:'46204', policy:'POL-2024-0042' },
+      { lat:38.03, lng:-97.31, name:'Blue Ridge Restaurant Group Partners', products:["Umbrella"], premium:'$44,000', status:'Active', zip:'67202', policy:'POL-2024-0043' },
+      { lat:21.26, lng:-157.7, name:'Liberty Catering', products:["Professional Liability", "Property", "Umbrella"], premium:'$122,000', status:'Active', zip:'96813', policy:'POL-2024-0044' },
+      { lat:40.1, lng:-75.52, name:'Nova Bakery Group', products:["Professional Liability"], premium:'$365,000', status:'Active', zip:'19103', policy:'POL-2024-0045' },
+      { lat:44.35, lng:-72.97, name:'Crestview Events Partners', products:["Cyber Liability"], premium:'$192,000', status:'Bound', zip:'05401', policy:'POL-2024-0046' },
+      { lat:39.09, lng:-95.9, name:'Yellowstone Landscaping Co.', products:["Umbrella"], premium:'$232,000', status:'Quoted', zip:'66603', policy:'POL-2024-0047' },
+      { lat:40.61, lng:-74.19, name:'Quarry HVAC LLC', products:["Commercial Auto"], premium:'$370,000', status:'Active', zip:'10001', policy:'POL-2024-0048' },
+      { lat:32.7, lng:-116.88, name:'Delta Crossfit Inc.', products:["Workers Comp"], premium:'$72,000', status:'Active', zip:'92101', policy:'POL-2024-0049' },
+      { lat:37.56, lng:-97.13, name:'Prairie Fitness LLC', products:["Commercial Auto"], premium:'$337,000', status:'Active', zip:'67202', policy:'POL-2024-0050' },
+      { lat:32.69, lng:-97.24, name:'Pioneer Coffee Inc.', products:["Property"], premium:'$100,000', status:'Quoted', zip:'76102', policy:'POL-2024-0051' },
+      { lat:41.02, lng:-73.74, name:'Cascade Veterinary Inc.', products:["Commercial Auto"], premium:'$50,000', status:'Quoted', zip:'10001', policy:'POL-2024-0052' },
+      { lat:43.33, lng:-88.17, name:'Magnolia Salon LLC', products:["Workers Comp"], premium:'$411,000', status:'Bound', zip:'53202', policy:'POL-2024-0053' },
+      { lat:43.21, lng:-71.19, name:'Stonebridge Marina', products:["Liquor Liability"], premium:'$405,000', status:'Bound', zip:'03101', policy:'POL-2024-0054' },
+      { lat:32.61, lng:-96.98, name:'Vanguard Construction', products:["Property"], premium:'$165,000', status:'Bound', zip:'75201', policy:'POL-2024-0055' },
+      { lat:35.38, lng:-81.03, name:'Frontier Auto Group', products:["Liquor Liability"], premium:'$143,000', status:'Bound', zip:'28202', policy:'POL-2024-0056' },
+      { lat:30.56, lng:-87.53, name:'Meadowbrook Auto Group', products:["General Liability"], premium:'$130,000', status:'Bound', zip:'32501', policy:'POL-2024-0057' },
+      { lat:36.45, lng:-115.08, name:'Atlas Fitness', products:["General Liability"], premium:'$205,000', status:'Active', zip:'89101', policy:'POL-2024-0058' },
+      { lat:36.42, lng:-114.82, name:'Meadowbrook Property Mgmt', products:["Property", "Commercial Auto"], premium:'$137,000', status:'Active', zip:'89101', policy:'POL-2024-0059' },
+      { lat:30.44, lng:-91.27, name:'Yellowstone Bakery Inc.', products:["Commercial Auto", "Professional Liability"], premium:'$343,000', status:'Quoted', zip:'70801', policy:'POL-2024-0060' },
+      { lat:42.64, lng:-71.0, name:'Yellowstone Fitness Inc.', products:["Liquor Liability"], premium:'$468,000', status:'Bound', zip:'02108', policy:'POL-2024-0061' },
+      { lat:34.83, lng:-90.13, name:'Riverside Wellness LLC', products:["Cyber Liability"], premium:'$167,000', status:'Bound', zip:'38103', policy:'POL-2024-0062' },
+      { lat:45.21, lng:-93.29, name:'Delta Property Mgmt LLC', products:["Workers Comp", "Professional Liability", "Commercial Auto"], premium:'$60,000', status:'Quoted', zip:'55401', policy:'POL-2024-0063' },
+      { lat:40.13, lng:-74.86, name:'Pioneer Marina LLC', products:["Property"], premium:'$89,000', status:'Bound', zip:'19103', policy:'POL-2024-0064' },
+      { lat:46.6, lng:-113.68, name:'Copper Hill Coffee Partners', products:["Liquor Liability", "Umbrella"], premium:'$335,000', status:'Quoted', zip:'59802', policy:'POL-2024-0065' },
+      { lat:28.73, lng:-81.62, name:'Heritage Restaurant Group', products:["Umbrella"], premium:'$319,000', status:'Quoted', zip:'32801', policy:'POL-2024-0066' },
+      { lat:32.15, lng:-110.82, name:'Golden Gate Cleaning Services Group', products:["Umbrella"], premium:'$460,000', status:'Quoted', zip:'85701', policy:'POL-2024-0067' },
+      { lat:21.52, lng:-157.65, name:'Peregrine Salon LLC', products:["Cyber Liability"], premium:'$363,000', status:'Active', zip:'96813', policy:'POL-2024-0068' },
+      { lat:37.54, lng:-77.55, name:'Meadowbrook Marina LLC', products:["Workers Comp"], premium:'$350,000', status:'Bound', zip:'23219', policy:'POL-2024-0069' },
+      { lat:30.37, lng:-87.06, name:'Westgate Construction', products:["Commercial Auto", "Property"], premium:'$248,000', status:'Quoted', zip:'32501', policy:'POL-2024-0070' },
+      { lat:61.06, lng:-149.65, name:'Lone Star Construction LLC', products:["Commercial Auto"], premium:'$316,000', status:'Quoted', zip:'99501', policy:'POL-2024-0071' },
+      { lat:46.79, lng:-114.32, name:'Liberty Crossfit LLC', products:["Umbrella"], premium:'$199,000', status:'Active', zip:'59802', policy:'POL-2024-0072' },
+      { lat:21.45, lng:-158.02, name:'Summit Manufacturing Group', products:["Cyber Liability"], premium:'$275,000', status:'Quoted', zip:'96813', policy:'POL-2024-0073' },
+      { lat:43.09, lng:-85.56, name:'Juniper Wellness LLC', products:["Property"], premium:'$232,000', status:'Quoted', zip:'49503', policy:'POL-2024-0074' },
+      { lat:42.9, lng:-87.84, name:'Falcon Property Mgmt', products:["Workers Comp"], premium:'$205,000', status:'Quoted', zip:'53202', policy:'POL-2024-0075' },
+      { lat:32.59, lng:-97.5, name:'Redwood Physical Therapy Group', products:["Liquor Liability"], premium:'$123,000', status:'Active', zip:'76102', policy:'POL-2024-0076' },
+      { lat:30.11, lng:-97.68, name:'Emberly Manufacturing', products:["Professional Liability"], premium:'$451,000', status:'Active', zip:'78701', policy:'POL-2024-0077' },
+      { lat:38.86, lng:-95.9, name:'Summit Coffee', products:["General Liability"], premium:'$52,000', status:'Quoted', zip:'66603', policy:'POL-2024-0078' },
+      { lat:39.19, lng:-95.94, name:'Emberly Distillery Inc.', products:["Umbrella", "Property"], premium:'$270,000', status:'Bound', zip:'66603', policy:'POL-2024-0079' },
+      { lat:43.4, lng:-116.51, name:'Falcon Restaurant Group Inc.', products:["Professional Liability"], premium:'$320,000', status:'Quoted', zip:'83702', policy:'POL-2024-0080' },
+      { lat:39.05, lng:-76.4, name:'Heritage Holdings Group', products:["Cyber Liability"], premium:'$335,000', status:'Quoted', zip:'21201', policy:'POL-2024-0081' },
+      { lat:44.29, lng:-73.19, name:'Willow Consulting LLC', products:["Cyber Liability"], premium:'$181,000', status:'Quoted', zip:'05401', policy:'POL-2024-0082' },
+      { lat:44.17, lng:-72.89, name:'Cascade Veterinary Group', products:["Umbrella"], premium:'$363,000', status:'Active', zip:'05401', policy:'POL-2024-0083' },
+      { lat:32.2, lng:-86.27, name:'Granite Fitness Inc.', products:["Commercial Auto"], premium:'$174,000', status:'Active', zip:'36104', policy:'POL-2024-0084' },
+      { lat:42.18, lng:-83.2, name:'Copper Hill Holdings Group', products:["Property", "Commercial Auto"], premium:'$83,000', status:'Quoted', zip:'48226', policy:'POL-2024-0085' },
+      { lat:39.87, lng:-85.87, name:'Prairie Holdings LLC', products:["Umbrella"], premium:'$329,000', status:'Quoted', zip:'46204', policy:'POL-2024-0086' },
+      { lat:45.81, lng:-122.71, name:'Copper Hill Coffee Partners', products:["Umbrella"], premium:'$281,000', status:'Quoted', zip:'97204', policy:'POL-2024-0087' },
+      { lat:34.01, lng:-118.17, name:'Stonebridge Physical Therapy LLC', products:["General Liability"], premium:'$71,000', status:'Active', zip:'90012', policy:'POL-2024-0088' },
+      { lat:37.93, lng:-97.29, name:'Blue Ridge Veterinary Partners', products:["Liquor Liability"], premium:'$265,000', status:'Quoted', zip:'67202', policy:'POL-2024-0089' },
+      { lat:39.59, lng:-80.12, name:'Quarry Catering LLC', products:["Commercial Auto", "Liquor Liability", "Property"], premium:'$195,000', status:'Active', zip:'26501', policy:'POL-2024-0090' },
+      { lat:46.59, lng:-114.23, name:'Meadowbrook Coffee LLC', products:["Cyber Liability"], premium:'$441,000', status:'Quoted', zip:'59802', policy:'POL-2024-0091' },
+      { lat:41.74, lng:-72.8, name:'Liberty Restaurant Group Inc.', products:["General Liability", "Workers Comp"], premium:'$470,000', status:'Quoted', zip:'06103', policy:'POL-2024-0092' },
+      { lat:29.7, lng:-95.58, name:'Evergreen HVAC LLC', products:["General Liability"], premium:'$129,000', status:'Active', zip:'77002', policy:'POL-2024-0093' },
+      { lat:38.32, lng:-121.64, name:'Atlas Distillery Inc.', products:["Property"], premium:'$388,000', status:'Active', zip:'95814', policy:'POL-2024-0094' },
+      { lat:41.63, lng:-93.58, name:'Lone Star Logistics Inc.', products:["Professional Liability"], premium:'$356,000', status:'Active', zip:'50309', policy:'POL-2024-0095' },
+      { lat:34.35, lng:-118.39, name:'Bristol Construction Inc.', products:["Commercial Auto", "Professional Liability"], premium:'$258,000', status:'Quoted', zip:'90012', policy:'POL-2024-0096' },
+      { lat:27.26, lng:-82.24, name:'Lakeshore Physical Therapy Co.', products:["Umbrella", "Cyber Liability"], premium:'$429,000', status:'Bound', zip:'34236', policy:'POL-2024-0097' },
+      { lat:43.92, lng:-116.19, name:'Summit Dental Partners', products:["Commercial Auto", "Cyber Liability"], premium:'$101,000', status:'Bound', zip:'83702', policy:'POL-2024-0098' },
+      { lat:37.76, lng:-122.53, name:'Emberly Property Mgmt Inc.', products:["Workers Comp"], premium:'$470,000', status:'Active', zip:'94103', policy:'POL-2024-0099' },
+      { lat:43.01, lng:-85.85, name:'Foxglove Catering LLC', products:["Commercial Auto"], premium:'$386,000', status:'Bound', zip:'49503', policy:'POL-2024-0100' },
+      { lat:36.51, lng:-114.94, name:'Westgate Yoga Studio LLC', products:["Liquor Liability", "Umbrella", "Cyber Liability"], premium:'$194,000', status:'Active', zip:'89101', policy:'POL-2024-0101' },
+      { lat:32.02, lng:-89.89, name:'Summit Physical Therapy Co.', products:["Liquor Liability"], premium:'$63,000', status:'Bound', zip:'39201', policy:'POL-2024-0102' },
+      { lat:41.78, lng:-87.49, name:'Westgate Holdings LLC', products:["Cyber Liability", "Liquor Liability"], premium:'$345,000', status:'Quoted', zip:'60601', policy:'POL-2024-0103' },
+      { lat:32.02, lng:-106.81, name:'Golden Gate Logistics Partners', products:["Professional Liability", "Property", "General Liability"], premium:'$414,000', status:'Quoted', zip:'79901', policy:'POL-2024-0104' },
+      { lat:33.71, lng:-84.25, name:'Blue Ridge Bistro LLC', products:["Umbrella", "Liquor Liability"], premium:'$216,000', status:'Bound', zip:'30303', policy:'POL-2024-0105' },
+      { lat:27.16, lng:-82.6, name:'Zephyr Salon Co.', products:["Professional Liability"], premium:'$337,000', status:'Bound', zip:'34236', policy:'POL-2024-0106' },
+      { lat:44.61, lng:-73.21, name:'Quarry Yoga Studio Group', products:["Umbrella"], premium:'$260,000', status:'Active', zip:'05401', policy:'POL-2024-0107' },
+      { lat:46.53, lng:-113.78, name:'Crescent Bakery', products:["Commercial Auto"], premium:'$201,000', status:'Quoted', zip:'59802', policy:'POL-2024-0108' },
+      { lat:41.36, lng:-95.98, name:'Northstar Wellness Partners', products:["Cyber Liability"], premium:'$461,000', status:'Bound', zip:'68102', policy:'POL-2024-0109' },
+      { lat:30.15, lng:-81.61, name:'Peregrine Dental Partners', products:["Cyber Liability"], premium:'$165,000', status:'Active', zip:'32202', policy:'POL-2024-0110' },
+      { lat:45.78, lng:-122.48, name:'Ironwood Consulting', products:["Umbrella", "Cyber Liability"], premium:'$434,000', status:'Active', zip:'97204', policy:'POL-2024-0111' },
+      { lat:43.87, lng:-70.46, name:'Pioneer HVAC Partners', products:["Liquor Liability"], premium:'$346,000', status:'Active', zip:'04101', policy:'POL-2024-0112' },
+      { lat:41.92, lng:-71.54, name:'Willow Bistro', products:["Liquor Liability"], premium:'$71,000', status:'Active', zip:'02903', policy:'POL-2024-0113' },
+      { lat:47.05, lng:-97.02, name:'Magnolia Salon', products:["Workers Comp", "Umbrella"], premium:'$281,000', status:'Active', zip:'58102', policy:'POL-2024-0114' },
+      { lat:33.35, lng:-86.58, name:'Falcon Salon Partners', products:["Workers Comp", "Cyber Liability"], premium:'$83,000', status:'Bound', zip:'35203', policy:'POL-2024-0115' },
+      { lat:34.98, lng:-80.51, name:'Zephyr Physical Therapy Inc.', products:["Workers Comp", "General Liability", "Property"], premium:'$32,000', status:'Active', zip:'28202', policy:'POL-2024-0116' },
+      { lat:37.51, lng:-122.5, name:'Delta Bakery Partners', products:["Workers Comp"], premium:'$80,000', status:'Quoted', zip:'94103', policy:'POL-2024-0117' },
+      { lat:42.31, lng:-82.97, name:'Orchard Auto Group', products:["Professional Liability"], premium:'$350,000', status:'Bound', zip:'48226', policy:'POL-2024-0118' },
+      { lat:41.36, lng:-96.2, name:'Harbor Bistro Partners', products:["Professional Liability", "General Liability", "Commercial Auto"], premium:'$479,000', status:'Quoted', zip:'68102', policy:'POL-2024-0119' },
+      { lat:26.63, lng:-80.14, name:'Delta Coffee', products:["Liquor Liability"], premium:'$478,000', status:'Bound', zip:'33401', policy:'POL-2024-0120' },
+      { lat:39.35, lng:-79.97, name:'Meadowbrook Construction LLC', products:["Property"], premium:'$252,000', status:'Bound', zip:'26501', policy:'POL-2024-0121' },
+      { lat:43.21, lng:-85.94, name:'Zephyr Roofing', products:["Workers Comp", "General Liability"], premium:'$228,000', status:'Active', zip:'49503', policy:'POL-2024-0122' },
+      { lat:38.58, lng:-85.45, name:'Copper Hill Holdings Group', products:["General Liability"], premium:'$50,000', status:'Active', zip:'40202', policy:'POL-2024-0123' },
+      { lat:43.38, lng:-87.7, name:'Riverside Holdings', products:["Property"], premium:'$441,000', status:'Active', zip:'53202', policy:'POL-2024-0124' },
+      { lat:46.78, lng:-111.84, name:'Sable Fitness Partners', products:["Liquor Liability", "Professional Liability"], premium:'$301,000', status:'Active', zip:'59601', policy:'POL-2024-0125' },
+      { lat:35.9, lng:-86.52, name:'Magnolia Fitness LLC', products:["Property", "Umbrella"], premium:'$190,000', status:'Active', zip:'37201', policy:'POL-2024-0126' },
+      { lat:36.01, lng:-87.04, name:'Meadowbrook Manufacturing Inc.', products:["Commercial Auto", "Property"], premium:'$423,000', status:'Active', zip:'37201', policy:'POL-2024-0127' },
+      { lat:32.79, lng:-117.19, name:'Oakmont HVAC LLC', products:["Umbrella", "Property"], premium:'$354,000', status:'Active', zip:'92101', policy:'POL-2024-0128' },
+      { lat:39.26, lng:-76.78, name:'Stonebridge Bakery Inc.', products:["Commercial Auto"], premium:'$62,000', status:'Active', zip:'20001', policy:'POL-2024-0129' },
+      { lat:46.96, lng:-97.09, name:'Beacon HVAC', products:["Workers Comp"], premium:'$220,000', status:'Quoted', zip:'58102', policy:'POL-2024-0130' },
+      { lat:36.6, lng:-119.79, name:'Stonebridge Restaurant Group Inc.', products:["Property", "Commercial Auto"], premium:'$256,000', status:'Active', zip:'93721', policy:'POL-2024-0131' },
+      { lat:36.04, lng:-96.02, name:'Meadowbrook Physical Therapy Inc.', products:["Workers Comp"], premium:'$365,000', status:'Active', zip:'74103', policy:'POL-2024-0132' },
+      { lat:33.77, lng:-111.94, name:'Falcon Holdings Inc.', products:["Professional Liability", "Property"], premium:'$74,000', status:'Quoted', zip:'85004', policy:'POL-2024-0133' },
+      { lat:33.67, lng:-112.03, name:'Quarry Property Mgmt', products:["Professional Liability"], premium:'$235,000', status:'Active', zip:'85004', policy:'POL-2024-0134' },
+      { lat:47.18, lng:-114.04, name:'Crestview Bistro Partners', products:["Workers Comp"], premium:'$78,000', status:'Quoted', zip:'59802', policy:'POL-2024-0135' },
+      { lat:33.89, lng:-118.3, name:'Oakmont Storage Inc.', products:["Workers Comp"], premium:'$83,000', status:'Active', zip:'90210', policy:'POL-2024-0136' },
+      { lat:47.42, lng:-122.38, name:'Orchard Veterinary', products:["General Liability"], premium:'$336,000', status:'Quoted', zip:'98101', policy:'POL-2024-0137' },
+      { lat:41.55, lng:-87.79, name:'Emberly Dental LLC', products:["Liquor Liability"], premium:'$470,000', status:'Active', zip:'60602', policy:'POL-2024-0138' },
+      { lat:45.63, lng:-122.97, name:'Delta Plumbing LLC', products:["Property"], premium:'$217,000', status:'Bound', zip:'97204', policy:'POL-2024-0139' },
+      { lat:32.64, lng:-97.42, name:'Crestview Auto Group', products:["General Liability"], premium:'$104,000', status:'Active', zip:'76102', policy:'POL-2024-0140' },
+      { lat:44.16, lng:-73.5, name:'Willow Bakery Inc.', products:["Commercial Auto"], premium:'$237,000', status:'Active', zip:'05401', policy:'POL-2024-0141' },
+      { lat:39.28, lng:-84.78, name:'Stonebridge Restaurant Group Partners', products:["Commercial Auto"], premium:'$294,000', status:'Quoted', zip:'45202', policy:'POL-2024-0142' },
+      { lat:41.27, lng:-93.69, name:'Sable Bistro LLC', products:["Property"], premium:'$417,000', status:'Active', zip:'50309', policy:'POL-2024-0143' },
+      { lat:44.83, lng:-93.54, name:'Juniper Physical Therapy Inc.', products:["Cyber Liability"], premium:'$297,000', status:'Quoted', zip:'55401', policy:'POL-2024-0144' },
+      { lat:42.33, lng:-82.82, name:'Sunset Holdings Inc.', products:["General Liability", "Property"], premium:'$34,000', status:'Bound', zip:'48226', policy:'POL-2024-0145' },
+      { lat:35.48, lng:-80.79, name:'Peregrine Landscaping Inc.', products:["Cyber Liability"], premium:'$35,000', status:'Active', zip:'28202', policy:'POL-2024-0146' },
+      { lat:33.73, lng:-86.73, name:'Atlas Consulting LLC', products:["Professional Liability"], premium:'$149,000', status:'Bound', zip:'35203', policy:'POL-2024-0147' },
+      { lat:61.15, lng:-150.19, name:'Heritage Physical Therapy LLC', products:["Liquor Liability"], premium:'$64,000', status:'Quoted', zip:'99501', policy:'POL-2024-0148' },
+      { lat:39.47, lng:-75.54, name:'Foxglove Roofing LLC', products:["Liquor Liability", "Professional Liability"], premium:'$77,000', status:'Active', zip:'19801', policy:'POL-2024-0149' },
+      { lat:44.77, lng:-93.2, name:'Emberly Veterinary Inc.', products:["Commercial Auto"], premium:'$262,000', status:'Quoted', zip:'55401', policy:'POL-2024-0150' },
+      { lat:47.62, lng:-117.13, name:'Peregrine Plumbing', products:["Workers Comp"], premium:'$102,000', status:'Bound', zip:'99201', policy:'POL-2024-0151' },
+      { lat:37.52, lng:-77.35, name:'Beacon Cleaning Services LLC', products:["Professional Liability"], premium:'$183,000', status:'Bound', zip:'23219', policy:'POL-2024-0152' },
+      { lat:32.46, lng:-96.89, name:'Crescent Holdings Inc.', products:["Cyber Liability"], premium:'$261,000', status:'Quoted', zip:'75201', policy:'POL-2024-0153' },
+      { lat:38.9, lng:-121.32, name:'Harbor Wellness', products:["Workers Comp"], premium:'$334,000', status:'Bound', zip:'95814', policy:'POL-2024-0154' },
+      { lat:33.85, lng:-118.72, name:'Cascade Salon LLC', products:["Professional Liability", "Umbrella", "Workers Comp"], premium:'$113,000', status:'Active', zip:'90210', policy:'POL-2024-0155' },
+      { lat:43.19, lng:-87.56, name:'Monarch Manufacturing', products:["Workers Comp"], premium:'$494,000', status:'Active', zip:'53202', policy:'POL-2024-0156' },
+      { lat:36.11, lng:-115.25, name:'Sable Bistro LLC', products:["Professional Liability"], premium:'$310,000', status:'Quoted', zip:'89101', policy:'POL-2024-0157' },
+      { lat:36.02, lng:-114.98, name:'Yellowstone Consulting', products:["Workers Comp", "General Liability"], premium:'$323,000', status:'Quoted', zip:'89101', policy:'POL-2024-0158' },
+      { lat:27.63, lng:-82.67, name:'Westgate Coffee Inc.', products:["Professional Liability"], premium:'$183,000', status:'Quoted', zip:'34236', policy:'POL-2024-0159' },
+      { lat:32.32, lng:-111.09, name:'Magnolia Bakery', products:["Cyber Liability"], premium:'$285,000', status:'Active', zip:'85701', policy:'POL-2024-0160' },
+      { lat:40.64, lng:-74.25, name:'Riverside Auto Group LLC', products:["Liquor Liability"], premium:'$104,000', status:'Active', zip:'07030', policy:'POL-2024-0161' },
+      { lat:39.29, lng:-95.96, name:'Foxglove Property Mgmt', products:["Workers Comp"], premium:'$473,000', status:'Quoted', zip:'66603', policy:'POL-2024-0162' },
+      { lat:25.84, lng:-80.43, name:'Coastal Marina', products:["Liquor Liability", "Workers Comp"], premium:'$249,000', status:'Active', zip:'33131', policy:'POL-2024-0163' },
+      { lat:36.06, lng:-95.84, name:'Willow HVAC Partners', products:["Commercial Auto", "Professional Liability"], premium:'$298,000', status:'Active', zip:'74103', policy:'POL-2024-0164' },
+      { lat:41.92, lng:-93.42, name:'Pioneer Roofing', products:["Commercial Auto", "Cyber Liability", "Liquor Liability"], premium:'$423,000', status:'Bound', zip:'50309', policy:'POL-2024-0165' },
+      { lat:34.11, lng:-118.08, name:'Pioneer Salon', products:["Umbrella"], premium:'$51,000', status:'Quoted', zip:'90210', policy:'POL-2024-0166' },
+      { lat:30.53, lng:-97.7, name:'Cascade Coffee', products:["Umbrella", "General Liability"], premium:'$415,000', status:'Active', zip:'78701', policy:'POL-2024-0167' },
+      { lat:41.84, lng:-87.62, name:'Stonebridge Holdings Group', products:["Workers Comp", "General Liability"], premium:'$237,000', status:'Active', zip:'60602', policy:'POL-2024-0168' },
+      { lat:39.53, lng:-119.99, name:'Lone Star Roofing Group', products:["Professional Liability"], premium:'$454,000', status:'Quoted', zip:'89501', policy:'POL-2024-0169' },
+      { lat:39.51, lng:-80.21, name:'Harbor Dental LLC', products:["Liquor Liability"], premium:'$413,000', status:'Quoted', zip:'26501', policy:'POL-2024-0170' },
+      { lat:29.38, lng:-98.84, name:'Lone Star Fitness Partners', products:["Liquor Liability"], premium:'$305,000', status:'Quoted', zip:'78205', policy:'POL-2024-0171' },
+      { lat:43.68, lng:-70.53, name:'Crescent Logistics Partners', products:["Property"], premium:'$239,000', status:'Quoted', zip:'04101', policy:'POL-2024-0172' },
+      { lat:44.45, lng:-73.48, name:'Juniper HVAC', products:["Property"], premium:'$392,000', status:'Active', zip:'05401', policy:'POL-2024-0173' },
+      { lat:39.0, lng:-95.6, name:'Silver Creek Cleaning Services Inc.', products:["Professional Liability"], premium:'$293,000', status:'Active', zip:'66603', policy:'POL-2024-0174' },
+      { lat:37.86, lng:-77.41, name:'Lakeshore Property Mgmt LLC', products:["Commercial Auto"], premium:'$47,000', status:'Quoted', zip:'23219', policy:'POL-2024-0175' },
+      { lat:36.51, lng:-115.31, name:'Blue Ridge Roofing Inc.', products:["Professional Liability"], premium:'$420,000', status:'Quoted', zip:'89101', policy:'POL-2024-0176' },
+      { lat:46.33, lng:-112.14, name:'Frontier Marina Co.', products:["Commercial Auto", "Workers Comp"], premium:'$270,000', status:'Quoted', zip:'59601', policy:'POL-2024-0177' },
+      { lat:35.36, lng:-90.36, name:'Foxglove Wellness LLC', products:["General Liability"], premium:'$430,000', status:'Active', zip:'38103', policy:'POL-2024-0178' },
+      { lat:39.82, lng:-75.3, name:'Canyon Marina', products:["General Liability"], premium:'$410,000', status:'Quoted', zip:'19103', policy:'POL-2024-0179' },
+      { lat:38.1, lng:-85.51, name:'Ironwood Storage LLC', products:["Workers Comp"], premium:'$248,000', status:'Bound', zip:'40202', policy:'POL-2024-0180' },
+      { lat:32.58, lng:-90.26, name:'Coastal Distillery LLC', products:["Umbrella"], premium:'$435,000', status:'Active', zip:'39201', policy:'POL-2024-0181' },
+      { lat:29.66, lng:-90.01, name:'Coastal Property Mgmt Partners', products:["Professional Liability"], premium:'$192,000', status:'Quoted', zip:'70112', policy:'POL-2024-0182' },
+      { lat:38.91, lng:-95.61, name:'Stonebridge Crossfit LLC', products:["General Liability"], premium:'$397,000', status:'Active', zip:'66603', policy:'POL-2024-0183' },
+      { lat:43.34, lng:-71.62, name:'Ironwood Holdings Inc.', products:["Liquor Liability"], premium:'$40,000', status:'Active', zip:'03101', policy:'POL-2024-0184' },
+      { lat:43.78, lng:-70.3, name:'Magnolia Holdings Group', products:["Workers Comp", "Liquor Liability"], premium:'$221,000', status:'Quoted', zip:'04101', policy:'POL-2024-0185' },
+      { lat:41.84, lng:-72.54, name:'Evergreen Roofing LLC', products:["Liquor Liability", "Umbrella"], premium:'$212,000', status:'Bound', zip:'06103', policy:'POL-2024-0186' },
+      { lat:43.65, lng:-96.91, name:'Redwood Fitness Co.', products:["Cyber Liability"], premium:'$492,000', status:'Quoted', zip:'57104', policy:'POL-2024-0187' },
+      { lat:27.78, lng:-82.63, name:'Willow Brewing', products:["Commercial Auto"], premium:'$127,000', status:'Active', zip:'33602', policy:'POL-2024-0188' },
+      { lat:26.96, lng:-80.08, name:'Bristol Wellness Inc.', products:["Workers Comp", "Commercial Auto"], premium:'$202,000', status:'Quoted', zip:'33401', policy:'POL-2024-0189' },
+      { lat:37.57, lng:-77.59, name:'Heritage Storage Co.', products:["Liquor Liability", "Cyber Liability"], premium:'$210,000', status:'Quoted', zip:'23219', policy:'POL-2024-0190' },
+      { lat:39.5, lng:-86.37, name:'Magnolia Logistics LLC', products:["Workers Comp"], premium:'$264,000', status:'Quoted', zip:'46204', policy:'POL-2024-0191' },
+      { lat:25.85, lng:-80.48, name:'Heritage Landscaping LLC', products:["Cyber Liability"], premium:'$446,000', status:'Quoted', zip:'33131', policy:'POL-2024-0192' },
+      { lat:34.97, lng:-80.97, name:'Golden Gate Wellness LLC', products:["Workers Comp"], premium:'$90,000', status:'Quoted', zip:'28202', policy:'POL-2024-0193' },
+      { lat:39.8, lng:-75.36, name:'Magnolia Catering', products:["General Liability", "Cyber Liability"], premium:'$88,000', status:'Quoted', zip:'19801', policy:'POL-2024-0194' },
+      { lat:30.28, lng:-87.46, name:'Bristol Logistics LLC', products:["Umbrella", "Cyber Liability"], premium:'$65,000', status:'Active', zip:'32501', policy:'POL-2024-0195' },
+      { lat:40.05, lng:-82.96, name:'Magnolia Plumbing Partners', products:["Professional Liability"], premium:'$282,000', status:'Quoted', zip:'43215', policy:'POL-2024-0196' },
+      { lat:33.58, lng:-86.75, name:'Granite Bakery', products:["Workers Comp", "Cyber Liability"], premium:'$498,000', status:'Quoted', zip:'35203', policy:'POL-2024-0197' },
+      { lat:40.18, lng:-75.5, name:'Harbor Plumbing', products:["Property"], premium:'$417,000', status:'Quoted', zip:'19103', policy:'POL-2024-0198' },
+      { lat:34.83, lng:-92.62, name:'Vanguard Property Mgmt Partners', products:["Umbrella"], premium:'$272,000', status:'Active', zip:'72201', policy:'POL-2024-0199' },
+      { lat:35.33, lng:-97.82, name:'Ironwood Crossfit LLC', products:["Commercial Auto"], premium:'$129,000', status:'Active', zip:'73102', policy:'POL-2024-0200' },
+      { lat:43.41, lng:-70.01, name:'Liberty Physical Therapy LLC', products:["Liquor Liability", "Cyber Liability", "Commercial Auto"], premium:'$288,000', status:'Quoted', zip:'04101', policy:'POL-2024-0201' },
+      { lat:30.2, lng:-81.68, name:'Beacon Wellness Group', products:["General Liability"], premium:'$173,000', status:'Bound', zip:'32202', policy:'POL-2024-0202' },
+      { lat:42.93, lng:-71.14, name:'Granite Marina LLC', products:["Workers Comp", "Professional Liability"], premium:'$415,000', status:'Active', zip:'03101', policy:'POL-2024-0203' },
+      { lat:34.4, lng:-118.26, name:'Heritage Distillery LLC', products:["Cyber Liability"], premium:'$283,000', status:'Bound', zip:'90012', policy:'POL-2024-0204' },
+      { lat:42.76, lng:-85.76, name:'Ironwood Dental LLC', products:["Commercial Auto"], premium:'$171,000', status:'Quoted', zip:'49503', policy:'POL-2024-0205' },
+      { lat:40.93, lng:-74.04, name:'Northstar Physical Therapy LLC', products:["Workers Comp", "General Liability"], premium:'$230,000', status:'Active', zip:'11201', policy:'POL-2024-0206' },
+      { lat:45.56, lng:-122.77, name:'Crescent Holdings Inc.', products:["Umbrella"], premium:'$447,000', status:'Quoted', zip:'97204', policy:'POL-2024-0207' },
+      { lat:42.72, lng:-71.13, name:'Canyon Roofing LLC', products:["Workers Comp"], premium:'$411,000', status:'Active', zip:'03101', policy:'POL-2024-0208' },
+      { lat:40.03, lng:-83.07, name:'Harbor Bistro LLC', products:["Workers Comp"], premium:'$436,000', status:'Bound', zip:'43215', policy:'POL-2024-0209' },
+      { lat:33.72, lng:-117.8, name:'Lakeshore Yoga Studio LLC', products:["Workers Comp", "Professional Liability"], premium:'$226,000', status:'Quoted', zip:'92701', policy:'POL-2024-0210' },
+      { lat:41.33, lng:-95.92, name:'Lakeshore Property Mgmt LLC', products:["Umbrella", "Property"], premium:'$442,000', status:'Active', zip:'68102', policy:'POL-2024-0211' },
+      { lat:33.33, lng:-112.34, name:'Meadowbrook Cleaning Services Partners', products:["General Liability", "Umbrella"], premium:'$267,000', status:'Active', zip:'85004', policy:'POL-2024-0212' },
+      { lat:39.83, lng:-79.77, name:'Peregrine Logistics LLC', products:["Liquor Liability"], premium:'$293,000', status:'Quoted', zip:'26501', policy:'POL-2024-0213' },
+      { lat:44.67, lng:-73.29, name:'Zephyr Logistics LLC', products:["Professional Liability"], premium:'$122,000', status:'Active', zip:'05401', policy:'POL-2024-0214' },
+      { lat:32.17, lng:-90.42, name:'Atlas Brewing Inc.', products:["Commercial Auto"], premium:'$471,000', status:'Quoted', zip:'39201', policy:'POL-2024-0215' },
+      { lat:39.05, lng:-77.01, name:'Orchard Auto Group LLC', products:["Workers Comp"], premium:'$113,000', status:'Bound', zip:'20001', policy:'POL-2024-0216' },
+      { lat:37.66, lng:-122.51, name:'Foxglove Storage Partners', products:["Property"], premium:'$151,000', status:'Active', zip:'94103', policy:'POL-2024-0217' },
+      { lat:37.19, lng:-121.58, name:'Heritage Veterinary Partners', products:["Commercial Auto", "Liquor Liability"], premium:'$270,000', status:'Active', zip:'95113', policy:'POL-2024-0218' },
+      { lat:37.63, lng:-121.68, name:'Beacon Dental Inc.', products:["Cyber Liability"], premium:'$483,000', status:'Bound', zip:'95113', policy:'POL-2024-0219' },
+      { lat:41.08, lng:-111.68, name:'Crescent Bistro Partners', products:["Professional Liability", "Liquor Liability", "Property"], premium:'$360,000', status:'Active', zip:'84101', policy:'POL-2024-0220' },
+      { lat:30.07, lng:-97.51, name:'Beacon Consulting', products:["Liquor Liability"], premium:'$80,000', status:'Quoted', zip:'78701', policy:'POL-2024-0221' },
+      { lat:61.04, lng:-150.21, name:'Monarch Logistics Group', products:["Cyber Liability"], premium:'$194,000', status:'Quoted', zip:'99501', policy:'POL-2024-0222' },
+      { lat:29.14, lng:-98.3, name:'Summit Property Mgmt Co.', products:["Commercial Auto"], premium:'$269,000', status:'Quoted', zip:'78205', policy:'POL-2024-0223' },
+      { lat:40.14, lng:-83.15, name:'Crescent Plumbing LLC', products:["Professional Liability", "Workers Comp"], premium:'$318,000', status:'Active', zip:'43215', policy:'POL-2024-0224' },
+      { lat:37.94, lng:-122.16, name:'Harbor Consulting Co.', products:["Liquor Liability"], premium:'$495,000', status:'Active', zip:'94103', policy:'POL-2024-0225' },
+      { lat:39.73, lng:-120.03, name:'Delta Storage Partners', products:["General Liability", "Liquor Liability"], premium:'$315,000', status:'Quoted', zip:'89501', policy:'POL-2024-0226' },
+      { lat:30.63, lng:-81.78, name:'Copper Hill Plumbing', products:["Liquor Liability"], premium:'$460,000', status:'Quoted', zip:'32202', policy:'POL-2024-0227' },
+      { lat:29.6, lng:-95.14, name:'Frontier Crossfit LLC', products:["Liquor Liability"], premium:'$32,000', status:'Quoted', zip:'77002', policy:'POL-2024-0228' },
+      { lat:43.82, lng:-116.15, name:'Emberly Brewing Co.', products:["Cyber Liability"], premium:'$448,000', status:'Bound', zip:'83702', policy:'POL-2024-0229' },
+      { lat:32.6, lng:-117.23, name:'Cascade Crossfit Co.', products:["Property"], premium:'$28,000', status:'Active', zip:'92101', policy:'POL-2024-0230' },
+      { lat:35.98, lng:-114.96, name:'Frontier Dental', products:["General Liability", "Liquor Liability"], premium:'$359,000', status:'Active', zip:'89101', policy:'POL-2024-0231' },
+      { lat:42.65, lng:-85.93, name:'Heritage Crossfit Inc.', products:["Umbrella"], premium:'$378,000', status:'Active', zip:'49503', policy:'POL-2024-0232' },
+      { lat:40.03, lng:-75.69, name:'Timberline Logistics Group', products:["Commercial Auto", "Professional Liability", "Property"], premium:'$407,000', status:'Quoted', zip:'19801', policy:'POL-2024-0233' },
+      { lat:33.39, lng:-112.04, name:'Falcon Veterinary', products:["Property", "Cyber Liability"], premium:'$151,000', status:'Quoted', zip:'85004', policy:'POL-2024-0234' },
+      { lat:21.57, lng:-158.15, name:'Willow Manufacturing LLC', products:["Professional Liability"], premium:'$56,000', status:'Quoted', zip:'96813', policy:'POL-2024-0235' },
+      { lat:33.88, lng:-118.38, name:'Granite Auto Group', products:["Property"], premium:'$392,000', status:'Quoted', zip:'90210', policy:'POL-2024-0236' },
+      { lat:31.47, lng:-106.48, name:'Ironwood Wellness Co.', products:["Commercial Auto"], premium:'$313,000', status:'Active', zip:'79901', policy:'POL-2024-0237' },
+      { lat:37.3, lng:-121.68, name:'Crestview Fitness Inc.', products:["General Liability"], premium:'$406,000', status:'Active', zip:'95113', policy:'POL-2024-0238' },
+      { lat:47.36, lng:-117.48, name:'Atlas Holdings', products:["Professional Liability", "Property", "General Liability"], premium:'$171,000', status:'Bound', zip:'99201', policy:'POL-2024-0239' },
+      { lat:35.33, lng:-89.86, name:'Crestview Plumbing Inc.', products:["Cyber Liability"], premium:'$254,000', status:'Bound', zip:'38103', policy:'POL-2024-0240' },
+      { lat:31.93, lng:-110.65, name:'Nova Yoga Studio LLC', products:["Cyber Liability"], premium:'$295,000', status:'Active', zip:'85701', policy:'POL-2024-0241' },
+      { lat:40.0, lng:-85.98, name:'Heritage Wellness', products:["Cyber Liability"], premium:'$446,000', status:'Active', zip:'46204', policy:'POL-2024-0242' },
+      { lat:43.01, lng:-88.14, name:'Pioneer Consulting Inc.', products:["Cyber Liability"], premium:'$339,000', status:'Active', zip:'53202', policy:'POL-2024-0243' },
+      { lat:42.75, lng:-85.94, name:'Harbor Wellness', products:["General Liability"], premium:'$150,000', status:'Quoted', zip:'49503', policy:'POL-2024-0244' },
+      { lat:39.88, lng:-75.36, name:'Riverside Veterinary LLC', products:["Umbrella"], premium:'$144,000', status:'Quoted', zip:'19103', policy:'POL-2024-0245' },
+      { lat:47.48, lng:-122.26, name:'Zephyr Marina LLC', products:["Liquor Liability"], premium:'$363,000', status:'Quoted', zip:'98101', policy:'POL-2024-0246' },
+      { lat:39.71, lng:-86.32, name:'Orchard Cleaning Services Co.', products:["Cyber Liability"], premium:'$309,000', status:'Bound', zip:'46204', policy:'POL-2024-0247' },
+      { lat:39.62, lng:-76.31, name:'Yellowstone Landscaping', products:["Cyber Liability"], premium:'$234,000', status:'Active', zip:'21201', policy:'POL-2024-0248' },
+      { lat:41.17, lng:-95.75, name:'Falcon Logistics Group', products:["Liquor Liability"], premium:'$437,000', status:'Bound', zip:'68102', policy:'POL-2024-0249' },
+      { lat:38.95, lng:-76.69, name:'Orchard Manufacturing Co.', products:["Umbrella"], premium:'$129,000', status:'Active', zip:'20001', policy:'POL-2024-0250' },
+      { lat:38.06, lng:-81.67, name:'Evergreen Holdings', products:["Property", "General Liability"], premium:'$162,000', status:'Bound', zip:'25301', policy:'POL-2024-0251' },
+      { lat:37.76, lng:-97.66, name:'Golden Gate Brewing', products:["Property", "Commercial Auto"], premium:'$131,000', status:'Active', zip:'67202', policy:'POL-2024-0252' },
+      { lat:41.58, lng:-96.27, name:'Pioneer Physical Therapy Inc.', products:["Commercial Auto", "Professional Liability"], premium:'$381,000', status:'Quoted', zip:'68102', policy:'POL-2024-0253' },
+      { lat:41.43, lng:-81.87, name:'Liberty Veterinary Partners', products:["Workers Comp"], premium:'$182,000', status:'Active', zip:'44114', policy:'POL-2024-0254' },
+      { lat:35.09, lng:-106.65, name:'Cascade Salon LLC', products:["Workers Comp", "Professional Liability"], premium:'$214,000', status:'Active', zip:'87102', policy:'POL-2024-0255' },
+      { lat:35.83, lng:-95.74, name:'Delta Yoga Studio LLC', products:["Cyber Liability"], premium:'$176,000', status:'Active', zip:'74103', policy:'POL-2024-0256' },
+      { lat:39.84, lng:-83.08, name:'Silver Creek Distillery', products:["Workers Comp"], premium:'$156,000', status:'Bound', zip:'43215', policy:'POL-2024-0257' },
+      { lat:38.52, lng:-81.66, name:'Crestview Salon LLC', products:["Commercial Auto"], premium:'$119,000', status:'Quoted', zip:'25301', policy:'POL-2024-0258' },
+      { lat:38.67, lng:-81.61, name:'Golden Gate Marina LLC', products:["Cyber Liability", "Professional Liability"], premium:'$456,000', status:'Quoted', zip:'25301', policy:'POL-2024-0259' },
+      { lat:42.03, lng:-83.29, name:'Riverside Manufacturing LLC', products:["Commercial Auto"], premium:'$362,000', status:'Bound', zip:'48226', policy:'POL-2024-0260' },
+      { lat:40.39, lng:-73.99, name:'Summit Fitness', products:["Umbrella", "General Liability"], premium:'$282,000', status:'Quoted', zip:'07030', policy:'POL-2024-0261' },
+      { lat:37.64, lng:-97.03, name:'Coastal Restaurant Group Inc.', products:["Property"], premium:'$123,000', status:'Quoted', zip:'67202', policy:'POL-2024-0262' },
+      { lat:36.57, lng:-119.89, name:'Canyon Holdings LLC', products:["Commercial Auto", "Umbrella", "Professional Liability"], premium:'$381,000', status:'Active', zip:'93721', policy:'POL-2024-0263' },
+      { lat:41.39, lng:-95.69, name:'Westgate Storage LLC', products:["Cyber Liability"], premium:'$218,000', status:'Quoted', zip:'68102', policy:'POL-2024-0264' },
+      { lat:29.11, lng:-98.83, name:'Granite Holdings LLC', products:["Workers Comp", "Umbrella"], premium:'$464,000', status:'Active', zip:'78205', policy:'POL-2024-0265' },
+      { lat:37.03, lng:-119.98, name:'Atlas Events', products:["General Liability"], premium:'$498,000', status:'Active', zip:'93721', policy:'POL-2024-0266' },
+      { lat:38.91, lng:-90.15, name:'Harbor Crossfit LLC', products:["Property"], premium:'$325,000', status:'Active', zip:'63101', policy:'POL-2024-0267' },
+      { lat:39.83, lng:-119.95, name:'Peregrine Logistics', products:["Cyber Liability", "Workers Comp"], premium:'$484,000', status:'Quoted', zip:'89501', policy:'POL-2024-0268' },
+      { lat:46.51, lng:-111.87, name:'Atlas Physical Therapy Inc.', products:["Workers Comp"], premium:'$52,000', status:'Active', zip:'59601', policy:'POL-2024-0269' },
+      { lat:30.26, lng:-91.49, name:'Sable Veterinary', products:["Cyber Liability", "Commercial Auto", "Liquor Liability"], premium:'$40,000', status:'Quoted', zip:'70801', policy:'POL-2024-0270' },
+      { lat:42.08, lng:-87.66, name:'Oakmont Roofing', products:["Cyber Liability", "Professional Liability"], premium:'$373,000', status:'Quoted', zip:'60602', policy:'POL-2024-0271' },
+      { lat:41.05, lng:-104.63, name:'Crescent Salon Group', products:["Professional Liability", "Liquor Liability"], premium:'$103,000', status:'Bound', zip:'82001', policy:'POL-2024-0272' },
+      { lat:39.5, lng:-75.63, name:'Evergreen Restaurant Group Inc.', products:["Umbrella"], premium:'$252,000', status:'Active', zip:'19801', policy:'POL-2024-0273' },
+      { lat:41.6, lng:-87.92, name:'Stonebridge Wellness', products:["Cyber Liability"], premium:'$77,000', status:'Active', zip:'60602', policy:'POL-2024-0274' },
+      { lat:32.68, lng:-80.21, name:'Sable Salon LLC', products:["General Liability", "Liquor Liability"], premium:'$236,000', status:'Bound', zip:'29401', policy:'POL-2024-0275' },
+      { lat:35.94, lng:-78.6, name:'Silver Creek Cleaning Services', products:["Cyber Liability"], premium:'$111,000', status:'Active', zip:'27601', policy:'POL-2024-0276' },
+      { lat:41.74, lng:-87.63, name:'Golden Gate Crossfit Inc.', products:["Umbrella"], premium:'$272,000', status:'Active', zip:'60602', policy:'POL-2024-0277' },
+      { lat:34.91, lng:-106.83, name:'Vanguard Distillery', products:["Commercial Auto"], premium:'$79,000', status:'Active', zip:'87102', policy:'POL-2024-0278' },
+      { lat:40.91, lng:-96.0, name:'Timberline Landscaping LLC', products:["Cyber Liability"], premium:'$442,000', status:'Quoted', zip:'68102', policy:'POL-2024-0279' },
+      { lat:21.06, lng:-157.99, name:'Atlas Brewing LLC', products:["Cyber Liability"], premium:'$188,000', status:'Active', zip:'96813', policy:'POL-2024-0280' },
+      { lat:39.73, lng:-75.5, name:'Silver Creek Auto Group Inc.', products:["Cyber Liability"], premium:'$211,000', status:'Active', zip:'19801', policy:'POL-2024-0281' },
+      { lat:45.31, lng:-122.32, name:'Coastal Bakery', products:["Commercial Auto"], premium:'$387,000', status:'Active', zip:'97204', policy:'POL-2024-0282' },
+      { lat:32.51, lng:-89.95, name:'Golden Gate Marina Inc.', products:["Liquor Liability"], premium:'$349,000', status:'Active', zip:'39201', policy:'POL-2024-0283' },
+      { lat:42.79, lng:-85.9, name:'Stonebridge Salon Inc.', products:["Commercial Auto"], premium:'$323,000', status:'Bound', zip:'49503', policy:'POL-2024-0284' },
+      { lat:37.77, lng:-122.12, name:'Atlas Catering', products:["Workers Comp"], premium:'$384,000', status:'Quoted', zip:'94103', policy:'POL-2024-0285' },
+      { lat:21.41, lng:-158.15, name:'Foxglove Logistics LLC', products:["General Liability"], premium:'$313,000', status:'Quoted', zip:'96813', policy:'POL-2024-0286' },
+      { lat:37.79, lng:-97.01, name:'Frontier Salon Inc.', products:["Professional Liability"], premium:'$157,000', status:'Active', zip:'67202', policy:'POL-2024-0287' },
+      { lat:32.89, lng:-117.12, name:'Atlas Cleaning Services Group', products:["Cyber Liability"], premium:'$262,000', status:'Quoted', zip:'92101', policy:'POL-2024-0288' },
+      { lat:61.35, lng:-150.14, name:'Blue Ridge Distillery Inc.', products:["Professional Liability"], premium:'$84,000', status:'Quoted', zip:'99501', policy:'POL-2024-0289' },
+      { lat:27.23, lng:-82.65, name:'Riverside Manufacturing LLC', products:["Professional Liability"], premium:'$249,000', status:'Quoted', zip:'34236', policy:'POL-2024-0290' },
+      { lat:32.65, lng:-96.94, name:'Bristol Restaurant Group LLC', products:["Professional Liability", "Workers Comp"], premium:'$434,000', status:'Active', zip:'75201', policy:'POL-2024-0291' },
+      { lat:43.05, lng:-87.86, name:'Frontier Property Mgmt Inc.', products:["Property", "Cyber Liability", "Commercial Auto"], premium:'$347,000', status:'Active', zip:'53202', policy:'POL-2024-0292' },
+      { lat:35.24, lng:-90.1, name:'Blue Ridge Physical Therapy', products:["Commercial Auto", "Umbrella"], premium:'$244,000', status:'Bound', zip:'38103', policy:'POL-2024-0293' },
+      { lat:40.89, lng:-74.2, name:'Emberly Coffee Inc.', products:["Liquor Liability"], premium:'$212,000', status:'Active', zip:'10001', policy:'POL-2024-0294' },
+      { lat:39.93, lng:-83.17, name:'Juniper Manufacturing LLC', products:["Cyber Liability"], premium:'$325,000', status:'Active', zip:'43215', policy:'POL-2024-0295' },
+      { lat:40.66, lng:-111.92, name:'Coastal Marina Partners', products:["Professional Liability", "Workers Comp"], premium:'$93,000', status:'Active', zip:'84101', policy:'POL-2024-0296' },
+      { lat:27.77, lng:-82.73, name:'Evergreen Coffee Co.', products:["Cyber Liability"], premium:'$330,000', status:'Active', zip:'33602', policy:'POL-2024-0297' },
+      { lat:47.53, lng:-122.55, name:'Vanguard Property Mgmt Co.', products:["Commercial Auto"], premium:'$172,000', status:'Active', zip:'98101', policy:'POL-2024-0298' },
+      { lat:35.01, lng:-90.08, name:'Ironwood Storage LLC', products:["Commercial Auto", "Professional Liability", "Cyber Liability"], premium:'$442,000', status:'Bound', zip:'38103', policy:'POL-2024-0299' },
+      { lat:37.33, lng:-121.89, name:'Zephyr Distillery Inc.', products:["Commercial Auto", "Property"], premium:'$110,000', status:'Active', zip:'95113', policy:'POL-2024-0300' },
+      { lat:45.19, lng:-122.49, name:'Crescent Bistro Partners', products:["Umbrella"], premium:'$111,000', status:'Bound', zip:'97204', policy:'POL-2024-0301' },
+      { lat:45.69, lng:-122.48, name:'Orchard Manufacturing Inc.', products:["Umbrella"], premium:'$421,000', status:'Quoted', zip:'97204', policy:'POL-2024-0302' },
+      { lat:35.11, lng:-106.47, name:'Emberly Physical Therapy LLC', products:["Cyber Liability"], premium:'$77,000', status:'Quoted', zip:'87102', policy:'POL-2024-0303' },
+      { lat:39.81, lng:-80.1, name:'Harbor Wellness Partners', products:["Professional Liability"], premium:'$249,000', status:'Active', zip:'26501', policy:'POL-2024-0304' },
+      { lat:42.76, lng:-85.49, name:'Atlas Roofing', products:["Liquor Liability"], premium:'$340,000', status:'Active', zip:'49503', policy:'POL-2024-0305' },
+      { lat:41.72, lng:-81.48, name:'Peregrine Roofing', products:["Liquor Liability"], premium:'$190,000', status:'Quoted', zip:'44114', policy:'POL-2024-0306' },
+      { lat:38.9, lng:-95.84, name:'Lakeshore Events Inc.', products:["Cyber Liability"], premium:'$495,000', status:'Active', zip:'66603', policy:'POL-2024-0307' },
+      { lat:38.89, lng:-90.45, name:'Magnolia Logistics Co.', products:["Property", "Cyber Liability"], premium:'$456,000', status:'Quoted', zip:'63101', policy:'POL-2024-0308' },
+      { lat:39.52, lng:-119.76, name:'Beacon Plumbing Inc.', products:["Professional Liability"], premium:'$349,000', status:'Active', zip:'89501', policy:'POL-2024-0309' },
+      { lat:35.48, lng:-97.68, name:'Evergreen Wellness LLC', products:["General Liability"], premium:'$469,000', status:'Quoted', zip:'73102', policy:'POL-2024-0310' },
+      { lat:32.94, lng:-79.96, name:'Yellowstone Coffee LLC', products:["Cyber Liability", "Professional Liability"], premium:'$244,000', status:'Active', zip:'29401', policy:'POL-2024-0311' },
+      { lat:33.89, lng:-118.01, name:'Frontier Property Mgmt', products:["Commercial Auto"], premium:'$428,000', status:'Active', zip:'90012', policy:'POL-2024-0312' },
+      { lat:38.97, lng:-76.53, name:'Copper Hill Fitness Inc.', products:["Liquor Liability", "Property"], premium:'$258,000', status:'Active', zip:'21201', policy:'POL-2024-0313' },
+      { lat:29.74, lng:-89.95, name:'Magnolia Events Partners', products:["Umbrella"], premium:'$72,000', status:'Quoted', zip:'70112', policy:'POL-2024-0314' },
+      { lat:34.91, lng:-106.74, name:'Westgate Crossfit LLC', products:["Umbrella"], premium:'$396,000', status:'Quoted', zip:'87102', policy:'POL-2024-0315' },
+      { lat:42.28, lng:-83.34, name:'Cascade Fitness Group', products:["Liquor Liability"], premium:'$328,000', status:'Active', zip:'48226', policy:'POL-2024-0316' },
+      { lat:33.88, lng:-118.21, name:'Atlas Auto Group Inc.', products:["Cyber Liability", "Workers Comp", "Professional Liability"], premium:'$269,000', status:'Active', zip:'92701', policy:'POL-2024-0317' },
+      { lat:42.25, lng:-82.89, name:'Cascade Restaurant Group LLC', products:["Umbrella"], premium:'$95,000', status:'Bound', zip:'48226', policy:'POL-2024-0318' },
+      { lat:26.81, lng:-79.93, name:'Golden Gate Manufacturing', products:["Liquor Liability"], premium:'$250,000', status:'Active', zip:'33401', policy:'POL-2024-0319' },
+      { lat:39.19, lng:-84.75, name:'Meadowbrook HVAC LLC', products:["Professional Liability", "General Liability"], premium:'$96,000', status:'Active', zip:'45202', policy:'POL-2024-0320' },
+      { lat:61.38, lng:-150.0, name:'Stonebridge Auto Group Co.', products:["Professional Liability"], premium:'$152,000', status:'Quoted', zip:'99501', policy:'POL-2024-0321' },
+      { lat:21.38, lng:-157.78, name:'Foxglove Coffee LLC', products:["Umbrella", "Professional Liability"], premium:'$290,000', status:'Quoted', zip:'96813', policy:'POL-2024-0322' },
+      { lat:32.5, lng:-117.24, name:'Westgate Bistro Group', products:["Professional Liability"], premium:'$148,000', status:'Bound', zip:'92101', policy:'POL-2024-0323' },
+      { lat:39.81, lng:-75.53, name:'Summit Roofing LLC', products:["Cyber Liability"], premium:'$212,000', status:'Quoted', zip:'19801', policy:'POL-2024-0324' },
+      { lat:36.35, lng:-86.46, name:'Foxglove Holdings LLC', products:["General Liability"], premium:'$159,000', status:'Active', zip:'37201', policy:'POL-2024-0325' },
+      { lat:40.25, lng:-74.86, name:'Canyon Manufacturing Partners', products:["Cyber Liability"], premium:'$241,000', status:'Quoted', zip:'19103', policy:'POL-2024-0326' },
+      { lat:35.18, lng:-97.49, name:'Timberline Yoga Studio Partners', products:["Professional Liability"], premium:'$286,000', status:'Active', zip:'73102', policy:'POL-2024-0327' },
+      { lat:30.45, lng:-87.3, name:'Vanguard Veterinary Inc.', products:["Cyber Liability"], premium:'$398,000', status:'Active', zip:'32501', policy:'POL-2024-0328' },
+      { lat:38.73, lng:-76.72, name:'Redwood Wellness', products:["Umbrella"], premium:'$366,000', status:'Quoted', zip:'20001', policy:'POL-2024-0329' },
+      { lat:41.3, lng:-105.09, name:'Bristol Yoga Studio LLC', products:["Workers Comp"], premium:'$292,000', status:'Quoted', zip:'82001', policy:'POL-2024-0330' },
+      { lat:41.66, lng:-87.88, name:'Foxglove Storage Partners', products:["Professional Liability", "Cyber Liability"], premium:'$485,000', status:'Active', zip:'60601', policy:'POL-2024-0331' },
+      { lat:46.8, lng:-112.2, name:'Golden Gate Construction', products:["Commercial Auto"], premium:'$258,000', status:'Quoted', zip:'59601', policy:'POL-2024-0332' },
+      { lat:34.77, lng:-106.4, name:'Granite Roofing Co.', products:["Professional Liability"], premium:'$482,000', status:'Quoted', zip:'87102', policy:'POL-2024-0333' },
+      { lat:37.85, lng:-97.53, name:'Lakeshore Fitness LLC', products:["General Liability", "Professional Liability"], premium:'$48,000', status:'Bound', zip:'67202', policy:'POL-2024-0334' },
+      { lat:35.0, lng:-106.89, name:'Harbor Property Mgmt Inc.', products:["Property"], premium:'$238,000', status:'Quoted', zip:'87102', policy:'POL-2024-0335' },
+      { lat:43.39, lng:-97.03, name:'Evergreen Restaurant Group', products:["General Liability"], premium:'$116,000', status:'Active', zip:'57104', policy:'POL-2024-0336' },
+      { lat:34.09, lng:-117.55, name:'Golden Gate Events LLC', products:["Umbrella", "Liquor Liability"], premium:'$69,000', status:'Quoted', zip:'92701', policy:'POL-2024-0337' },
+      { lat:32.41, lng:-97.54, name:'Peregrine Salon Partners', products:["Property", "Commercial Auto"], premium:'$213,000', status:'Quoted', zip:'76102', policy:'POL-2024-0338' },
+      { lat:34.4, lng:-118.05, name:'Crestview Events', products:["Property", "Professional Liability"], premium:'$28,000', status:'Bound', zip:'90012', policy:'POL-2024-0339' },
+      { lat:42.17, lng:-71.17, name:'Atlas Events LLC', products:["General Liability", "Cyber Liability", "Workers Comp"], premium:'$217,000', status:'Quoted', zip:'02108', policy:'POL-2024-0340' },
+      { lat:41.31, lng:-93.6, name:'Silver Creek Catering LLC', products:["Liquor Liability", "Workers Comp", "Commercial Auto"], premium:'$72,000', status:'Active', zip:'50309', policy:'POL-2024-0341' },
+      { lat:42.61, lng:-83.04, name:'Atlas Events LLC', products:["Professional Liability"], premium:'$322,000', status:'Active', zip:'48226', policy:'POL-2024-0342' },
+      { lat:33.83, lng:-118.19, name:'Golden Gate Cleaning Services', products:["Liquor Liability"], premium:'$146,000', status:'Active', zip:'90210', policy:'POL-2024-0343' },
+      { lat:42.14, lng:-87.32, name:'Canyon Coffee LLC', products:["Umbrella"], premium:'$144,000', status:'Active', zip:'60601', policy:'POL-2024-0344' },
+      { lat:39.71, lng:-82.81, name:'Cascade Yoga Studio Inc.', products:["Commercial Auto"], premium:'$185,000', status:'Bound', zip:'43215', policy:'POL-2024-0345' },
+      { lat:27.98, lng:-82.13, name:'Riverside Wellness Partners', products:["Professional Liability"], premium:'$71,000', status:'Active', zip:'33602', policy:'POL-2024-0346' },
+      { lat:41.49, lng:-95.79, name:'Harbor Brewing LLC', products:["Property"], premium:'$207,000', status:'Bound', zip:'68102', policy:'POL-2024-0347' },
+      { lat:32.4, lng:-117.3, name:'Coastal Fitness Inc.', products:["Property", "General Liability"], premium:'$261,000', status:'Active', zip:'92101', policy:'POL-2024-0348' },
+      { lat:26.45, lng:-80.36, name:'Foxglove Logistics Co.', products:["Cyber Liability"], premium:'$215,000', status:'Quoted', zip:'33401', policy:'POL-2024-0349' },
+      { lat:42.13, lng:-71.7, name:'Quarry Construction Inc.', products:["Professional Liability"], premium:'$126,000', status:'Quoted', zip:'02903', policy:'POL-2024-0350' },
+      { lat:32.52, lng:-90.47, name:'Frontier Restaurant Group LLC', products:["General Liability", "Professional Liability"], premium:'$498,000', status:'Quoted', zip:'39201', policy:'POL-2024-0351' },
+      { lat:30.68, lng:-91.26, name:'Blue Ridge Landscaping Inc.', products:["Property"], premium:'$490,000', status:'Active', zip:'70801', policy:'POL-2024-0352' },
+      { lat:38.48, lng:-89.92, name:'Harbor HVAC', products:["Umbrella"], premium:'$280,000', status:'Bound', zip:'63101', policy:'POL-2024-0353' },
+      { lat:38.57, lng:-121.78, name:'Bayside Yoga Studio Inc.', products:["Property"], premium:'$347,000', status:'Quoted', zip:'95814', policy:'POL-2024-0354' },
+      { lat:41.08, lng:-73.83, name:'Sunset Distillery', products:["Workers Comp", "Umbrella"], premium:'$282,000', status:'Active', zip:'07030', policy:'POL-2024-0355' },
+      { lat:36.01, lng:-115.47, name:'Sable Logistics LLC', products:["Umbrella", "General Liability"], premium:'$439,000', status:'Bound', zip:'89101', policy:'POL-2024-0356' },
+      { lat:36.64, lng:-119.73, name:'Oakmont Crossfit Inc.', products:["Property"], premium:'$161,000', status:'Quoted', zip:'93721', policy:'POL-2024-0357' },
+      { lat:39.09, lng:-76.71, name:'Peregrine Storage Inc.', products:["Liquor Liability"], premium:'$115,000', status:'Active', zip:'20001', policy:'POL-2024-0358' },
+      { lat:61.09, lng:-149.73, name:'Sunset Consulting', products:["Workers Comp"], premium:'$315,000', status:'Quoted', zip:'99501', policy:'POL-2024-0359' },
+      { lat:27.38, lng:-82.76, name:'Juniper Property Mgmt Partners', products:["General Liability"], premium:'$71,000', status:'Active', zip:'34236', policy:'POL-2024-0360' },
+      { lat:42.4, lng:-83.39, name:'Falcon Fitness LLC', products:["Property", "Cyber Liability"], premium:'$91,000', status:'Active', zip:'48226', policy:'POL-2024-0361' },
+      { lat:36.46, lng:-86.54, name:'Liberty Bistro LLC', products:["Liquor Liability"], premium:'$421,000', status:'Active', zip:'37201', policy:'POL-2024-0362' },
+      { lat:36.99, lng:-119.47, name:'Evergreen Coffee Inc.', products:["Workers Comp"], premium:'$179,000', status:'Active', zip:'93721', policy:'POL-2024-0363' },
+      { lat:27.04, lng:-79.89, name:'Stonebridge Salon LLC', products:["Liquor Liability"], premium:'$387,000', status:'Quoted', zip:'33401', policy:'POL-2024-0364' },
+      { lat:43.19, lng:-71.65, name:'Quarry Marina Co.', products:["Umbrella"], premium:'$90,000', status:'Active', zip:'03101', policy:'POL-2024-0365' },
+      { lat:41.06, lng:-73.68, name:'Canyon Storage', products:["Workers Comp"], premium:'$496,000', status:'Quoted', zip:'10001', policy:'POL-2024-0366' },
+      { lat:39.87, lng:-86.44, name:'Juniper Yoga Studio LLC', products:["Property", "Liquor Liability"], premium:'$188,000', status:'Active', zip:'46204', policy:'POL-2024-0367' },
+      { lat:40.01, lng:-75.84, name:'Bristol Bakery LLC', products:["Umbrella"], premium:'$132,000', status:'Active', zip:'19801', policy:'POL-2024-0368' },
+      { lat:37.44, lng:-77.24, name:'Crestview Fitness LLC', products:["Cyber Liability"], premium:'$110,000', status:'Bound', zip:'23219', policy:'POL-2024-0369' },
+      { lat:34.32, lng:-118.34, name:'Bayside Restaurant Group LLC', products:["Property", "Professional Liability"], premium:'$256,000', status:'Active', zip:'90012', policy:'POL-2024-0370' },
+      { lat:41.63, lng:-72.8, name:'Cascade Holdings LLC', products:["Cyber Liability"], premium:'$107,000', status:'Quoted', zip:'06103', policy:'POL-2024-0371' },
+      { lat:35.26, lng:-80.56, name:'Lone Star Auto Group', products:["Commercial Auto", "Workers Comp", "General Liability"], premium:'$245,000', status:'Quoted', zip:'28202', policy:'POL-2024-0372' },
+      { lat:33.6, lng:-86.86, name:'Ironwood Restaurant Group LLC', products:["Property"], premium:'$234,000', status:'Quoted', zip:'35203', policy:'POL-2024-0373' },
+      { lat:38.74, lng:-121.33, name:'Northstar Bakery Partners', products:["Professional Liability"], premium:'$50,000', status:'Bound', zip:'95814', policy:'POL-2024-0374' },
+      { lat:47.64, lng:-122.34, name:'Ironwood Roofing LLC', products:["Umbrella"], premium:'$446,000', status:'Quoted', zip:'98101', policy:'POL-2024-0375' },
+      { lat:41.89, lng:-71.62, name:'Blue Ridge Brewing Co.', products:["Professional Liability"], premium:'$267,000', status:'Active', zip:'02903', policy:'POL-2024-0376' },
+      { lat:41.79, lng:-93.64, name:'Yellowstone Construction Inc.', products:["Cyber Liability"], premium:'$119,000', status:'Active', zip:'50309', policy:'POL-2024-0377' },
+      { lat:32.13, lng:-111.01, name:'Northstar Wellness LLC', products:["Umbrella"], premium:'$313,000', status:'Active', zip:'85701', policy:'POL-2024-0378' },
+      { lat:30.6, lng:-87.1, name:'Lone Star Bakery LLC', products:["Cyber Liability", "Commercial Auto"], premium:'$326,000', status:'Active', zip:'32501', policy:'POL-2024-0379' },
+      { lat:38.27, lng:-121.57, name:'Monarch Catering', products:["Commercial Auto"], premium:'$318,000', status:'Active', zip:'95814', policy:'POL-2024-0380' },
+      { lat:29.28, lng:-98.56, name:'Bristol Bistro', products:["Liquor Liability"], premium:'$86,000', status:'Bound', zip:'78205', policy:'POL-2024-0381' },
+      { lat:36.48, lng:-87.01, name:'Riverside Salon Group', products:["Cyber Liability"], premium:'$65,000', status:'Quoted', zip:'37201', policy:'POL-2024-0382' },
+      { lat:30.24, lng:-90.96, name:'Prairie Marina', products:["Professional Liability"], premium:'$69,000', status:'Bound', zip:'70801', policy:'POL-2024-0383' },
+      { lat:37.26, lng:-122.01, name:'Beacon Manufacturing LLC', products:["General Liability", "Cyber Liability"], premium:'$383,000', status:'Quoted', zip:'95113', policy:'POL-2024-0384' },
+      { lat:61.24, lng:-149.96, name:'Meadowbrook Yoga Studio Co.', products:["Professional Liability"], premium:'$498,000', status:'Active', zip:'99501', policy:'POL-2024-0385' },
+      { lat:45.72, lng:-122.47, name:'Nova Events LLC', products:["Umbrella", "Property"], premium:'$360,000', status:'Bound', zip:'97204', policy:'POL-2024-0386' },
+      { lat:47.69, lng:-122.65, name:'Beacon Landscaping Co.', products:["Cyber Liability"], premium:'$44,000', status:'Bound', zip:'98101', policy:'POL-2024-0387' },
+      { lat:46.72, lng:-112.36, name:'Falcon Consulting Partners', products:["General Liability", "Liquor Liability"], premium:'$443,000', status:'Active', zip:'59601', policy:'POL-2024-0388' },
+      { lat:41.44, lng:-93.63, name:'Atlas Bakery Inc.', products:["Property", "Professional Liability", "Liquor Liability"], premium:'$405,000', status:'Bound', zip:'50309', policy:'POL-2024-0389' },
+      { lat:46.72, lng:-96.85, name:'Westgate Holdings Group', products:["Cyber Liability"], premium:'$404,000', status:'Bound', zip:'58102', policy:'POL-2024-0390' },
+      { lat:34.01, lng:-117.65, name:'Lakeshore Salon Co.', products:["Cyber Liability"], premium:'$94,000', status:'Quoted', zip:'92701', policy:'POL-2024-0391' },
+      { lat:45.19, lng:-122.89, name:'Pioneer Marina LLC', products:["Commercial Auto"], premium:'$50,000', status:'Active', zip:'97204', policy:'POL-2024-0392' },
+      { lat:39.8, lng:-82.77, name:'Lakeshore Landscaping Inc.', products:["Property"], premium:'$215,000', status:'Bound', zip:'43215', policy:'POL-2024-0393' },
+      { lat:21.27, lng:-157.54, name:'Falcon Cleaning Services', products:["Liquor Liability"], premium:'$453,000', status:'Active', zip:'96813', policy:'POL-2024-0394' },
+      { lat:32.63, lng:-80.01, name:'Granite Storage', products:["Property", "Cyber Liability"], premium:'$138,000', status:'Quoted', zip:'29401', policy:'POL-2024-0395' },
+      { lat:39.89, lng:-86.32, name:'Meadowbrook Manufacturing LLC', products:["General Liability", "Property"], premium:'$491,000', status:'Active', zip:'46204', policy:'POL-2024-0396' },
+      { lat:38.12, lng:-81.42, name:'Oakmont Construction', products:["Umbrella", "Workers Comp"], premium:'$388,000', status:'Quoted', zip:'25301', policy:'POL-2024-0397' },
+      { lat:38.58, lng:-90.28, name:'Sunset Wellness Partners', products:["Umbrella"], premium:'$371,000', status:'Quoted', zip:'63101', policy:'POL-2024-0398' },
+      { lat:44.41, lng:-73.49, name:'Lakeshore Bakery LLC', products:["Umbrella"], premium:'$177,000', status:'Quoted', zip:'05401', policy:'POL-2024-0399' },
+      { lat:30.32, lng:-81.77, name:'Beacon Plumbing LLC', products:["Umbrella", "Workers Comp"], premium:'$389,000', status:'Quoted', zip:'32202', policy:'POL-2024-0400' },
+      { lat:41.04, lng:-95.92, name:'Silver Creek Events LLC', products:["Cyber Liability", "Workers Comp"], premium:'$188,000', status:'Quoted', zip:'68102', policy:'POL-2024-0401' },
+      { lat:26.86, lng:-79.94, name:'Crescent Construction Inc.', products:["General Liability"], premium:'$323,000', status:'Quoted', zip:'33401', policy:'POL-2024-0402' },
+      { lat:47.83, lng:-122.44, name:'Bristol Logistics', products:["Commercial Auto"], premium:'$489,000', status:'Quoted', zip:'98101', policy:'POL-2024-0403' },
+      { lat:39.76, lng:-104.75, name:'Yellowstone Events', products:["Professional Liability"], premium:'$266,000', status:'Active', zip:'80202', policy:'POL-2024-0404' },
+      { lat:42.05, lng:-87.58, name:'Coastal Bakery LLC', products:["Property"], premium:'$206,000', status:'Active', zip:'60601', policy:'POL-2024-0405' },
+      { lat:41.53, lng:-93.35, name:'Evergreen Construction', products:["Professional Liability"], premium:'$265,000', status:'Active', zip:'50309', policy:'POL-2024-0406' },
+      { lat:39.8, lng:-75.24, name:'Golden Gate Distillery Group', products:["Cyber Liability"], premium:'$296,000', status:'Active', zip:'19801', policy:'POL-2024-0407' },
+      { lat:35.84, lng:-95.74, name:'Magnolia Brewing LLC', products:["Commercial Auto"], premium:'$98,000', status:'Active', zip:'74103', policy:'POL-2024-0408' },
+      { lat:35.34, lng:-90.06, name:'Vanguard Crossfit LLC', products:["General Liability"], premium:'$256,000', status:'Active', zip:'38103', policy:'POL-2024-0409' },
+      { lat:41.68, lng:-81.92, name:'Emberly Crossfit LLC', products:["Professional Liability", "Commercial Auto"], premium:'$339,000', status:'Bound', zip:'44114', policy:'POL-2024-0410' },
+      { lat:39.69, lng:-75.6, name:'Falcon Landscaping LLC', products:["Property"], premium:'$399,000', status:'Active', zip:'19801', policy:'POL-2024-0411' },
+      { lat:40.96, lng:-73.81, name:'Monarch Brewing LLC', products:["Property"], premium:'$140,000', status:'Quoted', zip:'11201', policy:'POL-2024-0412' },
+      { lat:40.63, lng:-112.17, name:'Lakeshore Cleaning Services Partners', products:["General Liability"], premium:'$177,000', status:'Active', zip:'84101', policy:'POL-2024-0413' },
+      { lat:32.91, lng:-97.26, name:'Frontier Catering Co.', products:["Commercial Auto"], premium:'$208,000', status:'Active', zip:'76102', policy:'POL-2024-0414' },
+      { lat:33.83, lng:-86.52, name:'Canyon Fitness Group', products:["Liquor Liability"], premium:'$133,000', status:'Quoted', zip:'35203', policy:'POL-2024-0415' },
+      { lat:40.8, lng:-74.26, name:'Evergreen Coffee LLC', products:["Umbrella"], premium:'$419,000', status:'Quoted', zip:'07030', policy:'POL-2024-0416' },
+      { lat:44.16, lng:-72.86, name:'Yellowstone Restaurant Group LLC', products:["Professional Liability"], premium:'$238,000', status:'Bound', zip:'05401', policy:'POL-2024-0417' },
+      { lat:31.96, lng:-111.14, name:'Atlas Yoga Studio Group', products:["General Liability"], premium:'$179,000', status:'Bound', zip:'85701', policy:'POL-2024-0418' },
+      { lat:40.85, lng:-104.81, name:'Timberline HVAC Co.', products:["Professional Liability"], premium:'$286,000', status:'Quoted', zip:'82001', policy:'POL-2024-0419' },
+      { lat:44.21, lng:-73.48, name:'Cascade Distillery Group', products:["Umbrella"], premium:'$450,000', status:'Quoted', zip:'05401', policy:'POL-2024-0420' },
+      { lat:39.86, lng:-83.06, name:'Granite Bistro', products:["Property"], premium:'$377,000', status:'Bound', zip:'43215', policy:'POL-2024-0421' },
+      { lat:46.4, lng:-112.38, name:'Lone Star Consulting Inc.', products:["Commercial Auto", "Professional Liability"], premium:'$71,000', status:'Quoted', zip:'59601', policy:'POL-2024-0422' },
+      { lat:35.39, lng:-81.12, name:'Northstar Plumbing Group', products:["Umbrella"], premium:'$160,000', status:'Bound', zip:'28202', policy:'POL-2024-0423' },
+      { lat:39.01, lng:-76.85, name:'Harbor Storage Partners', products:["Workers Comp"], premium:'$243,000', status:'Quoted', zip:'21201', policy:'POL-2024-0424' },
+      { lat:28.26, lng:-81.2, name:'Harbor Fitness Co.', products:["Liquor Liability"], premium:'$193,000', status:'Active', zip:'32801', policy:'POL-2024-0425' },
+      { lat:32.62, lng:-90.34, name:'Crestview Holdings LLC', products:["Liquor Liability", "General Liability"], premium:'$230,000', status:'Bound', zip:'39201', policy:'POL-2024-0426' },
+      { lat:32.59, lng:-97.41, name:'Falcon Salon Inc.', products:["Liquor Liability"], premium:'$82,000', status:'Active', zip:'76102', policy:'POL-2024-0427' },
+      { lat:39.25, lng:-76.78, name:'Cascade Catering', products:["Commercial Auto"], premium:'$117,000', status:'Quoted', zip:'20001', policy:'POL-2024-0428' },
+      { lat:32.42, lng:-110.89, name:'Zephyr Events Co.', products:["Commercial Auto"], premium:'$82,000', status:'Bound', zip:'85701', policy:'POL-2024-0429' },
+      { lat:31.98, lng:-90.35, name:'Liberty Fitness', products:["Property", "Workers Comp"], premium:'$472,000', status:'Active', zip:'39201', policy:'POL-2024-0430' },
+      { lat:33.77, lng:-117.73, name:'Cascade Catering Group', products:["Cyber Liability"], premium:'$101,000', status:'Quoted', zip:'92701', policy:'POL-2024-0431' },
+      { lat:42.68, lng:-71.36, name:'Granite Manufacturing LLC', products:["Liquor Liability", "General Liability"], premium:'$409,000', status:'Bound', zip:'03101', policy:'POL-2024-0432' },
+      { lat:46.7, lng:-96.46, name:'Ironwood Manufacturing Group', products:["Cyber Liability"], premium:'$231,000', status:'Active', zip:'58102', policy:'POL-2024-0433' },
+      { lat:35.75, lng:-78.43, name:'Willow Holdings LLC', products:["Professional Liability"], premium:'$279,000', status:'Quoted', zip:'27601', policy:'POL-2024-0434' },
+      { lat:39.29, lng:-80.03, name:'Harbor Property Mgmt', products:["Professional Liability"], premium:'$430,000', status:'Quoted', zip:'26501', policy:'POL-2024-0435' },
+      { lat:44.58, lng:-72.94, name:'Orchard Brewing LLC', products:["Workers Comp", "Cyber Liability", "General Liability"], premium:'$443,000', status:'Active', zip:'05401', policy:'POL-2024-0436' },
+      { lat:32.63, lng:-97.14, name:'Sable Distillery LLC', products:["Professional Liability", "General Liability"], premium:'$413,000', status:'Quoted', zip:'76102', policy:'POL-2024-0437' },
+      { lat:39.42, lng:-86.26, name:'Vanguard Salon Partners', products:["Workers Comp"], premium:'$384,000', status:'Active', zip:'46204', policy:'POL-2024-0438' },
+      { lat:40.23, lng:-75.18, name:'Bristol Physical Therapy Inc.', products:["Property"], premium:'$121,000', status:'Active', zip:'19103', policy:'POL-2024-0439' },
+      { lat:39.33, lng:-119.58, name:'Pioneer Coffee LLC', products:["Cyber Liability"], premium:'$48,000', status:'Quoted', zip:'89501', policy:'POL-2024-0440' },
+      { lat:37.75, lng:-97.15, name:'Willow Wellness', products:["Liquor Liability", "Property", "General Liability"], premium:'$296,000', status:'Quoted', zip:'67202', policy:'POL-2024-0441' },
+      { lat:39.33, lng:-76.67, name:'Quarry Distillery', products:["Liquor Liability", "Workers Comp"], premium:'$321,000', status:'Active', zip:'21201', policy:'POL-2024-0442' },
+      { lat:25.49, lng:-80.08, name:'Sable Events LLC', products:["Cyber Liability"], premium:'$239,000', status:'Quoted', zip:'33131', policy:'POL-2024-0443' },
+      { lat:42.88, lng:-87.58, name:'Crescent Wellness Co.', products:["Umbrella"], premium:'$456,000', status:'Quoted', zip:'53202', policy:'POL-2024-0444' },
+      { lat:38.83, lng:-121.34, name:'Orchard Plumbing Group', products:["Umbrella"], premium:'$376,000', status:'Active', zip:'95814', policy:'POL-2024-0445' },
+      { lat:37.43, lng:-97.19, name:'Coastal Manufacturing', products:["Workers Comp"], premium:'$388,000', status:'Active', zip:'67202', policy:'POL-2024-0446' },
+      { lat:39.79, lng:-104.93, name:'Yellowstone Coffee Inc.', products:["Umbrella"], premium:'$474,000', status:'Bound', zip:'80202', policy:'POL-2024-0447' },
+      { lat:40.71, lng:-74.32, name:'Prairie Bistro LLC', products:["Liquor Liability"], premium:'$171,000', status:'Quoted', zip:'11201', policy:'POL-2024-0448' },
+      { lat:44.73, lng:-93.58, name:'Crescent Brewing', products:["Commercial Auto"], premium:'$77,000', status:'Quoted', zip:'55401', policy:'POL-2024-0449' },
+      { lat:37.86, lng:-97.08, name:'Delta Plumbing', products:["Umbrella"], premium:'$379,000', status:'Quoted', zip:'67202', policy:'POL-2024-0450' },
+      { lat:39.59, lng:-76.7, name:'Zephyr Auto Group', products:["Umbrella"], premium:'$128,000', status:'Quoted', zip:'21201', policy:'POL-2024-0451' },
+      { lat:32.53, lng:-89.89, name:'Bristol Coffee LLC', products:["Property", "Cyber Liability"], premium:'$396,000', status:'Active', zip:'39201', policy:'POL-2024-0452' },
+      { lat:39.01, lng:-95.34, name:'Golden Gate Crossfit Co.', products:["Professional Liability", "Property"], premium:'$45,000', status:'Bound', zip:'66603', policy:'POL-2024-0453' },
+      { lat:38.67, lng:-90.45, name:'Quarry Storage Partners', products:["Commercial Auto"], premium:'$388,000', status:'Active', zip:'63101', policy:'POL-2024-0454' },
+      { lat:39.71, lng:-75.29, name:'Ironwood Veterinary', products:["Umbrella", "Property"], premium:'$429,000', status:'Quoted', zip:'19103', policy:'POL-2024-0455' },
+      { lat:38.48, lng:-121.29, name:'Liberty Manufacturing Group', products:["Professional Liability", "Cyber Liability", "Umbrella"], premium:'$106,000', status:'Bound', zip:'95814', policy:'POL-2024-0456' },
+      { lat:37.83, lng:-122.56, name:'Oakmont Events Group', products:["Workers Comp"], premium:'$209,000', status:'Active', zip:'94612', policy:'POL-2024-0457' },
+      { lat:39.42, lng:-84.43, name:'Falcon Property Mgmt LLC', products:["Workers Comp"], premium:'$253,000', status:'Active', zip:'45202', policy:'POL-2024-0458' },
+      { lat:38.43, lng:-81.55, name:'Harbor Bakery LLC', products:["Professional Liability"], premium:'$222,000', status:'Active', zip:'25301', policy:'POL-2024-0459' },
+      { lat:37.96, lng:-122.6, name:'Monarch Marina LLC', products:["Commercial Auto"], premium:'$274,000', status:'Active', zip:'94612', policy:'POL-2024-0460' },
+      { lat:39.33, lng:-95.9, name:'Lakeshore Holdings Inc.', products:["General Liability"], premium:'$345,000', status:'Active', zip:'66603', policy:'POL-2024-0461' },
+      { lat:41.62, lng:-81.5, name:'Zephyr Catering Inc.', products:["Cyber Liability"], premium:'$356,000', status:'Active', zip:'44114', policy:'POL-2024-0462' },
+      { lat:30.09, lng:-87.07, name:'Harbor Holdings Inc.', products:["Umbrella"], premium:'$310,000', status:'Active', zip:'32501', policy:'POL-2024-0463' },
+      { lat:47.84, lng:-122.04, name:'Meadowbrook Landscaping LLC', products:["Cyber Liability"], premium:'$186,000', status:'Active', zip:'98101', policy:'POL-2024-0464' },
+      { lat:36.29, lng:-115.12, name:'Westgate Physical Therapy', products:["General Liability"], premium:'$383,000', status:'Active', zip:'89101', policy:'POL-2024-0465' },
+      { lat:40.05, lng:-105.27, name:'Zephyr Dental', products:["Commercial Auto"], premium:'$220,000', status:'Bound', zip:'80202', policy:'POL-2024-0466' },
+      { lat:40.8, lng:-105.06, name:'Oakmont Yoga Studio Inc.', products:["Umbrella", "Workers Comp"], premium:'$98,000', status:'Active', zip:'82001', policy:'POL-2024-0467' },
+      { lat:37.96, lng:-97.01, name:'Crestview Plumbing LLC', products:["General Liability", "Umbrella", "Cyber Liability"], premium:'$97,000', status:'Active', zip:'67202', policy:'POL-2024-0468' },
+      { lat:39.6, lng:-75.1, name:'Nova Property Mgmt Inc.', products:["Workers Comp"], premium:'$133,000', status:'Bound', zip:'19103', policy:'POL-2024-0469' },
+      { lat:38.6, lng:-81.88, name:'Coastal Logistics', products:["Property", "General Liability"], premium:'$117,000', status:'Quoted', zip:'25301', policy:'POL-2024-0470' },
+      { lat:45.77, lng:-122.42, name:'Orchard Wellness', products:["Professional Liability"], premium:'$153,000', status:'Active', zip:'97204', policy:'POL-2024-0471' },
+      { lat:40.12, lng:-83.01, name:'Frontier Roofing Co.', products:["Property"], premium:'$76,000', status:'Active', zip:'43215', policy:'POL-2024-0472' },
+      { lat:44.18, lng:-73.42, name:'Juniper Wellness LLC', products:["Umbrella"], premium:'$380,000', status:'Quoted', zip:'05401', policy:'POL-2024-0473' },
+      { lat:30.47, lng:-87.31, name:'Liberty Catering Co.', products:["Property"], premium:'$427,000', status:'Active', zip:'32501', policy:'POL-2024-0474' },
+      { lat:38.31, lng:-81.39, name:'Magnolia Bakery LLC', products:["Commercial Auto", "Property"], premium:'$208,000', status:'Active', zip:'25301', policy:'POL-2024-0475' },
+      { lat:31.8, lng:-106.72, name:'Sable Holdings Partners', products:["Liquor Liability", "Umbrella"], premium:'$125,000', status:'Active', zip:'79901', policy:'POL-2024-0476' },
+      { lat:41.52, lng:-71.71, name:'Blue Ridge Storage', products:["Cyber Liability"], premium:'$418,000', status:'Quoted', zip:'02903', policy:'POL-2024-0477' },
+      { lat:39.38, lng:-84.47, name:'Nova Events', products:["Liquor Liability"], premium:'$212,000', status:'Bound', zip:'45202', policy:'POL-2024-0478' },
+      { lat:40.04, lng:-86.1, name:'Crescent Yoga Studio LLC', products:["Professional Liability"], premium:'$228,000', status:'Active', zip:'46204', policy:'POL-2024-0479' },
+      { lat:33.75, lng:-118.59, name:'Timberline Bakery Co.', products:["Liquor Liability", "Property"], premium:'$106,000', status:'Active', zip:'90210', policy:'POL-2024-0480' },
+      { lat:45.83, lng:-122.56, name:'Prairie Physical Therapy LLC', products:["General Liability", "Professional Liability"], premium:'$414,000', status:'Bound', zip:'97204', policy:'POL-2024-0481' },
+      { lat:42.02, lng:-83.14, name:'Harbor Bakery Group', products:["Workers Comp"], premium:'$223,000', status:'Bound', zip:'48226', policy:'POL-2024-0482' },
+      { lat:33.02, lng:-97.65, name:'Westgate Auto Group Inc.', products:["Umbrella", "Cyber Liability"], premium:'$404,000', status:'Active', zip:'76102', policy:'POL-2024-0483' },
+      { lat:47.69, lng:-117.66, name:'Westgate Landscaping LLC', products:["Professional Liability"], premium:'$289,000', status:'Active', zip:'99201', policy:'POL-2024-0484' },
+      { lat:32.55, lng:-111.16, name:'Canyon Roofing LLC', products:["Commercial Auto"], premium:'$479,000', status:'Quoted', zip:'85701', policy:'POL-2024-0485' },
+      { lat:40.75, lng:-74.24, name:'Granite Logistics Inc.', products:["Umbrella"], premium:'$133,000', status:'Active', zip:'10001', policy:'POL-2024-0486' },
+      { lat:34.9, lng:-89.98, name:'Redwood Bakery Group', products:["Workers Comp"], premium:'$393,000', status:'Active', zip:'38103', policy:'POL-2024-0487' },
+      { lat:30.39, lng:-97.75, name:'Quarry Crossfit Inc.', products:["General Liability"], premium:'$90,000', status:'Quoted', zip:'78701', policy:'POL-2024-0488' },
+      { lat:60.98, lng:-149.81, name:'Harbor Events', products:["Liquor Liability"], premium:'$157,000', status:'Active', zip:'99501', policy:'POL-2024-0489' },
+      { lat:34.07, lng:-117.8, name:'Peregrine Plumbing LLC', products:["Umbrella", "General Liability"], premium:'$135,000', status:'Bound', zip:'92701', policy:'POL-2024-0490' },
+      { lat:44.0, lng:-70.0, name:'Granite Logistics Inc.', products:["Liquor Liability"], premium:'$344,000', status:'Quoted', zip:'04101', policy:'POL-2024-0491' },
+      { lat:32.56, lng:-117.0, name:'Frontier Consulting LLC', products:["Professional Liability"], premium:'$142,000', status:'Bound', zip:'92101', policy:'POL-2024-0492' },
+      { lat:35.91, lng:-115.48, name:'Monarch Storage', products:["Liquor Liability"], premium:'$335,000', status:'Active', zip:'89101', policy:'POL-2024-0493' },
+      { lat:36.15, lng:-86.7, name:'Harbor Events', products:["Professional Liability"], premium:'$72,000', status:'Bound', zip:'37201', policy:'POL-2024-0494' },
+      { lat:40.87, lng:-104.75, name:'Summit Events Inc.', products:["Workers Comp"], premium:'$472,000', status:'Active', zip:'82001', policy:'POL-2024-0495' },
+      { lat:36.69, lng:-119.48, name:'Falcon Salon Inc.', products:["Professional Liability"], premium:'$242,000', status:'Active', zip:'93721', policy:'POL-2024-0496' },
+      { lat:44.96, lng:-93.46, name:'Lone Star Dental', products:["Cyber Liability", "Liquor Liability"], premium:'$121,000', status:'Active', zip:'55401', policy:'POL-2024-0497' },
+      { lat:40.8, lng:-74.26, name:'Summit Landscaping Group', products:["Workers Comp"], premium:'$234,000', status:'Active', zip:'10001', policy:'POL-2024-0498' },
+      { lat:30.09, lng:-81.55, name:'Northstar Construction', products:["Workers Comp"], premium:'$338,000', status:'Active', zip:'32202', policy:'POL-2024-0499' },
+      { lat:39.71, lng:-119.87, name:'Orchard Distillery Co.', products:["Commercial Auto"], premium:'$154,000', status:'Active', zip:'89501', policy:'POL-2024-0500' },
+      { lat:47.5, lng:-122.19, name:'Delta Yoga Studio Inc.', products:["Commercial Auto", "Cyber Liability"], premium:'$383,000', status:'Active', zip:'98101', policy:'POL-2024-0501' },
+      { lat:33.55, lng:-84.46, name:'Frontier Salon', products:["General Liability"], premium:'$107,000', status:'Bound', zip:'30303', policy:'POL-2024-0502' },
+      { lat:39.39, lng:-75.84, name:'Prairie Distillery', products:["Professional Liability"], premium:'$159,000', status:'Active', zip:'19801', policy:'POL-2024-0503' },
+      { lat:33.16, lng:-112.39, name:'Bayside Consulting Inc.', products:["Umbrella"], premium:'$389,000', status:'Quoted', zip:'85004', policy:'POL-2024-0504' },
+      { lat:39.22, lng:-76.8, name:'Vanguard Distillery LLC', products:["Umbrella"], premium:'$124,000', status:'Active', zip:'20001', policy:'POL-2024-0505' },
+      { lat:21.32, lng:-157.72, name:'Timberline Crossfit LLC', products:["General Liability"], premium:'$105,000', status:'Active', zip:'96813', policy:'POL-2024-0506' },
+      { lat:38.83, lng:-90.29, name:'Canyon Landscaping', products:["General Liability"], premium:'$402,000', status:'Quoted', zip:'63101', policy:'POL-2024-0507' },
+      { lat:37.83, lng:-77.41, name:'Crestview Marina', products:["Workers Comp", "Liquor Liability"], premium:'$442,000', status:'Active', zip:'23219', policy:'POL-2024-0508' },
+      { lat:39.84, lng:-86.37, name:'Canyon Cleaning Services LLC', products:["Cyber Liability"], premium:'$284,000', status:'Active', zip:'46204', policy:'POL-2024-0509' },
+      { lat:37.03, lng:-122.03, name:'Redwood Salon', products:["Umbrella", "Workers Comp", "Property"], premium:'$218,000', status:'Quoted', zip:'95113', policy:'POL-2024-0510' },
+      { lat:30.46, lng:-97.56, name:'Foxglove Wellness LLC', products:["General Liability", "Property"], premium:'$84,000', status:'Active', zip:'78701', policy:'POL-2024-0511' },
+      { lat:37.46, lng:-77.24, name:'Oakmont Bakery Group', products:["Cyber Liability", "Liquor Liability"], premium:'$289,000', status:'Quoted', zip:'23219', policy:'POL-2024-0512' },
+      { lat:40.83, lng:-74.16, name:'Crescent Holdings Inc.', products:["Workers Comp"], premium:'$63,000', status:'Quoted', zip:'11201', policy:'POL-2024-0513' },
+      { lat:36.15, lng:-86.88, name:'Peregrine Construction Co.', products:["Property", "Commercial Auto"], premium:'$402,000', status:'Active', zip:'37201', policy:'POL-2024-0514' },
+      { lat:43.12, lng:-85.4, name:'Riverside Logistics Group', products:["Workers Comp", "Professional Liability"], premium:'$423,000', status:'Active', zip:'49503', policy:'POL-2024-0515' },
+      { lat:28.24, lng:-82.34, name:'Yellowstone Distillery', products:["General Liability"], premium:'$459,000', status:'Bound', zip:'33602', policy:'POL-2024-0516' },
+      { lat:33.53, lng:-112.08, name:'Peregrine Storage Partners', products:["Umbrella"], premium:'$228,000', status:'Active', zip:'85004', policy:'POL-2024-0517' },
+      { lat:47.35, lng:-122.31, name:'Stonebridge Distillery', products:["Workers Comp"], premium:'$226,000', status:'Quoted', zip:'98101', policy:'POL-2024-0518' },
+      { lat:36.14, lng:-87.05, name:'Monarch Wellness LLC', products:["General Liability"], premium:'$370,000', status:'Active', zip:'37201', policy:'POL-2024-0519' },
+      { lat:32.28, lng:-111.09, name:'Timberline Storage Partners', products:["Umbrella"], premium:'$146,000', status:'Active', zip:'85701', policy:'POL-2024-0520' },
+      { lat:29.74, lng:-98.6, name:'Coastal Distillery Inc.', products:["Workers Comp"], premium:'$211,000', status:'Bound', zip:'78205', policy:'POL-2024-0521' },
+      { lat:38.6, lng:-90.14, name:'Peregrine Bakery Group', products:["Umbrella", "Cyber Liability"], premium:'$145,000', status:'Quoted', zip:'63101', policy:'POL-2024-0522' },
+      { lat:30.7, lng:-91.4, name:'Delta Yoga Studio LLC', products:["Liquor Liability", "Property"], premium:'$280,000', status:'Active', zip:'70801', policy:'POL-2024-0523' },
+      { lat:41.83, lng:-71.26, name:'Juniper Dental Partners', products:["General Liability"], premium:'$228,000', status:'Active', zip:'02903', policy:'POL-2024-0524' },
+      { lat:32.07, lng:-86.09, name:'Falcon Marina Inc.', products:["Workers Comp"], premium:'$158,000', status:'Active', zip:'36104', policy:'POL-2024-0525' },
+      { lat:35.12, lng:-106.35, name:'Northstar Roofing LLC', products:["Workers Comp"], premium:'$469,000', status:'Quoted', zip:'87102', policy:'POL-2024-0526' },
+      { lat:43.45, lng:-70.21, name:'Westgate Property Mgmt Co.', products:["Umbrella", "Liquor Liability", "Cyber Liability"], premium:'$369,000', status:'Quoted', zip:'04101', policy:'POL-2024-0527' },
+      { lat:31.95, lng:-106.53, name:'Lone Star Landscaping', products:["Liquor Liability"], premium:'$469,000', status:'Active', zip:'79901', policy:'POL-2024-0528' },
+      { lat:39.96, lng:-75.66, name:'Vanguard HVAC', products:["Professional Liability"], premium:'$65,000', status:'Active', zip:'19801', policy:'POL-2024-0529' },
+      { lat:43.43, lng:-116.33, name:'Crescent Coffee Partners', products:["Cyber Liability"], premium:'$163,000', status:'Bound', zip:'83702', policy:'POL-2024-0530' },
+      { lat:35.25, lng:-106.64, name:'Willow Catering Co.', products:["General Liability"], premium:'$89,000', status:'Quoted', zip:'87102', policy:'POL-2024-0531' },
+      { lat:43.07, lng:-85.35, name:'Atlas Physical Therapy Inc.', products:["Cyber Liability"], premium:'$77,000', status:'Active', zip:'49503', policy:'POL-2024-0532' },
+      { lat:37.85, lng:-77.46, name:'Ironwood Fitness Inc.', products:["Professional Liability"], premium:'$78,000', status:'Active', zip:'23219', policy:'POL-2024-0533' },
+      { lat:44.24, lng:-73.1, name:'Bayside Dental Group', products:["Umbrella"], premium:'$251,000', status:'Quoted', zip:'05401', policy:'POL-2024-0534' },
+      { lat:25.51, lng:-79.95, name:'Blue Ridge Bistro LLC', products:["Workers Comp", "Cyber Liability"], premium:'$268,000', status:'Bound', zip:'33131', policy:'POL-2024-0535' },
+      { lat:38.1, lng:-122.24, name:'Magnolia Coffee', products:["Commercial Auto"], premium:'$348,000', status:'Quoted', zip:'94612', policy:'POL-2024-0536' },
+      { lat:40.0, lng:-75.6, name:'Vanguard Plumbing', products:["Workers Comp"], premium:'$271,000', status:'Quoted', zip:'19801', policy:'POL-2024-0537' },
+      { lat:42.54, lng:-83.09, name:'Evergreen Catering Partners', products:["General Liability"], premium:'$25,000', status:'Quoted', zip:'48226', policy:'POL-2024-0538' },
+      { lat:26.6, lng:-80.07, name:'Summit Coffee LLC', products:["Commercial Auto", "Liquor Liability"], premium:'$29,000', status:'Bound', zip:'33401', policy:'POL-2024-0539' },
+      { lat:39.12, lng:-95.47, name:'Orchard Roofing Group', products:["Cyber Liability"], premium:'$227,000', status:'Active', zip:'66603', policy:'POL-2024-0540' },
+      { lat:32.53, lng:-86.21, name:'Bayside Logistics Partners', products:["Property"], premium:'$289,000', status:'Quoted', zip:'36104', policy:'POL-2024-0541' },
+      { lat:41.73, lng:-87.46, name:'Beacon Catering Group', products:["Liquor Liability", "Professional Liability"], premium:'$173,000', status:'Active', zip:'60602', policy:'POL-2024-0542' },
+      { lat:39.71, lng:-75.58, name:'Atlas HVAC LLC', products:["General Liability"], premium:'$102,000', status:'Active', zip:'19801', policy:'POL-2024-0543' },
+      { lat:37.44, lng:-122.08, name:'Crescent Construction Co.', products:["General Liability", "Professional Liability"], premium:'$71,000', status:'Active', zip:'94103', policy:'POL-2024-0544' },
+      { lat:40.69, lng:-74.1, name:'Heritage Salon LLC', products:["Commercial Auto", "Workers Comp", "General Liability"], premium:'$194,000', status:'Active', zip:'11201', policy:'POL-2024-0545' },
+      { lat:27.03, lng:-82.35, name:'Golden Gate Property Mgmt LLC', products:["Umbrella"], premium:'$443,000', status:'Bound', zip:'34236', policy:'POL-2024-0546' },
+      { lat:40.43, lng:-73.8, name:'Silver Creek Landscaping LLC', products:["General Liability"], premium:'$126,000', status:'Bound', zip:'11201', policy:'POL-2024-0547' },
+      { lat:33.76, lng:-84.05, name:'Falcon Landscaping Partners', products:["Liquor Liability", "Workers Comp"], premium:'$397,000', status:'Active', zip:'30303', policy:'POL-2024-0548' },
+      { lat:38.59, lng:-121.66, name:'Vanguard Dental Group', products:["General Liability"], premium:'$467,000', status:'Quoted', zip:'95814', policy:'POL-2024-0549' },
+      { lat:39.43, lng:-84.69, name:'Stonebridge Auto Group LLC', products:["Umbrella"], premium:'$324,000', status:'Active', zip:'45202', policy:'POL-2024-0550' },
+      { lat:39.73, lng:-120.15, name:'Harbor Cleaning Services LLC', products:["Liquor Liability"], premium:'$215,000', status:'Active', zip:'89501', policy:'POL-2024-0551' },
+      { lat:42.8, lng:-88.19, name:'Timberline Auto Group LLC', products:["Liquor Liability"], premium:'$384,000', status:'Quoted', zip:'53202', policy:'POL-2024-0552' },
+      { lat:30.07, lng:-81.85, name:'Orchard Salon LLC', products:["Commercial Auto", "Workers Comp"], premium:'$123,000', status:'Active', zip:'32202', policy:'POL-2024-0553' },
+      { lat:32.12, lng:-111.23, name:'Harbor Distillery LLC', products:["Commercial Auto"], premium:'$122,000', status:'Quoted', zip:'85701', policy:'POL-2024-0554' },
+      { lat:35.17, lng:-90.17, name:'Copper Hill Construction', products:["Liquor Liability", "General Liability"], premium:'$296,000', status:'Active', zip:'38103', policy:'POL-2024-0555' },
+      { lat:32.64, lng:-96.97, name:'Evergreen Wellness LLC', products:["Cyber Liability", "Workers Comp"], premium:'$119,000', status:'Active', zip:'75201', policy:'POL-2024-0556' },
+      { lat:44.73, lng:-73.02, name:'Silver Creek Auto Group Inc.', products:["Cyber Liability"], premium:'$122,000', status:'Quoted', zip:'05401', policy:'POL-2024-0557' },
+      { lat:34.24, lng:-118.48, name:'Crescent Auto Group Inc.', products:["Professional Liability"], premium:'$74,000', status:'Quoted', zip:'90012', policy:'POL-2024-0558' },
+      { lat:40.83, lng:-104.59, name:'Magnolia Crossfit LLC', products:["Commercial Auto"], premium:'$123,000', status:'Active', zip:'82001', policy:'POL-2024-0559' },
+      { lat:41.82, lng:-72.43, name:'Yellowstone Distillery', products:["Umbrella"], premium:'$50,000', status:'Active', zip:'06103', policy:'POL-2024-0560' },
+      { lat:39.84, lng:-86.46, name:'Riverside Plumbing LLC', products:["Professional Liability", "Property"], premium:'$435,000', status:'Quoted', zip:'46204', policy:'POL-2024-0561' },
+      { lat:38.81, lng:-76.85, name:'Meadowbrook Marina LLC', products:["General Liability", "Cyber Liability"], premium:'$340,000', status:'Active', zip:'20001', policy:'POL-2024-0562' },
+      { lat:36.42, lng:-120.09, name:'Heritage Holdings Group', products:["Professional Liability", "General Liability", "Workers Comp"], premium:'$143,000', status:'Quoted', zip:'93721', policy:'POL-2024-0563' },
+      { lat:35.95, lng:-115.12, name:'Silver Creek Cleaning Services Co.', products:["Cyber Liability"], premium:'$407,000', status:'Active', zip:'89101', policy:'POL-2024-0564' },
+      { lat:39.79, lng:-75.43, name:'Atlas Bakery Inc.', products:["Liquor Liability", "Cyber Liability"], premium:'$117,000', status:'Quoted', zip:'19801', policy:'POL-2024-0565' },
+      { lat:35.47, lng:-97.41, name:'Nova HVAC LLC', products:["Workers Comp", "Umbrella"], premium:'$191,000', status:'Active', zip:'73102', policy:'POL-2024-0566' },
+      { lat:36.33, lng:-96.04, name:'Crestview Auto Group', products:["Property"], premium:'$217,000', status:'Quoted', zip:'74103', policy:'POL-2024-0567' },
+      { lat:44.88, lng:-93.3, name:'Canyon Fitness LLC', products:["General Liability", "Umbrella", "Professional Liability"], premium:'$480,000', status:'Active', zip:'55401', policy:'POL-2024-0568' },
+      { lat:40.61, lng:-74.18, name:'Liberty Fitness Partners', products:["Liquor Liability", "General Liability"], premium:'$44,000', status:'Bound', zip:'10001', policy:'POL-2024-0569' },
+      { lat:39.51, lng:-105.15, name:'Quarry Logistics Group', products:["Umbrella"], premium:'$72,000', status:'Quoted', zip:'80202', policy:'POL-2024-0570' },
+      { lat:35.52, lng:-97.72, name:'Golden Gate Physical Therapy LLC', products:["Liquor Liability", "Property"], premium:'$447,000', status:'Quoted', zip:'73102', policy:'POL-2024-0571' },
+      { lat:47.83, lng:-122.61, name:'Westgate Dental LLC', products:["Cyber Liability", "General Liability"], premium:'$424,000', status:'Active', zip:'98101', policy:'POL-2024-0572' },
+      { lat:46.48, lng:-111.82, name:'Meadowbrook Consulting Inc.', products:["Property", "Workers Comp"], premium:'$359,000', status:'Quoted', zip:'59601', policy:'POL-2024-0573' },
+      { lat:40.78, lng:-73.9, name:'Ironwood Dental', products:["Liquor Liability"], premium:'$192,000', status:'Quoted', zip:'11201', policy:'POL-2024-0574' },
+      { lat:39.53, lng:-86.04, name:'Canyon Wellness', products:["Professional Liability"], premium:'$138,000', status:'Bound', zip:'46204', policy:'POL-2024-0575' },
+      { lat:39.25, lng:-95.93, name:'Frontier Holdings LLC', products:["General Liability"], premium:'$305,000', status:'Bound', zip:'66603', policy:'POL-2024-0576' },
+      { lat:41.6, lng:-87.62, name:'Foxglove Coffee Co.', products:["Commercial Auto", "Umbrella"], premium:'$126,000', status:'Bound', zip:'60601', policy:'POL-2024-0577' },
+      { lat:39.64, lng:-120.02, name:'Timberline Physical Therapy', products:["Professional Liability"], premium:'$161,000', status:'Bound', zip:'89501', policy:'POL-2024-0578' },
+      { lat:47.01, lng:-96.74, name:'Redwood Bakery Inc.', products:["Workers Comp"], premium:'$122,000', status:'Active', zip:'58102', policy:'POL-2024-0579' },
+      { lat:40.83, lng:-112.22, name:'Heritage Crossfit LLC', products:["Commercial Auto"], premium:'$344,000', status:'Active', zip:'84101', policy:'POL-2024-0580' },
+      { lat:31.98, lng:-89.96, name:'Pioneer Bakery LLC', products:["Professional Liability"], premium:'$82,000', status:'Quoted', zip:'39201', policy:'POL-2024-0581' },
+      { lat:39.11, lng:-76.54, name:'Prairie Storage Partners', products:["Professional Liability"], premium:'$181,000', status:'Bound', zip:'21201', policy:'POL-2024-0582' },
+      { lat:29.09, lng:-98.69, name:'Nova Brewing Group', products:["Umbrella"], premium:'$305,000', status:'Bound', zip:'78205', policy:'POL-2024-0583' },
+      { lat:44.64, lng:-73.46, name:'Atlas Bakery LLC', products:["General Liability"], premium:'$155,000', status:'Active', zip:'05401', policy:'POL-2024-0584' },
+      { lat:38.76, lng:-76.82, name:'Timberline Construction LLC', products:["General Liability"], premium:'$59,000', status:'Bound', zip:'20001', policy:'POL-2024-0585' },
+      { lat:40.97, lng:-104.57, name:'Yellowstone Roofing Inc.', products:["Cyber Liability"], premium:'$143,000', status:'Bound', zip:'82001', policy:'POL-2024-0586' },
+      { lat:33.05, lng:-117.44, name:'Liberty Distillery', products:["Liquor Liability"], premium:'$126,000', status:'Quoted', zip:'92101', policy:'POL-2024-0587' },
+      { lat:32.79, lng:-97.18, name:'Harbor Logistics', products:["Commercial Auto"], premium:'$226,000', status:'Quoted', zip:'76102', policy:'POL-2024-0588' },
+      { lat:32.04, lng:-86.18, name:'Sunset Plumbing Partners', products:["Umbrella"], premium:'$440,000', status:'Active', zip:'36104', policy:'POL-2024-0589' },
+      { lat:41.65, lng:-71.49, name:'Blue Ridge Property Mgmt Partners', products:["Workers Comp"], premium:'$484,000', status:'Bound', zip:'02903', policy:'POL-2024-0590' },
+      { lat:40.88, lng:-104.66, name:'Monarch Bakery', products:["Property", "Commercial Auto"], premium:'$148,000', status:'Quoted', zip:'82001', policy:'POL-2024-0591' },
+      { lat:30.37, lng:-87.35, name:'Sable Auto Group LLC', products:["Property"], premium:'$359,000', status:'Active', zip:'32501', policy:'POL-2024-0592' },
+      { lat:47.69, lng:-117.22, name:'Magnolia Dental', products:["Cyber Liability", "Commercial Auto"], premium:'$99,000', status:'Quoted', zip:'99201', policy:'POL-2024-0593' },
+      { lat:45.81, lng:-122.8, name:'Orchard Property Mgmt Inc.', products:["Liquor Liability"], premium:'$397,000', status:'Active', zip:'97204', policy:'POL-2024-0594' },
+      { lat:43.82, lng:-96.79, name:'Meadowbrook Dental LLC', products:["Umbrella", "Professional Liability"], premium:'$423,000', status:'Active', zip:'57104', policy:'POL-2024-0595' },
+      { lat:30.07, lng:-81.99, name:'Timberline HVAC Partners', products:["Property"], premium:'$330,000', status:'Active', zip:'32202', policy:'POL-2024-0596' },
+      { lat:42.46, lng:-83.15, name:'Atlas Veterinary LLC', products:["Commercial Auto"], premium:'$389,000', status:'Quoted', zip:'48226', policy:'POL-2024-0597' },
+      { lat:33.23, lng:-112.15, name:'Falcon Yoga Studio Co.', products:["General Liability"], premium:'$234,000', status:'Active', zip:'85004', policy:'POL-2024-0598' },
+      { lat:42.2, lng:-87.82, name:'Yellowstone Brewing Group', products:["Commercial Auto"], premium:'$468,000', status:'Quoted', zip:'60602', policy:'POL-2024-0599' },
+      { lat:31.89, lng:-106.23, name:'Silver Creek Catering Inc.', products:["Cyber Liability", "Workers Comp"], premium:'$185,000', status:'Bound', zip:'79901', policy:'POL-2024-0600' },
+      { lat:43.3, lng:-71.41, name:'Nova Manufacturing LLC', products:["Commercial Auto"], premium:'$258,000', status:'Active', zip:'03101', policy:'POL-2024-0601' },
+      { lat:43.05, lng:-87.97, name:'Delta Bistro', products:["General Liability"], premium:'$122,000', status:'Active', zip:'53202', policy:'POL-2024-0602' },
+      { lat:32.23, lng:-90.32, name:'Crescent Wellness Co.', products:["General Liability"], premium:'$378,000', status:'Quoted', zip:'39201', policy:'POL-2024-0603' },
+      { lat:27.31, lng:-82.44, name:'Lone Star Physical Therapy', products:["Liquor Liability"], premium:'$226,000', status:'Bound', zip:'34236', policy:'POL-2024-0604' },
+      { lat:46.85, lng:-97.01, name:'Quarry Events Group', products:["Professional Liability", "Liquor Liability"], premium:'$190,000', status:'Quoted', zip:'58102', policy:'POL-2024-0605' },
+      { lat:39.92, lng:-79.75, name:'Bristol Physical Therapy Inc.', products:["Commercial Auto"], premium:'$349,000', status:'Active', zip:'26501', policy:'POL-2024-0606' },
+      { lat:35.8, lng:-78.72, name:'Lakeshore HVAC Co.', products:["Cyber Liability"], premium:'$47,000', status:'Active', zip:'27601', policy:'POL-2024-0607' },
+      { lat:46.64, lng:-111.93, name:'Prairie Crossfit Co.', products:["General Liability"], premium:'$239,000', status:'Active', zip:'59601', policy:'POL-2024-0608' },
+      { lat:41.75, lng:-93.3, name:'Crescent Plumbing Co.', products:["Liquor Liability"], premium:'$128,000', status:'Active', zip:'50309', policy:'POL-2024-0609' },
+      { lat:44.67, lng:-73.55, name:'Juniper Storage LLC', products:["General Liability"], premium:'$336,000', status:'Bound', zip:'05401', policy:'POL-2024-0610' },
+      { lat:42.76, lng:-85.55, name:'Copper Hill Catering LLC', products:["General Liability"], premium:'$150,000', status:'Quoted', zip:'49503', policy:'POL-2024-0611' },
+      { lat:38.71, lng:-90.15, name:'Riverside Bistro Co.', products:["Workers Comp"], premium:'$43,000', status:'Active', zip:'63101', policy:'POL-2024-0612' },
+      { lat:41.89, lng:-72.43, name:'Heritage Auto Group Inc.', products:["Cyber Liability"], premium:'$116,000', status:'Active', zip:'06103', policy:'POL-2024-0613' },
+      { lat:37.54, lng:-97.23, name:'Atlas HVAC', products:["Liquor Liability", "Property"], premium:'$408,000', status:'Quoted', zip:'67202', policy:'POL-2024-0614' },
+      { lat:35.38, lng:-106.93, name:'Heritage Auto Group LLC', products:["Professional Liability", "Cyber Liability"], premium:'$243,000', status:'Quoted', zip:'87102', policy:'POL-2024-0615' },
+      { lat:37.39, lng:-77.7, name:'Atlas Storage Partners', products:["Cyber Liability"], premium:'$293,000', status:'Active', zip:'23219', policy:'POL-2024-0616' },
+      { lat:41.58, lng:-81.96, name:'Crestview Plumbing', products:["Commercial Auto", "Workers Comp", "Cyber Liability"], premium:'$334,000', status:'Quoted', zip:'44114', policy:'POL-2024-0617' },
+      { lat:39.05, lng:-94.34, name:'Northstar Manufacturing', products:["Workers Comp", "Professional Liability", "Umbrella"], premium:'$313,000', status:'Bound', zip:'64106', policy:'POL-2024-0618' },
+      { lat:33.91, lng:-117.87, name:'Coastal Events', products:["Umbrella"], premium:'$124,000', status:'Active', zip:'92701', policy:'POL-2024-0619' },
+      { lat:27.62, lng:-82.37, name:'Redwood Physical Therapy Group', products:["Cyber Liability", "Property"], premium:'$48,000', status:'Active', zip:'33602', policy:'POL-2024-0620' },
+      { lat:40.8, lng:-111.79, name:'Summit Plumbing Group', products:["Umbrella"], premium:'$429,000', status:'Active', zip:'84101', policy:'POL-2024-0621' },
+      { lat:41.45, lng:-93.59, name:'Foxglove Fitness Inc.', products:["Workers Comp"], premium:'$227,000', status:'Quoted', zip:'50309', policy:'POL-2024-0622' },
+      { lat:45.6, lng:-123.0, name:'Coastal Brewing LLC', products:["Commercial Auto", "Property"], premium:'$433,000', status:'Active', zip:'97204', policy:'POL-2024-0623' },
+      { lat:38.1, lng:-81.87, name:'Copper Hill Events', products:["Commercial Auto", "Cyber Liability"], premium:'$441,000', status:'Bound', zip:'25301', policy:'POL-2024-0624' },
+      { lat:39.14, lng:-77.16, name:'Crestview Bakery LLC', products:["General Liability"], premium:'$131,000', status:'Quoted', zip:'20001', policy:'POL-2024-0625' },
+      { lat:46.8, lng:-111.77, name:'Sunset Holdings Co.', products:["General Liability"], premium:'$198,000', status:'Bound', zip:'59601', policy:'POL-2024-0626' },
+      { lat:41.84, lng:-71.64, name:'Sable Landscaping Co.', products:["Umbrella"], premium:'$386,000', status:'Active', zip:'02903', policy:'POL-2024-0627' },
+      { lat:41.61, lng:-72.96, name:'Silver Creek Roofing LLC', products:["Umbrella", "Professional Liability"], premium:'$293,000', status:'Active', zip:'06103', policy:'POL-2024-0628' },
+      { lat:35.9, lng:-86.58, name:'Foxglove Brewing Inc.', products:["General Liability"], premium:'$434,000', status:'Bound', zip:'37201', policy:'POL-2024-0629' },
+      { lat:33.85, lng:-118.52, name:'Falcon Physical Therapy', products:["Workers Comp"], premium:'$98,000', status:'Active', zip:'90210', policy:'POL-2024-0630' },
+      { lat:33.87, lng:-118.13, name:'Crestview Bistro LLC', products:["Professional Liability"], premium:'$27,000', status:'Active', zip:'92701', policy:'POL-2024-0631' },
+      { lat:40.08, lng:-75.1, name:'Lone Star Auto Group LLC', products:["Professional Liability", "Umbrella"], premium:'$417,000', status:'Quoted', zip:'19103', policy:'POL-2024-0632' },
+      { lat:41.26, lng:-93.44, name:'Vanguard Events Group', products:["Property"], premium:'$171,000', status:'Active', zip:'50309', policy:'POL-2024-0633' },
+      { lat:37.64, lng:-122.45, name:'Redwood Construction Co.', products:["Professional Liability"], premium:'$32,000', status:'Quoted', zip:'94103', policy:'POL-2024-0634' },
+      { lat:37.34, lng:-122.1, name:'Sunset Property Mgmt LLC', products:["Umbrella"], premium:'$318,000', status:'Active', zip:'95113', policy:'POL-2024-0635' },
+      { lat:33.22, lng:-86.73, name:'Frontier Property Mgmt LLC', products:["General Liability"], premium:'$266,000', status:'Quoted', zip:'35203', policy:'POL-2024-0636' },
+      { lat:39.01, lng:-76.93, name:'Stonebridge Landscaping Co.', products:["Commercial Auto", "Umbrella"], premium:'$207,000', status:'Active', zip:'21201', policy:'POL-2024-0637' },
+      { lat:46.81, lng:-111.89, name:'Yellowstone Salon', products:["Commercial Auto"], premium:'$315,000', status:'Active', zip:'59601', policy:'POL-2024-0638' },
+      { lat:33.0, lng:-79.64, name:'Copper Hill Restaurant Group LLC', products:["Commercial Auto"], premium:'$265,000', status:'Active', zip:'29401', policy:'POL-2024-0639' },
+      { lat:39.52, lng:-85.88, name:'Northstar Consulting LLC', products:["Workers Comp"], premium:'$428,000', status:'Active', zip:'46204', policy:'POL-2024-0640' },
+      { lat:32.74, lng:-97.63, name:'Redwood Roofing LLC', products:["Liquor Liability"], premium:'$169,000', status:'Active', zip:'76102', policy:'POL-2024-0641' },
+      { lat:43.71, lng:-70.25, name:'Canyon Marina Inc.', products:["Professional Liability"], premium:'$430,000', status:'Active', zip:'04101', policy:'POL-2024-0642' },
+      { lat:37.74, lng:-122.35, name:'Silver Creek HVAC Group', products:["Commercial Auto"], premium:'$221,000', status:'Active', zip:'94103', policy:'POL-2024-0643' },
+      { lat:43.42, lng:-116.06, name:'Stonebridge Salon Inc.', products:["Workers Comp"], premium:'$303,000', status:'Quoted', zip:'83702', policy:'POL-2024-0644' },
+      { lat:42.73, lng:-85.54, name:'Delta Consulting', products:["Professional Liability", "Umbrella"], premium:'$330,000', status:'Bound', zip:'49503', policy:'POL-2024-0645' },
+      { lat:46.92, lng:-96.56, name:'Coastal Dental Inc.', products:["Professional Liability"], premium:'$375,000', status:'Quoted', zip:'58102', policy:'POL-2024-0646' },
+      { lat:32.1, lng:-110.87, name:'Ironwood Holdings Group', products:["General Liability", "Cyber Liability"], premium:'$100,000', status:'Quoted', zip:'85701', policy:'POL-2024-0647' },
+      { lat:30.39, lng:-87.37, name:'Timberline Cleaning Services LLC', products:["Workers Comp"], premium:'$178,000', status:'Quoted', zip:'32501', policy:'POL-2024-0648' },
+      { lat:37.55, lng:-97.03, name:'Stonebridge Coffee LLC', products:["General Liability", "Umbrella", "Cyber Liability"], premium:'$231,000', status:'Active', zip:'67202', policy:'POL-2024-0649' },
+      { lat:38.74, lng:-95.4, name:'Ironwood Fitness', products:["Workers Comp", "General Liability"], premium:'$465,000', status:'Active', zip:'66603', policy:'POL-2024-0650' },
+      { lat:42.17, lng:-70.92, name:'Canyon Plumbing LLC', products:["Cyber Liability", "Property"], premium:'$247,000', status:'Quoted', zip:'02108', policy:'POL-2024-0651' },
+      { lat:39.21, lng:-84.53, name:'Pioneer Property Mgmt Inc.', products:["Workers Comp", "Cyber Liability"], premium:'$238,000', status:'Active', zip:'45202', policy:'POL-2024-0652' },
+      { lat:39.45, lng:-94.46, name:'Magnolia Fitness Inc.', products:["Liquor Liability"], premium:'$394,000', status:'Bound', zip:'64106', policy:'POL-2024-0653' },
+      { lat:41.09, lng:-104.48, name:'Lone Star Yoga Studio Inc.', products:["Cyber Liability", "Umbrella"], premium:'$117,000', status:'Bound', zip:'82001', policy:'POL-2024-0654' },
+      { lat:32.67, lng:-116.94, name:'Bayside Roofing Group', products:["General Liability"], premium:'$320,000', status:'Bound', zip:'92101', policy:'POL-2024-0655' },
+      { lat:43.11, lng:-85.82, name:'Nova Cleaning Services LLC', products:["General Liability"], premium:'$315,000', status:'Bound', zip:'49503', policy:'POL-2024-0656' },
+      { lat:33.18, lng:-112.08, name:'Atlas Holdings Co.', products:["Umbrella", "Property"], premium:'$289,000', status:'Active', zip:'85004', policy:'POL-2024-0657' },
+      { lat:34.02, lng:-118.16, name:'Falcon Plumbing Inc.', products:["Umbrella"], premium:'$338,000', status:'Active', zip:'92701', policy:'POL-2024-0658' },
+      { lat:43.64, lng:-116.54, name:'Copper Hill Manufacturing LLC', products:["Workers Comp"], premium:'$240,000', status:'Active', zip:'83702', policy:'POL-2024-0659' },
+      { lat:38.9, lng:-96.01, name:'Sable Physical Therapy Partners', products:["Umbrella", "General Liability"], premium:'$347,000', status:'Bound', zip:'66603', policy:'POL-2024-0660' },
+      { lat:47.43, lng:-117.74, name:'Crescent Salon', products:["Commercial Auto"], premium:'$67,000', status:'Active', zip:'99201', policy:'POL-2024-0661' },
+      { lat:33.79, lng:-118.21, name:'Northstar Yoga Studio', products:["Umbrella"], premium:'$32,000', status:'Quoted', zip:'90210', policy:'POL-2024-0662' },
+      { lat:28.61, lng:-81.09, name:'Delta Yoga Studio LLC', products:["Liquor Liability"], premium:'$158,000', status:'Quoted', zip:'32801', policy:'POL-2024-0663' },
+      { lat:42.95, lng:-85.45, name:'Harbor Auto Group Inc.', products:["Liquor Liability", "Cyber Liability", "Property"], premium:'$410,000', status:'Bound', zip:'49503', policy:'POL-2024-0664' },
+      { lat:35.99, lng:-115.18, name:'Vanguard Crossfit Group', products:["Workers Comp"], premium:'$52,000', status:'Quoted', zip:'89101', policy:'POL-2024-0665' },
+      { lat:42.07, lng:-87.89, name:'Granite Wellness Inc.', products:["Commercial Auto"], premium:'$407,000', status:'Quoted', zip:'60601', policy:'POL-2024-0666' },
+      { lat:42.25, lng:-82.91, name:'Falcon Construction Co.', products:["Cyber Liability"], premium:'$31,000', status:'Active', zip:'48226', policy:'POL-2024-0667' },
+      { lat:32.7, lng:-96.93, name:'Monarch Bakery LLC', products:["Workers Comp"], premium:'$457,000', status:'Bound', zip:'75201', policy:'POL-2024-0668' },
+      { lat:43.28, lng:-71.21, name:'Frontier Construction Partners', products:["Umbrella", "Workers Comp"], premium:'$324,000', status:'Bound', zip:'03101', policy:'POL-2024-0669' },
+      { lat:29.95, lng:-95.19, name:'Crestview Bakery', products:["Workers Comp", "Commercial Auto"], premium:'$378,000', status:'Active', zip:'77002', policy:'POL-2024-0670' },
+      { lat:43.58, lng:-96.61, name:'Golden Gate Fitness Inc.', products:["Professional Liability"], premium:'$375,000', status:'Bound', zip:'57104', policy:'POL-2024-0671' },
+      { lat:40.56, lng:-112.04, name:'Pioneer Bistro LLC', products:["General Liability"], premium:'$329,000', status:'Quoted', zip:'84101', policy:'POL-2024-0672' },
+      { lat:39.42, lng:-84.41, name:'Bristol Restaurant Group Inc.', products:["Liquor Liability", "Property"], premium:'$361,000', status:'Quoted', zip:'45202', policy:'POL-2024-0673' },
+      { lat:45.73, lng:-122.89, name:'Redwood Coffee Co.', products:["Commercial Auto"], premium:'$363,000', status:'Active', zip:'97204', policy:'POL-2024-0674' },
+      { lat:39.71, lng:-75.2, name:'Foxglove Catering LLC', products:["Professional Liability"], premium:'$166,000', status:'Active', zip:'19801', policy:'POL-2024-0675' },
+      { lat:32.14, lng:-110.62, name:'Northstar Marina Partners', products:["Professional Liability"], premium:'$276,000', status:'Active', zip:'85701', policy:'POL-2024-0676' },
+      { lat:42.91, lng:-71.36, name:'Cascade Yoga Studio', products:["Property", "Umbrella"], premium:'$354,000', status:'Active', zip:'03101', policy:'POL-2024-0677' },
+      { lat:32.45, lng:-90.46, name:'Golden Gate Holdings', products:["Commercial Auto", "General Liability"], premium:'$484,000', status:'Bound', zip:'39201', policy:'POL-2024-0678' },
+      { lat:30.53, lng:-87.57, name:'Harbor Bakery Inc.', products:["Workers Comp"], premium:'$488,000', status:'Bound', zip:'32501', policy:'POL-2024-0679' },
+      { lat:47.26, lng:-122.18, name:'Foxglove Distillery LLC', products:["Professional Liability"], premium:'$301,000', status:'Active', zip:'98101', policy:'POL-2024-0680' },
+      { lat:40.67, lng:-73.86, name:'Foxglove Distillery Inc.', products:["Workers Comp"], premium:'$195,000', status:'Quoted', zip:'10001', policy:'POL-2024-0681' },
+      { lat:41.19, lng:-95.84, name:'Westgate Holdings LLC', products:["Workers Comp"], premium:'$66,000', status:'Bound', zip:'68102', policy:'POL-2024-0682' },
+      { lat:39.15, lng:-95.91, name:'Harbor Landscaping Group', products:["Cyber Liability"], premium:'$483,000', status:'Active', zip:'66603', policy:'POL-2024-0683' },
+      { lat:41.95, lng:-71.42, name:'Vanguard Wellness Group', products:["Property"], premium:'$37,000', status:'Quoted', zip:'02903', policy:'POL-2024-0684' },
+      { lat:61.04, lng:-149.98, name:'Nova Plumbing Partners', products:["Commercial Auto"], premium:'$33,000', status:'Active', zip:'99501', policy:'POL-2024-0685' },
+      { lat:43.31, lng:-116.0, name:'Harbor Landscaping Inc.', products:["Commercial Auto"], premium:'$372,000', status:'Quoted', zip:'83702', policy:'POL-2024-0686' },
+      { lat:30.59, lng:-87.41, name:'Golden Gate Bistro Co.', products:["General Liability"], premium:'$266,000', status:'Quoted', zip:'32501', policy:'POL-2024-0687' },
+      { lat:39.77, lng:-75.07, name:'Summit Crossfit LLC', products:["Professional Liability", "Property"], premium:'$337,000', status:'Active', zip:'19103', policy:'POL-2024-0688' },
+      { lat:60.91, lng:-149.68, name:'Redwood Distillery', products:["Property", "General Liability"], premium:'$436,000', status:'Active', zip:'99501', policy:'POL-2024-0689' },
+      { lat:29.84, lng:-89.84, name:'Delta Bakery Inc.', products:["Liquor Liability"], premium:'$189,000', status:'Active', zip:'70112', policy:'POL-2024-0690' },
+      { lat:40.02, lng:-75.29, name:'Redwood Construction Co.', products:["Liquor Liability", "Workers Comp"], premium:'$214,000', status:'Quoted', zip:'19103', policy:'POL-2024-0691' },
+      { lat:33.48, lng:-86.51, name:'Harbor Yoga Studio Inc.', products:["Cyber Liability", "Commercial Auto"], premium:'$105,000', status:'Active', zip:'35203', policy:'POL-2024-0692' },
+      { lat:31.47, lng:-106.83, name:'Lone Star Coffee', products:["Cyber Liability", "Workers Comp"], premium:'$438,000', status:'Bound', zip:'79901', policy:'POL-2024-0693' },
+      { lat:25.56, lng:-80.09, name:'Monarch Wellness Inc.', products:["Liquor Liability"], premium:'$337,000', status:'Quoted', zip:'33131', policy:'POL-2024-0694' },
+      { lat:41.84, lng:-72.52, name:'Timberline Holdings Partners', products:["General Liability"], premium:'$310,000', status:'Active', zip:'06103', policy:'POL-2024-0695' },
+      { lat:37.98, lng:-85.74, name:'Cascade HVAC LLC', products:["Property", "Commercial Auto"], premium:'$419,000', status:'Quoted', zip:'40202', policy:'POL-2024-0696' },
+      { lat:40.93, lng:-105.13, name:'Redwood Salon Co.', products:["Commercial Auto"], premium:'$279,000', status:'Active', zip:'82001', policy:'POL-2024-0697' },
+      { lat:32.5, lng:-86.63, name:'Westgate Roofing Partners', products:["Umbrella"], premium:'$196,000', status:'Quoted', zip:'36104', policy:'POL-2024-0698' },
+      { lat:32.43, lng:-97.16, name:'Nova Crossfit Co.', products:["Commercial Auto", "Umbrella"], premium:'$84,000', status:'Active', zip:'76102', policy:'POL-2024-0699' },
+      { lat:43.11, lng:-85.6, name:'Liberty Catering Group', products:["Workers Comp", "Professional Liability"], premium:'$423,000', status:'Active', zip:'49503', policy:'POL-2024-0700' },
+      { lat:46.69, lng:-96.97, name:'Meadowbrook Storage Group', products:["Property"], premium:'$62,000', status:'Bound', zip:'58102', policy:'POL-2024-0701' },
+      { lat:47.65, lng:-117.16, name:'Prairie Brewing', products:["Cyber Liability"], premium:'$216,000', status:'Active', zip:'99201', policy:'POL-2024-0702' },
+      { lat:32.9, lng:-97.24, name:'Beacon Brewing LLC', products:["General Liability"], premium:'$168,000', status:'Active', zip:'76102', policy:'POL-2024-0703' },
+      { lat:28.79, lng:-81.41, name:'Granite Veterinary LLC', products:["Umbrella"], premium:'$334,000', status:'Active', zip:'32801', policy:'POL-2024-0704' },
+      { lat:40.06, lng:-75.27, name:'Peregrine Property Mgmt Group', products:["Commercial Auto"], premium:'$466,000', status:'Active', zip:'19801', policy:'POL-2024-0705' },
+      { lat:61.2, lng:-149.93, name:'Summit Physical Therapy Inc.', products:["Property", "Professional Liability"], premium:'$192,000', status:'Bound', zip:'99501', policy:'POL-2024-0706' },
+      { lat:47.47, lng:-117.13, name:'Prairie Consulting', products:["Cyber Liability", "General Liability"], premium:'$45,000', status:'Bound', zip:'99201', policy:'POL-2024-0707' },
+      { lat:33.76, lng:-118.39, name:'Falcon Salon Inc.', products:["Property"], premium:'$67,000', status:'Quoted', zip:'90210', policy:'POL-2024-0708' },
+      { lat:40.83, lng:-74.06, name:'Riverside Yoga Studio LLC', products:["Professional Liability"], premium:'$33,000', status:'Bound', zip:'11201', policy:'POL-2024-0709' },
+      { lat:46.73, lng:-113.85, name:'Peregrine Physical Therapy', products:["Commercial Auto"], premium:'$262,000', status:'Active', zip:'59802', policy:'POL-2024-0710' },
+      { lat:35.25, lng:-97.26, name:'Vanguard Wellness LLC', products:["Professional Liability", "Property"], premium:'$482,000', status:'Quoted', zip:'73102', policy:'POL-2024-0711' },
+      { lat:46.61, lng:-112.18, name:'Emberly Construction', products:["Property"], premium:'$428,000', status:'Quoted', zip:'59601', policy:'POL-2024-0712' },
+      { lat:35.86, lng:-78.76, name:'Ironwood Manufacturing LLC', products:["Professional Liability", "Property"], premium:'$212,000', status:'Bound', zip:'27601', policy:'POL-2024-0713' },
+      { lat:44.16, lng:-73.3, name:'Westgate Property Mgmt Inc.', products:["Property"], premium:'$95,000', status:'Active', zip:'05401', policy:'POL-2024-0714' },
+      { lat:42.99, lng:-85.56, name:'Delta Veterinary', products:["Property", "Cyber Liability"], premium:'$406,000', status:'Active', zip:'49503', policy:'POL-2024-0715' },
+      { lat:46.78, lng:-96.95, name:'Zephyr Catering Partners', products:["Workers Comp"], premium:'$201,000', status:'Bound', zip:'58102', policy:'POL-2024-0716' },
+      { lat:31.76, lng:-106.26, name:'Falcon Coffee', products:["Umbrella"], premium:'$256,000', status:'Quoted', zip:'79901', policy:'POL-2024-0717' },
+      { lat:33.66, lng:-111.76, name:'Golden Gate Brewing LLC', products:["Cyber Liability"], premium:'$484,000', status:'Active', zip:'85004', policy:'POL-2024-0718' },
+      { lat:39.42, lng:-94.88, name:'Granite Construction Inc.', products:["Commercial Auto"], premium:'$102,000', status:'Active', zip:'64106', policy:'POL-2024-0719' },
+      { lat:34.07, lng:-118.2, name:'Meadowbrook Bakery', products:["Commercial Auto", "Liquor Liability"], premium:'$240,000', status:'Bound', zip:'92701', policy:'POL-2024-0720' },
+      { lat:38.02, lng:-81.85, name:'Blue Ridge Storage Group', products:["Workers Comp", "Property"], premium:'$321,000', status:'Active', zip:'25301', policy:'POL-2024-0721' },
+      { lat:39.73, lng:-80.08, name:'Quarry Bakery', products:["Commercial Auto", "Property"], premium:'$180,000', status:'Quoted', zip:'26501', policy:'POL-2024-0722' },
+      { lat:26.05, lng:-80.33, name:'Northstar Logistics LLC', products:["Umbrella"], premium:'$419,000', status:'Active', zip:'33131', policy:'POL-2024-0723' },
+      { lat:27.24, lng:-82.57, name:'Granite HVAC Co.', products:["Umbrella", "Professional Liability"], premium:'$114,000', status:'Quoted', zip:'34236', policy:'POL-2024-0724' },
+      { lat:47.08, lng:-114.23, name:'Redwood Bistro LLC', products:["Commercial Auto"], premium:'$158,000', status:'Active', zip:'59802', policy:'POL-2024-0725' },
+      { lat:34.93, lng:-89.91, name:'Yellowstone Auto Group LLC', products:["Commercial Auto"], premium:'$301,000', status:'Active', zip:'38103', policy:'POL-2024-0726' },
+      { lat:37.63, lng:-122.12, name:'Canyon Consulting LLC', products:["Commercial Auto", "Liquor Liability"], premium:'$104,000', status:'Active', zip:'94103', policy:'POL-2024-0727' },
+      { lat:38.13, lng:-122.39, name:'Bristol Dental LLC', products:["Liquor Liability", "Cyber Liability"], premium:'$314,000', status:'Quoted', zip:'94612', policy:'POL-2024-0728' },
+      { lat:32.19, lng:-90.45, name:'Falcon Events LLC', products:["Professional Liability"], premium:'$182,000', status:'Active', zip:'39201', policy:'POL-2024-0729' },
+      { lat:35.55, lng:-97.72, name:'Sunset Holdings LLC', products:["Property"], premium:'$323,000', status:'Quoted', zip:'73102', policy:'POL-2024-0730' },
+      { lat:39.97, lng:-85.97, name:'Pioneer Fitness Inc.', products:["Commercial Auto"], premium:'$371,000', status:'Quoted', zip:'46204', policy:'POL-2024-0731' },
+      { lat:33.11, lng:-80.0, name:'Juniper Auto Group', products:["General Liability"], premium:'$490,000', status:'Quoted', zip:'29401', policy:'POL-2024-0732' },
+      { lat:35.01, lng:-106.5, name:'Stonebridge Roofing Inc.', products:["Umbrella"], premium:'$201,000', status:'Active', zip:'87102', policy:'POL-2024-0733' },
+      { lat:41.92, lng:-93.36, name:'Lone Star Brewing LLC', products:["Cyber Liability", "Commercial Auto"], premium:'$251,000', status:'Active', zip:'50309', policy:'POL-2024-0734' },
+      { lat:32.59, lng:-85.98, name:'Stonebridge Physical Therapy Inc.', products:["Professional Liability"], premium:'$98,000', status:'Active', zip:'36104', policy:'POL-2024-0735' },
+      { lat:41.24, lng:-95.67, name:'Frontier Holdings', products:["Professional Liability", "General Liability"], premium:'$234,000', status:'Quoted', zip:'68102', policy:'POL-2024-0736' },
+      { lat:41.82, lng:-87.59, name:'Bristol Cleaning Services Co.', products:["Cyber Liability"], premium:'$173,000', status:'Quoted', zip:'60602', policy:'POL-2024-0737' },
+      { lat:31.44, lng:-106.26, name:'Quarry Dental LLC', products:["Commercial Auto"], premium:'$139,000', status:'Active', zip:'79901', policy:'POL-2024-0738' },
+      { lat:40.51, lng:-74.13, name:'Vanguard Marina LLC', products:["Umbrella"], premium:'$238,000', status:'Active', zip:'10001', policy:'POL-2024-0739' },
+      { lat:32.04, lng:-106.39, name:'Blue Ridge Restaurant Group Partners', products:["Professional Liability"], premium:'$331,000', status:'Quoted', zip:'79901', policy:'POL-2024-0740' },
+      { lat:35.14, lng:-106.6, name:'Northstar Plumbing LLC', products:["Professional Liability", "Liquor Liability", "Umbrella"], premium:'$400,000', status:'Quoted', zip:'87102', policy:'POL-2024-0741' },
+      { lat:40.98, lng:-74.27, name:'Ironwood Yoga Studio LLC', products:["Liquor Liability"], premium:'$207,000', status:'Active', zip:'07030', policy:'POL-2024-0742' },
+      { lat:39.13, lng:-76.68, name:'Sunset Bistro Partners', products:["Professional Liability"], premium:'$288,000', status:'Active', zip:'21201', policy:'POL-2024-0743' },
+      { lat:41.6, lng:-71.69, name:'Emberly Crossfit', products:["Workers Comp"], premium:'$448,000', status:'Quoted', zip:'02903', policy:'POL-2024-0744' },
+      { lat:41.1, lng:-95.79, name:'Evergreen Restaurant Group', products:["Liquor Liability"], premium:'$31,000', status:'Active', zip:'68102', policy:'POL-2024-0745' },
+      { lat:33.6, lng:-117.67, name:'Meadowbrook Auto Group Co.', products:["Liquor Liability"], premium:'$282,000', status:'Active', zip:'92701', policy:'POL-2024-0746' },
+      { lat:38.46, lng:-85.72, name:'Atlas Marina', products:["Professional Liability", "Property"], premium:'$260,000', status:'Active', zip:'40202', policy:'POL-2024-0747' },
+      { lat:28.76, lng:-81.08, name:'Falcon Roofing Partners', products:["Liquor Liability"], premium:'$443,000', status:'Bound', zip:'32801', policy:'POL-2024-0748' },
+      { lat:21.33, lng:-157.53, name:'Coastal Coffee Partners', products:["Professional Liability"], premium:'$138,000', status:'Active', zip:'96813', policy:'POL-2024-0749' },
+      { lat:27.47, lng:-82.67, name:'Riverside Yoga Studio Inc.', products:["Professional Liability"], premium:'$64,000', status:'Active', zip:'34236', policy:'POL-2024-0750' },
+      { lat:30.45, lng:-98.06, name:'Cascade Bistro', products:["Commercial Auto"], premium:'$85,000', status:'Active', zip:'78701', policy:'POL-2024-0751' },
+      { lat:39.65, lng:-75.05, name:'Emberly Restaurant Group Inc.', products:["Property", "Umbrella"], premium:'$486,000', status:'Active', zip:'19103', policy:'POL-2024-0752' },
+      { lat:35.26, lng:-90.38, name:'Prairie Storage Partners', products:["Workers Comp", "Liquor Liability"], premium:'$107,000', status:'Quoted', zip:'38103', policy:'POL-2024-0753' },
+      { lat:42.81, lng:-71.41, name:'Cascade Marina', products:["Property", "Workers Comp"], premium:'$123,000', status:'Active', zip:'03101', policy:'POL-2024-0754' },
+      { lat:33.8, lng:-86.78, name:'Crestview Restaurant Group Group', products:["Commercial Auto", "Liquor Liability"], premium:'$382,000', status:'Quoted', zip:'35203', policy:'POL-2024-0755' },
+      { lat:35.1, lng:-89.73, name:'Coastal Marina LLC', products:["Cyber Liability", "Professional Liability", "Umbrella"], premium:'$141,000', status:'Bound', zip:'38103', policy:'POL-2024-0756' },
+      { lat:28.72, lng:-81.51, name:'Copper Hill Restaurant Group', products:["Workers Comp"], premium:'$385,000', status:'Active', zip:'32801', policy:'POL-2024-0757' },
+      { lat:37.49, lng:-122.18, name:'Juniper Restaurant Group Inc.', products:["Umbrella"], premium:'$376,000', status:'Bound', zip:'95113', policy:'POL-2024-0758' },
+      { lat:39.81, lng:-86.31, name:'Stonebridge Brewing Inc.', products:["Commercial Auto", "Workers Comp"], premium:'$213,000', status:'Active', zip:'46204', policy:'POL-2024-0759' },
+      { lat:41.04, lng:-74.0, name:'Cascade Landscaping LLC', products:["Professional Liability"], premium:'$86,000', status:'Active', zip:'11201', policy:'POL-2024-0760' },
+      { lat:39.46, lng:-119.75, name:'Cascade Physical Therapy Co.', products:["Property"], premium:'$198,000', status:'Active', zip:'89501', policy:'POL-2024-0761' },
+      { lat:21.55, lng:-157.93, name:'Oakmont Marina Inc.', products:["Umbrella", "Cyber Liability"], premium:'$390,000', status:'Quoted', zip:'96813', policy:'POL-2024-0762' },
+      { lat:61.06, lng:-149.7, name:'Westgate Landscaping LLC', products:["Cyber Liability"], premium:'$273,000', status:'Quoted', zip:'99501', policy:'POL-2024-0763' },
+      { lat:38.38, lng:-90.22, name:'Redwood Construction LLC', products:["Liquor Liability"], premium:'$40,000', status:'Active', zip:'63101', policy:'POL-2024-0764' },
+      { lat:39.52, lng:-76.62, name:'Blue Ridge Crossfit Inc.', products:["Workers Comp"], premium:'$103,000', status:'Active', zip:'21201', policy:'POL-2024-0765' },
+      { lat:44.57, lng:-73.03, name:'Yellowstone Veterinary', products:["Commercial Auto", "Professional Liability"], premium:'$175,000', status:'Quoted', zip:'05401', policy:'POL-2024-0766' },
+      { lat:34.04, lng:-118.41, name:'Frontier Salon', products:["General Liability"], premium:'$245,000', status:'Active', zip:'90012', policy:'POL-2024-0767' },
+      { lat:36.14, lng:-114.89, name:'Willow Wellness LLC', products:["Umbrella"], premium:'$477,000', status:'Quoted', zip:'89101', policy:'POL-2024-0768' },
+      { lat:33.51, lng:-87.07, name:'Bristol Landscaping LLC', products:["Commercial Auto", "Workers Comp"], premium:'$308,000', status:'Quoted', zip:'35203', policy:'POL-2024-0769' },
+      { lat:37.85, lng:-122.29, name:'Granite Manufacturing LLC', products:["Commercial Auto"], premium:'$327,000', status:'Bound', zip:'94612', policy:'POL-2024-0770' },
+      { lat:43.11, lng:-71.27, name:'Crescent Auto Group LLC', products:["General Liability"], premium:'$90,000', status:'Active', zip:'03101', policy:'POL-2024-0771' },
+      { lat:40.98, lng:-111.83, name:'Emberly Events LLC', products:["Cyber Liability"], premium:'$201,000', status:'Active', zip:'84101', policy:'POL-2024-0772' },
+      { lat:36.05, lng:-95.88, name:'Silver Creek Logistics Partners', products:["Professional Liability"], premium:'$469,000', status:'Active', zip:'74103', policy:'POL-2024-0773' },
+      { lat:28.43, lng:-81.72, name:'Liberty Bistro LLC', products:["Cyber Liability"], premium:'$315,000', status:'Quoted', zip:'32801', policy:'POL-2024-0774' },
+      { lat:34.59, lng:-92.15, name:'Quarry Fitness LLC', products:["Cyber Liability"], premium:'$190,000', status:'Quoted', zip:'72201', policy:'POL-2024-0775' },
+      { lat:33.97, lng:-84.67, name:'Zephyr Brewing LLC', products:["Workers Comp"], premium:'$110,000', status:'Quoted', zip:'30303', policy:'POL-2024-0776' },
+      { lat:41.16, lng:-95.97, name:'Juniper Plumbing Inc.', products:["Property", "Liquor Liability"], premium:'$160,000', status:'Active', zip:'68102', policy:'POL-2024-0777' },
+      { lat:41.61, lng:-96.0, name:'Oakmont HVAC Inc.', products:["Professional Liability", "Umbrella"], premium:'$197,000', status:'Active', zip:'68102', policy:'POL-2024-0778' },
+      { lat:37.59, lng:-77.42, name:'Stonebridge Brewing LLC', products:["Umbrella", "Commercial Auto"], premium:'$436,000', status:'Active', zip:'23219', policy:'POL-2024-0779' },
+      { lat:30.56, lng:-91.32, name:'Meadowbrook Landscaping Partners', products:["Commercial Auto"], premium:'$368,000', status:'Quoted', zip:'70801', policy:'POL-2024-0780' },
+      { lat:35.41, lng:-89.96, name:'Monarch Storage Co.', products:["Property"], premium:'$363,000', status:'Quoted', zip:'38103', policy:'POL-2024-0781' },
+      { lat:29.6, lng:-95.26, name:'Timberline Storage Inc.', products:["General Liability", "Umbrella"], premium:'$127,000', status:'Active', zip:'77002', policy:'POL-2024-0782' },
+      { lat:29.51, lng:-95.6, name:'Zephyr Veterinary Partners', products:["Cyber Liability", "Liquor Liability"], premium:'$465,000', status:'Active', zip:'77002', policy:'POL-2024-0783' },
+      { lat:39.53, lng:-75.61, name:'Crescent Plumbing Co.', products:["Property"], premium:'$232,000', status:'Active', zip:'19801', policy:'POL-2024-0784' },
+      { lat:28.29, lng:-81.71, name:'Heritage Wellness LLC', products:["Cyber Liability"], premium:'$241,000', status:'Quoted', zip:'32801', policy:'POL-2024-0785' },
+      { lat:41.56, lng:-72.83, name:'Blue Ridge Construction Partners', products:["Liquor Liability"], premium:'$354,000', status:'Active', zip:'06103', policy:'POL-2024-0786' },
+      { lat:31.96, lng:-106.8, name:'Lone Star Auto Group', products:["Professional Liability"], premium:'$486,000', status:'Bound', zip:'79901', policy:'POL-2024-0787' },
+      { lat:35.2, lng:-106.38, name:'Canyon Marina Co.', products:["Professional Liability"], premium:'$292,000', status:'Quoted', zip:'87102', policy:'POL-2024-0788' },
+      { lat:47.97, lng:-117.13, name:'Northstar Distillery Inc.', products:["Professional Liability"], premium:'$420,000', status:'Active', zip:'99201', policy:'POL-2024-0789' },
+      { lat:46.82, lng:-111.87, name:'Delta Physical Therapy Group', products:["Property", "Professional Liability"], premium:'$79,000', status:'Active', zip:'59601', policy:'POL-2024-0790' },
+      { lat:39.43, lng:-84.55, name:'Northstar Storage', products:["Workers Comp"], premium:'$383,000', status:'Active', zip:'45202', policy:'POL-2024-0791' },
+      { lat:43.58, lng:-96.75, name:'Silver Creek Construction Co.', products:["Workers Comp"], premium:'$445,000', status:'Active', zip:'57104', policy:'POL-2024-0792' },
+      { lat:40.84, lng:-73.75, name:'Harbor Marina LLC', products:["Property"], premium:'$154,000', status:'Quoted', zip:'07030', policy:'POL-2024-0793' },
+      { lat:36.04, lng:-114.82, name:'Evergreen Events Inc.', products:["Property"], premium:'$464,000', status:'Bound', zip:'89101', policy:'POL-2024-0794' },
+      { lat:35.83, lng:-114.82, name:'Northstar Dental Inc.', products:["Property", "Liquor Liability"], premium:'$132,000', status:'Active', zip:'89101', policy:'POL-2024-0795' },
+      { lat:32.39, lng:-89.91, name:'Foxglove Plumbing Inc.', products:["Umbrella", "Cyber Liability"], premium:'$66,000', status:'Bound', zip:'39201', policy:'POL-2024-0796' },
+      { lat:29.59, lng:-98.19, name:'Frontier Coffee Inc.', products:["Professional Liability", "Cyber Liability"], premium:'$107,000', status:'Quoted', zip:'78205', policy:'POL-2024-0797' },
+      { lat:41.89, lng:-87.72, name:'Sable Physical Therapy', products:["Commercial Auto", "Workers Comp"], premium:'$39,000', status:'Active', zip:'60601', policy:'POL-2024-0798' },
+      { lat:38.45, lng:-81.54, name:'Westgate Yoga Studio LLC', products:["Umbrella"], premium:'$185,000', status:'Quoted', zip:'25301', policy:'POL-2024-0799' },
+      { lat:35.51, lng:-78.82, name:'Bristol Veterinary Co.', products:["Cyber Liability", "Commercial Auto"], premium:'$188,000', status:'Bound', zip:'27601', policy:'POL-2024-0800' },
+      { lat:30.53, lng:-98.0, name:'Coastal Bakery', products:["Umbrella", "Professional Liability"], premium:'$68,000', status:'Bound', zip:'78701', policy:'POL-2024-0801' },
+      { lat:33.23, lng:-111.81, name:'Peregrine Logistics LLC', products:["Property", "General Liability"], premium:'$261,000', status:'Active', zip:'85004', policy:'POL-2024-0802' },
+      { lat:42.03, lng:-87.85, name:'Canyon HVAC Inc.', products:["Liquor Liability"], premium:'$70,000', status:'Active', zip:'60601', policy:'POL-2024-0803' },
+      { lat:33.83, lng:-87.08, name:'Bristol Manufacturing Inc.', products:["Commercial Auto", "Cyber Liability"], premium:'$369,000', status:'Bound', zip:'35203', policy:'POL-2024-0804' },
+      { lat:27.76, lng:-82.67, name:'Beacon Dental LLC', products:["Cyber Liability"], premium:'$463,000', status:'Active', zip:'33602', policy:'POL-2024-0805' },
+      { lat:21.11, lng:-157.63, name:'Crestview Bakery Group', products:["Cyber Liability"], premium:'$430,000', status:'Active', zip:'96813', policy:'POL-2024-0806' },
+      { lat:42.21, lng:-71.23, name:'Timberline Wellness Group', products:["Commercial Auto"], premium:'$68,000', status:'Active', zip:'02108', policy:'POL-2024-0807' },
+      { lat:29.16, lng:-98.61, name:'Atlas Landscaping Group', products:["Cyber Liability", "Workers Comp"], premium:'$330,000', status:'Active', zip:'78205', policy:'POL-2024-0808' },
+      { lat:34.95, lng:-81.15, name:'Frontier Consulting Group', products:["Workers Comp"], premium:'$335,000', status:'Quoted', zip:'28202', policy:'POL-2024-0809' },
+      { lat:21.46, lng:-157.64, name:'Summit Construction', products:["Umbrella"], premium:'$227,000', status:'Quoted', zip:'96813', policy:'POL-2024-0810' },
+      { lat:33.19, lng:-111.8, name:'Harbor Cleaning Services Co.', products:["Commercial Auto"], premium:'$198,000', status:'Bound', zip:'85004', policy:'POL-2024-0811' },
+      { lat:25.48, lng:-80.04, name:'Stonebridge Yoga Studio Partners', products:["General Liability"], premium:'$90,000', status:'Bound', zip:'33131', policy:'POL-2024-0812' },
+      { lat:38.8, lng:-89.89, name:'Crescent Events Partners', products:["Umbrella"], premium:'$289,000', status:'Active', zip:'63101', policy:'POL-2024-0813' },
+      { lat:30.72, lng:-91.32, name:'Juniper Veterinary Co.', products:["Commercial Auto"], premium:'$52,000', status:'Active', zip:'70801', policy:'POL-2024-0814' },
+      { lat:30.11, lng:-87.44, name:'Falcon Construction Co.', products:["Cyber Liability", "General Liability"], premium:'$483,000', status:'Bound', zip:'32501', policy:'POL-2024-0815' },
+      { lat:39.91, lng:-74.83, name:'Orchard Distillery LLC', products:["Liquor Liability"], premium:'$88,000', status:'Active', zip:'19103', policy:'POL-2024-0816' },
+      { lat:32.57, lng:-80.08, name:'Granite Physical Therapy', products:["Property", "Umbrella"], premium:'$27,000', status:'Quoted', zip:'29401', policy:'POL-2024-0817' },
+      { lat:47.39, lng:-122.04, name:'Silver Creek Veterinary LLC', products:["Workers Comp"], premium:'$38,000', status:'Active', zip:'98101', policy:'POL-2024-0818' },
+      { lat:27.88, lng:-82.4, name:'Cascade Marina LLC', products:["Professional Liability"], premium:'$260,000', status:'Quoted', zip:'33602', policy:'POL-2024-0819' },
+      { lat:41.12, lng:-104.73, name:'Beacon HVAC LLC', products:["General Liability"], premium:'$360,000', status:'Quoted', zip:'82001', policy:'POL-2024-0820' },
+      { lat:32.66, lng:-96.64, name:'Crestview Consulting', products:["General Liability"], premium:'$435,000', status:'Quoted', zip:'75201', policy:'POL-2024-0821' },
+      { lat:38.98, lng:-94.89, name:'Golden Gate Property Mgmt', products:["Cyber Liability"], premium:'$155,000', status:'Active', zip:'64106', policy:'POL-2024-0822' },
+      { lat:43.29, lng:-85.4, name:'Lone Star Fitness Group', products:["Cyber Liability"], premium:'$170,000', status:'Quoted', zip:'49503', policy:'POL-2024-0823' },
+      { lat:39.39, lng:-80.1, name:'Stonebridge Physical Therapy Partners', products:["Liquor Liability", "Commercial Auto"], premium:'$365,000', status:'Active', zip:'26501', policy:'POL-2024-0824' },
+      { lat:33.46, lng:-112.08, name:'Bayside Distillery Partners', products:["Cyber Liability"], premium:'$71,000', status:'Bound', zip:'85004', policy:'POL-2024-0825' },
+      { lat:33.53, lng:-112.12, name:'Stonebridge Holdings LLC', products:["Commercial Auto"], premium:'$371,000', status:'Active', zip:'85004', policy:'POL-2024-0826' },
+      { lat:38.48, lng:-81.87, name:'Juniper Manufacturing', products:["Commercial Auto"], premium:'$248,000', status:'Active', zip:'25301', policy:'POL-2024-0827' },
+      { lat:30.13, lng:-97.4, name:'Zephyr Events Partners', products:["Cyber Liability", "Liquor Liability"], premium:'$316,000', status:'Active', zip:'78701', policy:'POL-2024-0828' },
+      { lat:38.28, lng:-121.81, name:'Cascade Manufacturing Inc.', products:["Commercial Auto"], premium:'$363,000', status:'Quoted', zip:'95814', policy:'POL-2024-0829' },
+      { lat:45.74, lng:-122.77, name:'Quarry Holdings', products:["Commercial Auto"], premium:'$116,000', status:'Active', zip:'97204', policy:'POL-2024-0830' },
+      { lat:39.21, lng:-119.87, name:'Bristol Dental LLC', products:["Commercial Auto"], premium:'$412,000', status:'Quoted', zip:'89501', policy:'POL-2024-0831' },
+      { lat:32.87, lng:-96.96, name:'Coastal Brewing Co.', products:["Umbrella"], premium:'$471,000', status:'Quoted', zip:'75201', policy:'POL-2024-0832' },
+      { lat:30.28, lng:-82.0, name:'Canyon Restaurant Group LLC', products:["Commercial Auto"], premium:'$260,000', status:'Quoted', zip:'32202', policy:'POL-2024-0833' },
+      { lat:35.73, lng:-97.19, name:'Sable Physical Therapy LLC', products:["Workers Comp"], premium:'$378,000', status:'Quoted', zip:'73102', policy:'POL-2024-0834' },
+      { lat:37.62, lng:-97.48, name:'Magnolia Yoga Studio LLC', products:["General Liability"], premium:'$381,000', status:'Active', zip:'67202', policy:'POL-2024-0835' },
+      { lat:42.16, lng:-70.96, name:'Westgate Logistics Inc.', products:["Property", "General Liability"], premium:'$179,000', status:'Bound', zip:'02108', policy:'POL-2024-0836' },
+      { lat:27.32, lng:-82.87, name:'Granite Events Co.', products:["Commercial Auto", "Property"], premium:'$266,000', status:'Active', zip:'34236', policy:'POL-2024-0837' },
+      { lat:32.84, lng:-97.01, name:'Peregrine Marina Inc.', products:["General Liability"], premium:'$77,000', status:'Quoted', zip:'75201', policy:'POL-2024-0838' },
+      { lat:30.79, lng:-90.95, name:'Delta Cleaning Services', products:["Umbrella", "General Liability"], premium:'$274,000', status:'Bound', zip:'70801', policy:'POL-2024-0839' },
+      { lat:31.77, lng:-106.33, name:'Zephyr Events LLC', products:["General Liability"], premium:'$295,000', status:'Active', zip:'79901', policy:'POL-2024-0840' },
+      { lat:30.0, lng:-90.04, name:'Beacon Events Inc.', products:["Professional Liability", "Property"], premium:'$343,000', status:'Quoted', zip:'70112', policy:'POL-2024-0841' },
+      { lat:40.72, lng:-111.93, name:'Granite Dental Group', products:["Commercial Auto"], premium:'$143,000', status:'Quoted', zip:'84101', policy:'POL-2024-0842' },
+      { lat:39.83, lng:-86.03, name:'Sable Storage LLC', products:["Umbrella"], premium:'$395,000', status:'Quoted', zip:'46204', policy:'POL-2024-0843' },
+      { lat:36.49, lng:-114.91, name:'Zephyr Plumbing LLC', products:["Liquor Liability", "Umbrella"], premium:'$131,000', status:'Active', zip:'89101', policy:'POL-2024-0844' },
+      { lat:32.9, lng:-80.19, name:'Pioneer Crossfit', products:["Cyber Liability"], premium:'$277,000', status:'Active', zip:'29401', policy:'POL-2024-0845' },
+      { lat:42.76, lng:-85.98, name:'Blue Ridge Roofing Partners', products:["Liquor Liability"], premium:'$114,000', status:'Quoted', zip:'49503', policy:'POL-2024-0846' },
+      { lat:41.98, lng:-72.78, name:'Redwood HVAC Group', products:["Property"], premium:'$274,000', status:'Active', zip:'06103', policy:'POL-2024-0847' },
+      { lat:43.82, lng:-116.01, name:'Foxglove Events', products:["Liquor Liability"], premium:'$461,000', status:'Quoted', zip:'83702', policy:'POL-2024-0848' },
+      { lat:32.79, lng:-117.44, name:'Ironwood Consulting LLC', products:["Professional Liability", "General Liability"], premium:'$425,000', status:'Quoted', zip:'92101', policy:'POL-2024-0849' },
+      { lat:43.19, lng:-71.15, name:'Orchard Bistro', products:["Professional Liability"], premium:'$470,000', status:'Active', zip:'03101', policy:'POL-2024-0850' },
+      { lat:34.84, lng:-106.8, name:'Willow Veterinary', products:["Professional Liability"], premium:'$103,000', status:'Quoted', zip:'87102', policy:'POL-2024-0851' },
+      { lat:34.96, lng:-106.9, name:'Pioneer Wellness Inc.', products:["General Liability", "Professional Liability"], premium:'$452,000', status:'Bound', zip:'87102', policy:'POL-2024-0852' },
+      { lat:43.47, lng:-116.43, name:'Beacon Roofing Inc.', products:["Property"], premium:'$102,000', status:'Quoted', zip:'83702', policy:'POL-2024-0853' },
+      { lat:34.95, lng:-92.54, name:'Stonebridge Catering Inc.', products:["Workers Comp", "General Liability"], premium:'$251,000', status:'Active', zip:'72201', policy:'POL-2024-0854' },
+      { lat:40.84, lng:-73.98, name:'Golden Gate Holdings LLC', products:["Liquor Liability"], premium:'$247,000', status:'Active', zip:'11201', policy:'POL-2024-0855' },
+      { lat:39.71, lng:-119.7, name:'Westgate Yoga Studio', products:["Umbrella"], premium:'$239,000', status:'Bound', zip:'89501', policy:'POL-2024-0856' },
+      { lat:38.84, lng:-121.33, name:'Liberty Consulting LLC', products:["Umbrella"], premium:'$485,000', status:'Quoted', zip:'95814', policy:'POL-2024-0857' },
+      { lat:43.28, lng:-71.32, name:'Willow Plumbing Group', products:["Commercial Auto", "Workers Comp"], premium:'$201,000', status:'Quoted', zip:'03101', policy:'POL-2024-0858' },
+      { lat:35.66, lng:-97.25, name:'Lone Star Bistro', products:["Liquor Liability"], premium:'$291,000', status:'Quoted', zip:'73102', policy:'POL-2024-0859' },
+      { lat:38.9, lng:-94.57, name:'Heritage Manufacturing LLC', products:["Liquor Liability", "General Liability"], premium:'$39,000', status:'Quoted', zip:'64106', policy:'POL-2024-0860' },
+      { lat:61.05, lng:-149.67, name:'Heritage Physical Therapy Inc.', products:["Professional Liability", "Workers Comp", "General Liability"], premium:'$455,000', status:'Active', zip:'99501', policy:'POL-2024-0861' },
+      { lat:41.98, lng:-87.72, name:'Ironwood Veterinary Inc.', products:["General Liability"], premium:'$257,000', status:'Active', zip:'60601', policy:'POL-2024-0862' },
+      { lat:43.17, lng:-85.32, name:'Peregrine Coffee', products:["Property", "Liquor Liability"], premium:'$178,000', status:'Active', zip:'49503', policy:'POL-2024-0863' },
+      { lat:47.07, lng:-113.84, name:'Zephyr Yoga Studio Inc.', products:["Property"], premium:'$78,000', status:'Active', zip:'59802', policy:'POL-2024-0864' },
+      { lat:33.81, lng:-117.64, name:'Evergreen Wellness Inc.', products:["Cyber Liability"], premium:'$449,000', status:'Bound', zip:'92701', policy:'POL-2024-0865' },
+      { lat:35.49, lng:-78.69, name:'Magnolia Distillery Group', products:["Workers Comp"], premium:'$371,000', status:'Quoted', zip:'27601', policy:'POL-2024-0866' },
+      { lat:35.53, lng:-97.51, name:'Canyon Storage Partners', products:["Cyber Liability"], premium:'$250,000', status:'Quoted', zip:'73102', policy:'POL-2024-0867' },
+      { lat:31.92, lng:-106.55, name:'Granite Yoga Studio', products:["Commercial Auto"], premium:'$91,000', status:'Quoted', zip:'79901', policy:'POL-2024-0868' },
+      { lat:32.97, lng:-117.43, name:'Riverside Wellness LLC', products:["Liquor Liability"], premium:'$311,000', status:'Active', zip:'92101', policy:'POL-2024-0869' },
+      { lat:28.02, lng:-82.52, name:'Redwood Roofing', products:["Liquor Liability"], premium:'$85,000', status:'Active', zip:'33602', policy:'POL-2024-0870' },
+      { lat:41.93, lng:-93.76, name:'Juniper Fitness Co.', products:["Cyber Liability"], premium:'$49,000', status:'Active', zip:'50309', policy:'POL-2024-0871' },
+      { lat:38.9, lng:-94.36, name:'Juniper Fitness Inc.', products:["Professional Liability"], premium:'$470,000', status:'Active', zip:'64106', policy:'POL-2024-0872' },
+      { lat:34.74, lng:-92.42, name:'Willow Events LLC', products:["Commercial Auto", "Cyber Liability"], premium:'$393,000', status:'Quoted', zip:'72201', policy:'POL-2024-0873' },
+      { lat:25.95, lng:-80.19, name:'Copper Hill Veterinary LLC', products:["Liquor Liability"], premium:'$468,000', status:'Quoted', zip:'33131', policy:'POL-2024-0874' },
+      { lat:46.59, lng:-96.7, name:'Timberline Catering Inc.', products:["Cyber Liability"], premium:'$198,000', status:'Quoted', zip:'58102', policy:'POL-2024-0875' },
+      { lat:40.27, lng:-74.9, name:'Delta Construction Inc.', products:["General Liability", "Umbrella"], premium:'$347,000', status:'Quoted', zip:'19103', policy:'POL-2024-0876' },
+      { lat:41.63, lng:-93.88, name:'Orchard Holdings Group', products:["General Liability", "Umbrella", "Cyber Liability"], premium:'$121,000', status:'Bound', zip:'50309', policy:'POL-2024-0877' },
+      { lat:34.37, lng:-118.68, name:'Nova Crossfit LLC', products:["Property"], premium:'$150,000', status:'Quoted', zip:'90210', policy:'POL-2024-0878' },
+      { lat:47.62, lng:-117.22, name:'Sable Auto Group Inc.', products:["Commercial Auto"], premium:'$466,000', status:'Active', zip:'99201', policy:'POL-2024-0879' },
+      { lat:43.58, lng:-116.26, name:'Monarch Auto Group Inc.', products:["Professional Liability"], premium:'$75,000', status:'Quoted', zip:'83702', policy:'POL-2024-0880' },
+      { lat:33.37, lng:-87.03, name:'Foxglove Holdings Co.', products:["Cyber Liability"], premium:'$372,000', status:'Active', zip:'35203', policy:'POL-2024-0881' },
+      { lat:38.99, lng:-77.14, name:'Blue Ridge Coffee LLC', products:["Professional Liability"], premium:'$188,000', status:'Active', zip:'20001', policy:'POL-2024-0882' },
+      { lat:36.43, lng:-96.16, name:'Redwood Bistro Group', products:["Property"], premium:'$277,000', status:'Quoted', zip:'74103', policy:'POL-2024-0883' },
+      { lat:34.01, lng:-118.68, name:'Ironwood Auto Group LLC', products:["Professional Liability"], premium:'$272,000', status:'Active', zip:'90210', policy:'POL-2024-0884' },
+      { lat:36.24, lng:-95.7, name:'Blue Ridge Construction', products:["Professional Liability", "Commercial Auto", "Umbrella"], premium:'$358,000', status:'Active', zip:'74103', policy:'POL-2024-0885' },
+      { lat:41.31, lng:-95.97, name:'Vanguard Manufacturing Group', products:["Liquor Liability", "Commercial Auto"], premium:'$301,000', status:'Active', zip:'68102', policy:'POL-2024-0886' },
+      { lat:43.07, lng:-87.95, name:'Orchard Wellness LLC', products:["Commercial Auto"], premium:'$449,000', status:'Quoted', zip:'53202', policy:'POL-2024-0887' },
+      { lat:39.16, lng:-95.91, name:'Ironwood Consulting LLC', products:["Umbrella"], premium:'$454,000', status:'Quoted', zip:'66603', policy:'POL-2024-0888' },
+      { lat:32.57, lng:-110.73, name:'Riverside Cleaning Services', products:["Liquor Liability"], premium:'$403,000', status:'Quoted', zip:'85701', policy:'POL-2024-0889' },
+      { lat:45.22, lng:-122.96, name:'Atlas Restaurant Group Co.', products:["Umbrella", "Property"], premium:'$132,000', status:'Quoted', zip:'97204', policy:'POL-2024-0890' },
+      { lat:34.41, lng:-118.54, name:'Zephyr Auto Group Partners', products:["Commercial Auto", "Liquor Liability", "Professional Liability"], premium:'$364,000', status:'Active', zip:'90210', policy:'POL-2024-0891' },
+      { lat:43.42, lng:-115.88, name:'Frontier Fitness Co.', products:["General Liability"], premium:'$336,000', status:'Bound', zip:'83702', policy:'POL-2024-0892' },
+      { lat:41.03, lng:-73.87, name:'Meadowbrook Property Mgmt LLC', products:["Professional Liability", "Cyber Liability"], premium:'$473,000', status:'Quoted', zip:'10001', policy:'POL-2024-0893' },
+      { lat:39.33, lng:-80.29, name:'Yellowstone Wellness Inc.', products:["Cyber Liability"], premium:'$448,000', status:'Quoted', zip:'26501', policy:'POL-2024-0894' },
+      { lat:39.67, lng:-104.75, name:'Atlas Fitness Inc.', products:["Property"], premium:'$252,000', status:'Active', zip:'80202', policy:'POL-2024-0895' },
+      { lat:39.94, lng:-85.98, name:'Zephyr Consulting LLC', products:["Umbrella"], premium:'$438,000', status:'Quoted', zip:'46204', policy:'POL-2024-0896' },
+      { lat:39.58, lng:-86.16, name:'Evergreen Bistro Partners', products:["Property"], premium:'$28,000', status:'Active', zip:'46204', policy:'POL-2024-0897' },
+      { lat:39.67, lng:-75.29, name:'Peregrine Manufacturing LLC', products:["Property"], premium:'$362,000', status:'Quoted', zip:'19801', policy:'POL-2024-0898' },
+      { lat:45.64, lng:-122.6, name:'Coastal Holdings', products:["Professional Liability"], premium:'$90,000', status:'Active', zip:'97204', policy:'POL-2024-0899' },
+      { lat:45.77, lng:-122.4, name:'Crestview Salon Partners', products:["General Liability"], premium:'$379,000', status:'Quoted', zip:'97204', policy:'POL-2024-0900' },
+      { lat:37.85, lng:-122.28, name:'Copper Hill Fitness Inc.', products:["General Liability"], premium:'$462,000', status:'Active', zip:'94103', policy:'POL-2024-0901' },
+      { lat:30.69, lng:-91.26, name:'Redwood Bakery', products:["Workers Comp"], premium:'$289,000', status:'Active', zip:'70801', policy:'POL-2024-0902' },
+      { lat:39.45, lng:-85.87, name:'Nova Wellness LLC', products:["Property"], premium:'$196,000', status:'Active', zip:'46204', policy:'POL-2024-0903' },
+      { lat:47.83, lng:-121.99, name:'Oakmont Coffee Inc.', products:["Property", "Professional Liability", "Cyber Liability"], premium:'$193,000', status:'Active', zip:'98101', policy:'POL-2024-0904' },
+      { lat:37.63, lng:-77.72, name:'Falcon Catering LLC', products:["Workers Comp"], premium:'$455,000', status:'Active', zip:'23219', policy:'POL-2024-0905' },
+      { lat:42.77, lng:-88.08, name:'Frontier Marina LLC', products:["Property", "General Liability"], premium:'$422,000', status:'Quoted', zip:'53202', policy:'POL-2024-0906' },
+      { lat:44.44, lng:-73.49, name:'Willow Cleaning Services Inc.', products:["General Liability"], premium:'$494,000', status:'Active', zip:'05401', policy:'POL-2024-0907' },
+      { lat:32.09, lng:-110.73, name:'Golden Gate Salon Co.', products:["Commercial Auto"], premium:'$53,000', status:'Active', zip:'85701', policy:'POL-2024-0908' },
+      { lat:43.08, lng:-71.76, name:'Zephyr Bistro', products:["Cyber Liability"], premium:'$230,000', status:'Active', zip:'03101', policy:'POL-2024-0909' },
+      { lat:44.66, lng:-73.4, name:'Sable Salon', products:["Cyber Liability"], premium:'$262,000', status:'Bound', zip:'05401', policy:'POL-2024-0910' },
+      { lat:44.56, lng:-73.32, name:'Zephyr Salon LLC', products:["Workers Comp"], premium:'$325,000', status:'Active', zip:'05401', policy:'POL-2024-0911' },
+      { lat:30.05, lng:-81.59, name:'Golden Gate Cleaning Services Group', products:["Liquor Liability", "Workers Comp"], premium:'$285,000', status:'Active', zip:'32202', policy:'POL-2024-0912' },
+      { lat:39.69, lng:-104.83, name:'Willow Crossfit Group', products:["General Liability"], premium:'$55,000', status:'Active', zip:'80202', policy:'POL-2024-0913' },
+      { lat:41.65, lng:-93.61, name:'Westgate Veterinary LLC', products:["Liquor Liability"], premium:'$100,000', status:'Bound', zip:'50309', policy:'POL-2024-0914' },
+      { lat:41.66, lng:-93.77, name:'Summit Manufacturing', products:["Liquor Liability"], premium:'$54,000', status:'Active', zip:'50309', policy:'POL-2024-0915' },
+      { lat:34.31, lng:-118.37, name:'Ironwood Catering LLC', products:["Property"], premium:'$352,000', status:'Active', zip:'90210', policy:'POL-2024-0916' },
+      { lat:37.43, lng:-77.32, name:'Atlas Coffee LLC', products:["Workers Comp"], premium:'$461,000', status:'Quoted', zip:'23219', policy:'POL-2024-0917' },
+      { lat:45.84, lng:-122.59, name:'Meadowbrook Auto Group Co.', products:["General Liability"], premium:'$278,000', status:'Active', zip:'97204', policy:'POL-2024-0918' },
+      { lat:40.85, lng:-73.85, name:'Copper Hill HVAC Group', products:["Workers Comp"], premium:'$438,000', status:'Quoted', zip:'10001', policy:'POL-2024-0919' },
+      { lat:32.01, lng:-111.19, name:'Summit Roofing LLC', products:["General Liability"], premium:'$309,000', status:'Active', zip:'85701', policy:'POL-2024-0920' },
+      { lat:27.19, lng:-82.75, name:'Quarry Consulting LLC', products:["General Liability"], premium:'$126,000', status:'Active', zip:'34236', policy:'POL-2024-0921' },
+      { lat:38.87, lng:-94.31, name:'Crestview Crossfit LLC', products:["Property", "Professional Liability"], premium:'$125,000', status:'Active', zip:'64106', policy:'POL-2024-0922' },
+      { lat:36.41, lng:-86.49, name:'Blue Ridge Marina Co.', products:["Professional Liability"], premium:'$198,000', status:'Active', zip:'37201', policy:'POL-2024-0923' },
+      { lat:41.56, lng:-93.71, name:'Evergreen Bakery Co.', products:["Cyber Liability", "Workers Comp"], premium:'$58,000', status:'Active', zip:'50309', policy:'POL-2024-0924' },
+      { lat:27.61, lng:-82.8, name:'Pioneer Brewing', products:["Workers Comp"], premium:'$187,000', status:'Quoted', zip:'34236', policy:'POL-2024-0925' },
+      { lat:30.28, lng:-90.26, name:'Harbor Veterinary', products:["Umbrella"], premium:'$429,000', status:'Active', zip:'70112', policy:'POL-2024-0926' },
+      { lat:46.7, lng:-96.7, name:'Beacon Storage Co.', products:["Commercial Auto", "Professional Liability"], premium:'$397,000', status:'Active', zip:'58102', policy:'POL-2024-0927' },
+      { lat:29.62, lng:-98.41, name:'Granite Manufacturing Inc.', products:["Workers Comp", "Property"], premium:'$290,000', status:'Bound', zip:'78205', policy:'POL-2024-0928' },
+      { lat:36.05, lng:-86.87, name:'Atlas Distillery LLC', products:["Cyber Liability"], premium:'$351,000', status:'Quoted', zip:'37201', policy:'POL-2024-0929' },
+      { lat:39.31, lng:-80.16, name:'Pioneer Wellness Group', products:["Umbrella"], premium:'$242,000', status:'Bound', zip:'26501', policy:'POL-2024-0930' },
+      { lat:47.37, lng:-122.09, name:'Northstar Property Mgmt Inc.', products:["Professional Liability"], premium:'$176,000', status:'Bound', zip:'98101', policy:'POL-2024-0931' },
+      { lat:33.65, lng:-117.81, name:'Copper Hill Manufacturing', products:["Commercial Auto"], premium:'$264,000', status:'Bound', zip:'92701', policy:'POL-2024-0932' },
+      { lat:36.06, lng:-95.99, name:'Beacon Landscaping LLC', products:["Property"], premium:'$160,000', status:'Quoted', zip:'74103', policy:'POL-2024-0933' },
+      { lat:35.13, lng:-81.13, name:'Lakeshore Manufacturing', products:["Umbrella"], premium:'$499,000', status:'Active', zip:'28202', policy:'POL-2024-0934' },
+      { lat:33.48, lng:-84.49, name:'Nova Brewing LLC', products:["Workers Comp"], premium:'$153,000', status:'Active', zip:'30303', policy:'POL-2024-0935' },
+      { lat:38.41, lng:-90.12, name:'Magnolia Storage', products:["General Liability", "Cyber Liability"], premium:'$178,000', status:'Active', zip:'63101', policy:'POL-2024-0936' },
+      { lat:40.96, lng:-111.96, name:'Canyon Marina', products:["General Liability", "Property"], premium:'$359,000', status:'Quoted', zip:'84101', policy:'POL-2024-0937' },
+      { lat:30.68, lng:-87.41, name:'Crestview Physical Therapy Group', products:["Commercial Auto"], premium:'$394,000', status:'Bound', zip:'32501', policy:'POL-2024-0938' },
+      { lat:43.82, lng:-116.33, name:'Pioneer Catering Inc.', products:["Commercial Auto"], premium:'$461,000', status:'Quoted', zip:'83702', policy:'POL-2024-0939' },
+      { lat:42.27, lng:-71.01, name:'Magnolia Dental LLC', products:["Workers Comp"], premium:'$198,000', status:'Active', zip:'02108', policy:'POL-2024-0940' },
+      { lat:34.7, lng:-92.11, name:'Emberly Veterinary', products:["General Liability"], premium:'$315,000', status:'Active', zip:'72201', policy:'POL-2024-0941' },
+      { lat:26.47, lng:-79.73, name:'Frontier Cleaning Services', products:["Cyber Liability", "Property"], premium:'$129,000', status:'Bound', zip:'33401', policy:'POL-2024-0942' },
+      { lat:37.56, lng:-77.66, name:'Cascade Auto Group', products:["Umbrella", "General Liability", "Professional Liability"], premium:'$78,000', status:'Quoted', zip:'23219', policy:'POL-2024-0943' },
+      { lat:38.35, lng:-121.26, name:'Sable Distillery LLC', products:["Professional Liability"], premium:'$491,000', status:'Bound', zip:'95814', policy:'POL-2024-0944' },
+      { lat:38.89, lng:-94.73, name:'Monarch Holdings LLC', products:["General Liability"], premium:'$112,000', status:'Active', zip:'64106', policy:'POL-2024-0945' },
+      { lat:36.07, lng:-95.65, name:'Magnolia Property Mgmt Inc.', products:["Professional Liability"], premium:'$224,000', status:'Active', zip:'74103', policy:'POL-2024-0946' },
+      { lat:26.03, lng:-80.32, name:'Bristol Bakery LLC', products:["Umbrella"], premium:'$325,000', status:'Active', zip:'33131', policy:'POL-2024-0947' },
+      { lat:34.24, lng:-118.44, name:'Pioneer Fitness Co.', products:["Cyber Liability"], premium:'$334,000', status:'Active', zip:'90210', policy:'POL-2024-0948' },
+      { lat:36.62, lng:-119.74, name:'Juniper Wellness LLC', products:["Professional Liability"], premium:'$172,000', status:'Quoted', zip:'93721', policy:'POL-2024-0949' },
+      { lat:32.64, lng:-97.09, name:'Heritage Landscaping', products:["Liquor Liability", "Property"], premium:'$152,000', status:'Active', zip:'76102', policy:'POL-2024-0950' },
+      { lat:44.64, lng:-73.24, name:'Yellowstone Crossfit', products:["General Liability"], premium:'$147,000', status:'Active', zip:'05401', policy:'POL-2024-0951' },
+      { lat:38.9, lng:-90.16, name:'Yellowstone Consulting Inc.', products:["Property"], premium:'$490,000', status:'Bound', zip:'63101', policy:'POL-2024-0952' },
+      { lat:36.49, lng:-95.95, name:'Evergreen Holdings Inc.', products:["Workers Comp"], premium:'$234,000', status:'Bound', zip:'74103', policy:'POL-2024-0953' },
+      { lat:33.35, lng:-86.81, name:'Copper Hill Fitness Inc.', products:["Commercial Auto"], premium:'$220,000', status:'Active', zip:'35203', policy:'POL-2024-0954' },
+      { lat:35.72, lng:-97.59, name:'Summit Construction Inc.', products:["Liquor Liability", "Commercial Auto"], premium:'$368,000', status:'Quoted', zip:'73102', policy:'POL-2024-0955' },
+      { lat:29.75, lng:-95.66, name:'Orchard Bakery Group', products:["Commercial Auto", "Professional Liability"], premium:'$266,000', status:'Active', zip:'77002', policy:'POL-2024-0956' },
+      { lat:32.15, lng:-86.65, name:'Cascade Crossfit Partners', products:["Cyber Liability"], premium:'$111,000', status:'Active', zip:'36104', policy:'POL-2024-0957' },
+      { lat:47.05, lng:-113.87, name:'Prairie Wellness LLC', products:["General Liability"], premium:'$482,000', status:'Quoted', zip:'59802', policy:'POL-2024-0958' },
+      { lat:37.57, lng:-122.27, name:'Vanguard Salon', products:["Professional Liability"], premium:'$224,000', status:'Quoted', zip:'94103', policy:'POL-2024-0959' },
+      { lat:41.55, lng:-93.55, name:'Ironwood Veterinary Inc.', products:["Property", "Liquor Liability"], premium:'$490,000', status:'Active', zip:'50309', policy:'POL-2024-0960' },
+      { lat:39.67, lng:-83.05, name:'Summit Auto Group Group', products:["Professional Liability"], premium:'$137,000', status:'Active', zip:'43215', policy:'POL-2024-0961' },
+      { lat:46.64, lng:-114.22, name:'Meadowbrook Manufacturing Inc.', products:["Workers Comp", "Umbrella"], premium:'$345,000', status:'Active', zip:'59802', policy:'POL-2024-0962' },
+      { lat:44.27, lng:-73.18, name:'Stonebridge Restaurant Group Group', products:["Workers Comp"], premium:'$190,000', status:'Active', zip:'05401', policy:'POL-2024-0963' },
+      { lat:40.62, lng:-74.12, name:'Bayside Brewing LLC', products:["Umbrella"], premium:'$357,000', status:'Quoted', zip:'11201', policy:'POL-2024-0964' },
+      { lat:33.13, lng:-111.8, name:'Meadowbrook Dental', products:["Professional Liability"], premium:'$389,000', status:'Quoted', zip:'85004', policy:'POL-2024-0965' },
+      { lat:45.29, lng:-122.35, name:'Sable Auto Group Inc.', products:["Liquor Liability"], premium:'$195,000', status:'Active', zip:'97204', policy:'POL-2024-0966' },
+      { lat:39.92, lng:-75.42, name:'Yellowstone Distillery Inc.', products:["Commercial Auto"], premium:'$220,000', status:'Quoted', zip:'19801', policy:'POL-2024-0967' },
+      { lat:39.91, lng:-75.55, name:'Bristol Fitness Group', products:["Professional Liability"], premium:'$183,000', status:'Active', zip:'19801', policy:'POL-2024-0968' },
+      { lat:30.13, lng:-90.0, name:'Ironwood Yoga Studio LLC', products:["Property"], premium:'$102,000', status:'Bound', zip:'70112', policy:'POL-2024-0969' },
+      { lat:41.6, lng:-81.87, name:'Crestview HVAC LLC', products:["Workers Comp", "Professional Liability"], premium:'$167,000', status:'Active', zip:'44114', policy:'POL-2024-0970' },
+      { lat:38.55, lng:-81.95, name:'Meadowbrook Plumbing Partners', products:["Property", "Cyber Liability"], premium:'$400,000', status:'Active', zip:'25301', policy:'POL-2024-0971' },
+      { lat:43.44, lng:-116.17, name:'Yellowstone Logistics Group', products:["Cyber Liability"], premium:'$291,000', status:'Active', zip:'83702', policy:'POL-2024-0972' },
+      { lat:35.1, lng:-90.4, name:'Juniper Holdings Group', products:["Liquor Liability"], premium:'$129,000', status:'Active', zip:'38103', policy:'POL-2024-0973' },
+      { lat:32.55, lng:-79.9, name:'Riverside Logistics', products:["Commercial Auto"], premium:'$184,000', status:'Active', zip:'29401', policy:'POL-2024-0974' },
+      { lat:39.78, lng:-83.23, name:'Silver Creek Dental Partners', products:["Property"], premium:'$164,000', status:'Bound', zip:'43215', policy:'POL-2024-0975' },
+      { lat:36.1, lng:-78.74, name:'Bayside Crossfit LLC', products:["Cyber Liability"], premium:'$414,000', status:'Active', zip:'27601', policy:'POL-2024-0976' },
+      { lat:29.93, lng:-97.82, name:'Lone Star Veterinary Partners', products:["Liquor Liability"], premium:'$308,000', status:'Quoted', zip:'78701', policy:'POL-2024-0977' },
+      { lat:36.0, lng:-86.81, name:'Copper Hill Dental Inc.', products:["Commercial Auto"], premium:'$61,000', status:'Active', zip:'37201', policy:'POL-2024-0978' },
+      { lat:26.86, lng:-80.26, name:'Pioneer Fitness LLC', products:["Workers Comp", "Property"], premium:'$232,000', status:'Bound', zip:'33401', policy:'POL-2024-0979' },
+      { lat:39.86, lng:-119.9, name:'Juniper Dental', products:["General Liability"], premium:'$496,000', status:'Active', zip:'89501', policy:'POL-2024-0980' },
+      { lat:36.47, lng:-115.38, name:'Emberly Catering Partners', products:["Workers Comp", "Umbrella"], premium:'$388,000', status:'Bound', zip:'89101', policy:'POL-2024-0981' },
+      { lat:39.87, lng:-75.41, name:'Westgate Landscaping Inc.', products:["Property", "Commercial Auto"], premium:'$42,000', status:'Active', zip:'19801', policy:'POL-2024-0982' },
+      { lat:41.96, lng:-71.74, name:'Yellowstone Plumbing Co.', products:["Commercial Auto"], premium:'$373,000', status:'Active', zip:'02903', policy:'POL-2024-0983' },
+      { lat:44.8, lng:-93.22, name:'Yellowstone Marina Co.', products:["Professional Liability"], premium:'$354,000', status:'Quoted', zip:'55401', policy:'POL-2024-0984' },
+      { lat:36.1, lng:-115.08, name:'Lone Star Manufacturing Group', products:["Liquor Liability", "Cyber Liability"], premium:'$243,000', status:'Active', zip:'89101', policy:'POL-2024-0985' },
+      { lat:41.26, lng:-95.91, name:'Bayside Cleaning Services Partners', products:["Professional Liability", "General Liability"], premium:'$350,000', status:'Quoted', zip:'68102', policy:'POL-2024-0986' },
+      { lat:40.98, lng:-112.05, name:'Riverside Consulting Inc.', products:["General Liability"], premium:'$111,000', status:'Bound', zip:'84101', policy:'POL-2024-0987' },
+      { lat:40.47, lng:-73.8, name:'Meadowbrook Manufacturing Inc.', products:["Cyber Liability"], premium:'$112,000', status:'Active', zip:'10001', policy:'POL-2024-0988' },
+      { lat:33.23, lng:-112.33, name:'Juniper Crossfit', products:["Commercial Auto", "Umbrella"], premium:'$441,000', status:'Active', zip:'85004', policy:'POL-2024-0989' },
+      { lat:34.93, lng:-89.88, name:'Emberly Brewing Partners', products:["Cyber Liability", "Property", "Workers Comp"], premium:'$492,000', status:'Quoted', zip:'38103', policy:'POL-2024-0990' },
+      { lat:30.59, lng:-81.89, name:'Crescent Holdings Inc.', products:["Professional Liability"], premium:'$200,000', status:'Active', zip:'32202', policy:'POL-2024-0991' },
+      { lat:47.47, lng:-117.44, name:'Emberly Restaurant Group LLC', products:["General Liability"], premium:'$365,000', status:'Quoted', zip:'99201', policy:'POL-2024-0992' },
+      { lat:39.67, lng:-75.15, name:'Summit Landscaping', products:["Umbrella"], premium:'$273,000', status:'Bound', zip:'19103', policy:'POL-2024-0993' },
+      { lat:43.69, lng:-116.31, name:'Zephyr Events LLC', products:["Property", "Liquor Liability", "Workers Comp"], premium:'$229,000', status:'Bound', zip:'83702', policy:'POL-2024-0994' },
+      { lat:42.68, lng:-71.56, name:'Frontier Salon Inc.', products:["Cyber Liability"], premium:'$396,000', status:'Active', zip:'03101', policy:'POL-2024-0995' },
+      { lat:42.43, lng:-70.8, name:'Beacon Coffee Group', products:["Commercial Auto"], premium:'$288,000', status:'Bound', zip:'02108', policy:'POL-2024-0996' },
+      { lat:40.91, lng:-104.48, name:'Liberty Fitness LLC', products:["Workers Comp", "Commercial Auto"], premium:'$252,000', status:'Active', zip:'82001', policy:'POL-2024-0997' },
+      { lat:43.65, lng:-70.09, name:'Lone Star Roofing Inc.', products:["Commercial Auto", "Workers Comp"], premium:'$463,000', status:'Quoted', zip:'04101', policy:'POL-2024-0998' },
+      { lat:33.91, lng:-84.53, name:'Pioneer Coffee Co.', products:["General Liability", "Professional Liability"], premium:'$279,000', status:'Active', zip:'30303', policy:'POL-2024-0999' },
+      { lat:41.49, lng:-95.58, name:'Copper Hill Crossfit LLC', products:["Commercial Auto", "Workers Comp", "Umbrella"], premium:'$148,000', status:'Active', zip:'68102', policy:'POL-2024-1000' },
+    ];
+
+    let radarMarkers = [];
+
+    function radarPinPopup(pin) {
+      const statusColor = pin.status === 'Bound'  ? { bg:'#d1fae5', fg:'#065f46' }
+                        : pin.status === 'Quoted' ? { bg:'#dbeafe', fg:'#1e40af' }
+                        :                           { bg:'#ede9fe', fg:'#5b21b6' };
+      return `<div style="font-family:'DM Sans',sans-serif;min-width:190px">
+        <div style="font-weight:600;font-size:13px;color:#252424;margin-bottom:6px">${pin.name}</div>
+        <div style="font-size:12px;color:#868585;line-height:1.8">
+          <div>${pin.products.join(', ')}</div>
+          <div style="font-weight:500;color:#252424">${pin.premium}</div>
+          <div style="font-size:11px;color:#a0a0a0">${pin.policy} · ${pin.zip}</div>
+        </div>
+        <div style="margin-top:6px">
+          <span style="padding:2px 8px;border-radius:999px;font-size:11px;background:${statusColor.bg};color:${statusColor.fg}">${pin.status}</span>
+        </div>
+      </div>`;
+    }
+
+    function radarAddMarker(pin) {
+      if (!radarMap) return;
+      const m = L.circleMarker([pin.lat, pin.lng], {
+        radius: 6, fillColor: '#cf5c3f', color: '#fff', weight: 2, fillOpacity: 1,
+      }).addTo(radarMap);
+      m.bindPopup(radarPinPopup(pin), { closeButton: false, maxWidth: 240 });
+      m.on('mouseover', function() { this.openPopup(); });
+      m.on('click',     function() { this.openPopup(); });
+      radarMarkers.push(m);
+    }
+
+    function filterRadarPins() {
+      if (!radarMap) return;
+      radarMarkers.forEach(m => radarMap.removeLayer(m));
+      radarMarkers = [];
+
+      const zipVal    = (document.getElementById('radar-zip')?.value    || '').trim().toLowerCase();
+      const policyVal = (document.getElementById('radar-policy')?.value || '').trim().toLowerCase();
+      const statusVal = document.getElementById('radar-status-val')?.dataset.value || '';
+
+      const checkedProducts = new Set();
+      document.querySelectorAll('.radar-check-row').forEach(row => {
+        if (row.querySelector('.radar-checkbox')?.classList.contains('checked'))
+          checkedProducts.add(row.querySelector('.radar-check-label')?.textContent.trim());
+      });
+
+      RADAR_PINS.forEach(pin => {
+        if (zipVal    && !pin.zip.includes(zipVal))                                       return;
+        if (policyVal && !pin.policy.toLowerCase().includes(policyVal)
+                      && !pin.name.toLowerCase().includes(policyVal))                     return;
+        if (statusVal && pin.status !== statusVal)                                        return;
+        if (checkedProducts.size > 0 &&
+            !pin.products.some(p => checkedProducts.has(p)))                              return;
+        radarAddMarker(pin);
+      });
+    }
+
+    function initRadarMap() {
+      if (typeof L === 'undefined') return;
+      if (radarMap) { radarMap.remove(); radarMap = null; }
+      radarMarkers = [];
+
+      requestAnimationFrame(() => {
+        const mapEl = document.getElementById('radar-map');
+        if (!mapEl) return;
+
+        radarMap = L.map('radar-map', { zoomControl: true, attributionControl: true })
+          .setView([40.71, -74.01], 10);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>',
+          subdomains: 'abcd', maxZoom: 20,
+        }).addTo(radarMap);
+
+        RADAR_PINS.forEach(radarAddMarker);
+        radarMap.invalidateSize();
+      });
+    }
+
+
     function renderApplications() {
       // Applications page — shows only APP-type rows from GROWTH_ROWS
       const appRows = GROWTH_ROWS.filter(r => r.type === 'APP');
@@ -8666,15 +10018,21 @@
       const prevScroll = State.page === 'detail'
         ? (document.querySelector('.detail-main') || {}).scrollTop || 0
         : 0;
-      main.className = 'main' + (State.page === 'detail' ? ' detail-mode' : '');
+      main.className = 'main' + (State.page === 'detail' ? ' detail-mode' : '') + (State.page === 'radar' ? ' radar-mode' : '');
+      // Leaflet map instance can't survive the innerHTML swap that leaving
+      // the Radar page triggers — tear it down before navigating away so
+      // initRadarMap() always starts clean on the next visit.
+      if (radarMap && State.page !== 'radar') { radarMap.remove(); radarMap = null; }
       if      (State.page === 'home')           main.innerHTML = renderHome();
       else if (State.page === 'detail')         main.innerHTML = renderDetail();
       else if (State.page === 'applications')   main.innerHTML = renderApplications();
       else if (State.page === 'policies')       main.innerHTML = renderPolicies();
       else if (State.page === 'policy-detail')  main.innerHTML = renderPolicyDetail();
       else if (State.page === 'insights')       main.innerHTML = renderInsights();
+      else if (State.page === 'radar')          main.innerHTML = renderRadar();
       else                                      main.innerHTML = renderGrowth();
       mountInsightsCharts();
+      if (State.page === 'radar') initRadarMap();
       if (prevScroll > 0) {
         const dm = document.querySelector('.detail-main');
         if (dm) dm.scrollTop = prevScroll;
@@ -8702,8 +10060,8 @@
           (State.page === 'home' && t === 'home') ||
           (State.page === 'applications' && t === 'applications') ||
           ((State.page === 'policies' || State.page === 'policy-detail') && t === 'policies') ||
-          (State.page === 'actuarial' && t === 'actuarial') ||
           (State.page === 'insights' && t === 'insights') ||
+          (State.page === 'radar' && t === 'radar') ||
           ((State.page === 'growth' || State.page === 'detail') && t === 'growth'));
       });
 
@@ -8918,7 +10276,7 @@
       $$('.nav-item[data-nav], .crumb-link[data-nav]').forEach(n => {
         n.onclick = () => {
           const t = n.dataset.nav;
-          if (t === 'home' || t === 'growth' || t === 'applications' || t === 'actuarial' || t === 'policies' || t === 'insights') {
+          if (t === 'home' || t === 'growth' || t === 'applications' || t === 'radar' || t === 'policies' || t === 'insights') {
             State.page = t; State.currentId = null; State.mobileNavOpen = false; render();
           }
         };
@@ -10145,6 +11503,52 @@
           if (changed) render();
         };
         setTimeout(() => document.addEventListener('click', closeInsPopovers), 0);
+      }
+
+      // Radar page — map itself is (re)built by initRadarMap() (called from
+      // render()); this wires the filter panel's own controls, which live
+      // entirely in plain DOM state rather than State/render() since they
+      // only need to add/remove map markers, not re-render the page.
+      if (State.page === 'radar') {
+        document.querySelectorAll('.radar-tab').forEach(tab => {
+          tab.onclick = () => {
+            document.querySelectorAll('.radar-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+          };
+        });
+        document.querySelector('.radar-filter-close')?.addEventListener('click', () =>
+          document.querySelector('.radar-filter')?.classList.toggle('hidden'));
+        document.getElementById('radar-zip')?.addEventListener('input', filterRadarPins);
+        document.getElementById('radar-policy')?.addEventListener('input', filterRadarPins);
+        document.querySelectorAll('.radar-checkbox').forEach(cb => {
+          cb.addEventListener('click', (e) => {
+            e.preventDefault();
+            cb.classList.toggle('checked');
+            filterRadarPins();
+          });
+        });
+        const statusBtn  = document.getElementById('radar-status-btn');
+        const statusMenu = document.getElementById('radar-status-menu');
+        const statusVal  = document.getElementById('radar-status-val');
+        if (statusBtn && statusMenu) {
+          statusBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            statusMenu.style.display = statusMenu.style.display === 'none' ? 'block' : 'none';
+          });
+          statusMenu.querySelectorAll('.radar-dropdown-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const val = item.dataset.val;
+              statusVal.textContent = item.textContent;
+              statusVal.dataset.value = val;
+              statusMenu.querySelectorAll('.radar-dropdown-item').forEach(i => i.classList.remove('selected'));
+              item.classList.add('selected');
+              statusMenu.style.display = 'none';
+              filterRadarPins();
+            });
+          });
+          document.addEventListener('click', () => { if (statusMenu) statusMenu.style.display = 'none'; });
+        }
       }
     }
 
