@@ -1238,6 +1238,27 @@
     .ins-menu-filter-panel { padding: var(--sp-2) var(--sp-2) var(--sp-2) 28px; margin-bottom: var(--sp-1); max-height: 180px; overflow-y: auto; }
     .ins-menu-divider { height: 1px; background: var(--border-soft); margin: var(--sp-2) -4px; }
 
+    /* Table pagination footer (Figma 233-65442) */
+    .ins-table-pagination {
+      display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-3);
+      padding: var(--sp-2) var(--sp-4);
+      background: var(--bg-soft); border-top: 1px solid var(--border);
+      font-size: 12px; color: var(--fg);
+    }
+    .ins-rows-per-page { display: flex; align-items: center; gap: var(--sp-2); font-weight: 500; }
+    .ins-rows-per-page select {
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      background: var(--surface); color: var(--fg);
+      font-size: 14px; padding: 6px 8px; height: 30px;
+    }
+    .ins-page-btn {
+      width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+      background: transparent; border: 0; border-radius: var(--r-md); color: var(--fg); cursor: pointer;
+    }
+    .ins-page-btn:hover:not(:disabled) { background: var(--bg-accent); }
+    .ins-page-btn:disabled { color: var(--fg-muted); cursor: not-allowed; opacity: .5; }
+    .ins-page-indicator { font-weight: 500; min-width: 44px; text-align: center; }
+
     /* "Select Prebuild Report" drawer */
     .ins-report-section-label {
       font-size: 11px; font-weight: 600; color: var(--fg-muted);
@@ -3163,6 +3184,8 @@
       insightsTableFilters: {},            // { [tab]: { [colKey]: string[] | 'gte-N'/'lt-N' } } — per-column table filters
       insightsTableSort: {},               // { [tab]: { key, dir } } — per-tab table column sort
       insightsTableOpenFilter: null,       // "tab:colKey" of the currently open column-filter popover
+      insightsTablePage: {},                // { [tab]: number } — current page (1-based) for each persistent table
+      insightsTableRowsPerPage: {},          // { [tab]: number } — rows/page for each persistent table (default 10)
       insightsWidgetFilters: {},           // { [widgetKey]: { min, max } } — per-widget value-range filter (kebab "Filters" section)
       insightsMenuFilterOpen: null,        // 'show' | 'sort' | 'value' | 'date' | null — which Data/Filters sub-row is expanded in the open kebab
       insightsWidgetSort: {},              // { [widgetKey]: 'desc' | 'asc' } — bar-list widgets' Sort option (Data section)
@@ -5746,6 +5769,41 @@
       return out;
     }
 
+    // ---- Pagination (Figma 233-65442) — every persistent table slices its
+    // already-filtered/sorted rows down to one page; CSV export (which
+    // reads applyInsTableFilters directly, not this) always covers every
+    // matching row regardless of what page is currently showing. ----
+    const INS_TABLE_ROWS_PER_PAGE_OPTS = [10, 25, 50, 100];
+    function insTableRowsPerPage(tab) {
+      return State.insightsTableRowsPerPage[tab] || 10;
+    }
+    function paginateInsTableRows(tab, rows) {
+      const perPage = insTableRowsPerPage(tab);
+      const totalPages = Math.max(1, Math.ceil(rows.length / perPage));
+      const page = Math.min(Math.max(1, State.insightsTablePage[tab] || 1), totalPages);
+      State.insightsTablePage[tab] = page;
+      const start = (page - 1) * perPage;
+      return { pageRows: rows.slice(start, start + perPage), page, totalPages, totalRows: rows.length };
+    }
+    function renderInsTablePagination(tab, totalRows) {
+      const perPage = insTableRowsPerPage(tab);
+      const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
+      const page = Math.min(Math.max(1, State.insightsTablePage[tab] || 1), totalPages);
+      return `
+        <div class="ins-table-pagination">
+          <div class="ins-rows-per-page">
+            <span>Rows per page:</span>
+            <select data-ins-table-rpp="${tab}">
+              ${INS_TABLE_ROWS_PER_PAGE_OPTS.map(n => `<option value="${n}" ${n === perPage ? 'selected' : ''}>${n}</option>`).join('')}
+            </select>
+          </div>
+          <button class="ins-page-btn" data-ins-table-page="${tab}:prev" ${page <= 1 ? 'disabled' : ''} title="Previous page"><i class="ph ph-caret-left"></i></button>
+          <span class="ins-page-indicator">${page} / ${totalPages}</span>
+          <button class="ins-page-btn" data-ins-table-page="${tab}:next" ${page >= totalPages ? 'disabled' : ''} title="Next page"><i class="ph ph-caret-right"></i></button>
+        </div>
+      `;
+    }
+
     function insSortIcon(tab, key) {
       const sort = State.insightsTableSort[tab];
       if (!sort || sort.key !== key) return '<span class="sort-ic">↕</span>';
@@ -6707,7 +6765,7 @@
           ${renderInsTableChips('premium', INS_TABLE_COLS.premium)}
           ${(() => { const filteredRows = applyInsTableFilters('premium', tableRows, INS_TABLE_COLS.premium); return filteredRows.length === 0 ? `
             <div class="empty-state">No builds match the current filter.</div>
-          ` : `
+          ` : (() => { const { pageRows } = paginateInsTableRows('premium', filteredRows); return `
           <div class="tbl-wrap">
             <table class="gtable">
               <thead>
@@ -6716,7 +6774,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${filteredRows.map(r => `
+                ${pageRows.map(r => `
                   <tr>
                     <td>${r.build}</td>
                     <td class="num">${fmtUSD(r.written)}</td>
@@ -6730,7 +6788,8 @@
               </tbody>
             </table>
           </div>
-          `; })()}
+          ${renderInsTablePagination('premium', filteredRows.length)}
+          `; })(); })()}
         </div>
       `;
     }
@@ -6807,7 +6866,7 @@
           ${renderInsTableChips('renewal', INS_TABLE_COLS.renewal)}
           ${(() => { const filteredRows = applyInsTableFilters('renewal', tableRows, INS_TABLE_COLS.renewal); return filteredRows.length === 0 ? `
             <div class="empty-state">No builds match the current filter.</div>
-          ` : `
+          ` : (() => { const { pageRows } = paginateInsTableRows('renewal', filteredRows); return `
           <div class="tbl-wrap">
             <table class="gtable">
               <thead>
@@ -6816,7 +6875,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${filteredRows.map(r => `
+                ${pageRows.map(r => `
                   <tr>
                     <td>${r.build}</td>
                     <td class="num">${fmtUSD(r.renewal)}</td>
@@ -6828,7 +6887,8 @@
               </tbody>
             </table>
           </div>
-          `; })()}
+          ${renderInsTablePagination('renewal', filteredRows.length)}
+          `; })(); })()}
         </div>
       `;
     }
@@ -6889,7 +6949,7 @@
           ${renderInsTableChips('transactions', INS_TABLE_COLS.transactions)}
           ${(() => { const filteredRows = applyInsTableFilters('transactions', tableRows, INS_TABLE_COLS.transactions); return filteredRows.length === 0 ? `
             <div class="empty-state">No builds match the current filter.</div>
-          ` : `
+          ` : (() => { const { pageRows } = paginateInsTableRows('transactions', filteredRows); return `
           <div class="tbl-wrap">
             <table class="gtable">
               <thead>
@@ -6898,7 +6958,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${filteredRows.map(r => `
+                ${pageRows.map(r => `
                   <tr>
                     <td style="white-space:nowrap">${r.build}</td>
                     <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.insured}</td>
@@ -6914,7 +6974,8 @@
               </tbody>
             </table>
           </div>
-          `; })()}
+          ${renderInsTablePagination('transactions', filteredRows.length)}
+          `; })(); })()}
         </div>
       `;
     }
@@ -6990,7 +7051,7 @@
           ${renderInsTableChips('claim', INS_TABLE_COLS.claim)}
           ${(() => { const filteredRows = applyInsTableFilters('claim', tableRows, INS_TABLE_COLS.claim); return filteredRows.length === 0 ? `
             <div class="empty-state">No builds match the current filter.</div>
-          ` : `
+          ` : (() => { const { pageRows } = paginateInsTableRows('claim', filteredRows); return `
           <div class="tbl-wrap">
             <table class="gtable">
               <thead>
@@ -6999,7 +7060,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${filteredRows.map(r => `
+                ${pageRows.map(r => `
                   <tr>
                     <td>${r.build}</td>
                     <td class="num">${fmtUSD(r.written)}</td>
@@ -7015,7 +7076,8 @@
               </tbody>
             </table>
           </div>
-          `; })()}
+          ${renderInsTablePagination('claim', filteredRows.length)}
+          `; })(); })()}
         </div>
       `;
     }
@@ -7102,14 +7164,15 @@
           ${renderInsTableChips(tab, cols)}
           ${filteredRows.length === 0 ? `
             <div class="empty-state">No rows match the current filter.</div>
-          ` : `
+          ` : (() => { const { pageRows } = paginateInsTableRows(tab, filteredRows); return `
           <div class="tbl-wrap">
             <table class="gtable">
               <thead><tr>${cols.map(c => renderInsTableColHeader(tab, c, rows)).join('')}</tr></thead>
-              <tbody>${filteredRows.map(rowRenderer).join('')}</tbody>
+              <tbody>${pageRows.map(rowRenderer).join('')}</tbody>
             </table>
           </div>
-          `}
+          ${renderInsTablePagination(tab, filteredRows.length)}
+          `; })()}
         </div>
       `;
     }
@@ -11836,6 +11899,24 @@
           e.stopPropagation();
           const exp = getInsTableExportData(btn.dataset.insTableDownload);
           if (exp) downloadCSV(exp.filename, exp.rows, exp.columns);
+        };
+      });
+      // Insights table pagination — rows-per-page select and prev/next.
+      $$('[data-ins-table-rpp]').forEach(sel => {
+        sel.onchange = () => {
+          const tab = sel.dataset.insTableRpp;
+          State.insightsTableRowsPerPage[tab] = Number(sel.value);
+          State.insightsTablePage[tab] = 1;
+          render();
+        };
+      });
+      $$('[data-ins-table-page]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const [tab, dir] = btn.dataset.insTablePage.split(':');
+          const cur = State.insightsTablePage[tab] || 1;
+          State.insightsTablePage[tab] = dir === 'next' ? cur + 1 : Math.max(1, cur - 1);
+          render();
         };
       });
       // Report search — filters the drawer's cards in place, no render (so
