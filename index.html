@@ -5655,6 +5655,145 @@
       return State.insightsWidgetSort[key] || null;
     }
 
+    // ---- CSV download — every widget's kebab ("Download CSV") and every
+    // table's "Download CSV" button both funnel through this. ----
+    function csvEscape(v) {
+      const s = v == null ? '' : String(v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+    function downloadCSV(filename, rows, columns) {
+      const header = columns.map((c) => csvEscape(c.label)).join(',');
+      const body = rows.map((r) => columns.map((c) => csvEscape(typeof c.value === 'function' ? c.value(r) : r[c.key])).join(',')).join('\n');
+      const blob = new Blob([header + '\n' + body], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename.endsWith('.csv') ? filename : filename + '.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+    // Every chart/stat widget's own current data, in the exact shape its
+    // Table view already renders — computed fresh on click via the same
+    // get*FilteredData() helpers the charts use, so the CSV always matches
+    // whatever build/date-range filter is currently applied.
+    function getInsWidgetExportData(key) {
+      switch (key) {
+        case 'bound-ytd': {
+          const f = getPremiumFilteredData();
+          return { filename: 'bound-premium', columns: [{ key: 'm', label: 'Month' }, { key: 'value', label: 'Bound Premium' }], rows: f.barData };
+        }
+        case 'written-month': {
+          const f = getPremiumFilteredData();
+          return { filename: 'written-premium', columns: [{ key: 'm', label: 'Month' }, { key: 'value', label: 'Written Premium' }], rows: f.writtenData };
+        }
+        case 'bound-month': {
+          const f = getPremiumFilteredData();
+          return { filename: 'bound-premium-month', columns: [{ key: 'm', label: 'Month' }, { key: 'value', label: 'Bound Premium' }], rows: f.barData };
+        }
+        case 'lqb-trend': {
+          const rows = INSIGHTS_MONTHS.map((m, i) => {
+            const row = { m };
+            INSIGHTS_LINE_SERIES.forEach((s) => { row[s.key] = s.values[i]; });
+            return row;
+          });
+          return { filename: 'unique-leads-quotes-binds', columns: [{ key: 'm', label: 'Month' }, ...INSIGHTS_LINE_SERIES.map((s) => ({ key: s.key, label: s.label }))], rows };
+        }
+        case 'lqb-funnel':
+          return { filename: 'leads-quotes-binds-this-month', columns: [{ key: 'name', label: 'Stage' }, { key: 'value', label: 'Count' }], rows: INSIGHTS_FUNNEL.map((f) => ({ name: f.label, value: f.value })) };
+        case 'top-builds': {
+          const f = getPremiumFilteredData();
+          return { filename: 'top-builds', columns: [{ key: 'name', label: 'Build' }, { key: 'value', label: 'Written Premium' }], rows: f.topBuilds.map((b) => ({ name: b.label, value: b.value })) };
+        }
+        case 'top-states':
+          return { filename: 'top-states', columns: [{ key: 'name', label: 'State' }, { key: 'value', label: 'Written Premium' }], rows: INSIGHTS_TOP_STATES.map((s) => ({ name: s.label, value: s.value })) };
+        case 'renewed-premium': {
+          const f = getRenewalFilteredData();
+          return { filename: 'renewed-premium', columns: [{ key: 'm', label: 'Month' }, { key: 'value', label: 'Renewed Premium' }], rows: f.monthly.map((d) => ({ m: d.m, value: d.renewed })) };
+        }
+        case 'cancelled-premium': {
+          const f = getRenewalFilteredData();
+          return { filename: 'cancelled-premium', columns: [{ key: 'm', label: 'Month' }, { key: 'value', label: 'Cancelled Premium' }], rows: f.monthly.map((d) => ({ m: d.m, value: d.cancelled })) };
+        }
+        case 'upcoming-renewal': {
+          const f = getRenewalFilteredData();
+          return { filename: 'upcoming-renewal', columns: [{ key: 'value', label: 'Upcoming Renewal' }], rows: [{ value: f.upcomingRenewal }] };
+        }
+        case 'renewed-retention': {
+          const f = getRenewalFilteredData();
+          return { filename: 'renewed-retention', columns: [{ key: 'm', label: 'Month' }, { key: 'renewed', label: 'Bound Renewed' }, { key: 'cancelled', label: 'Cancelled' }], rows: f.monthly };
+        }
+        case 'renewal-status': {
+          const f = getRenewalFilteredData();
+          return { filename: 'renewal-status', columns: [{ key: 'name', label: 'Status' }, { key: 'value', label: 'Premium' }], rows: f.statusPie.map((s) => ({ name: s.label, value: s.value })) };
+        }
+        case 'gross-written': {
+          const f = getTransactionsFilteredData();
+          return { filename: 'gross-written-premium', columns: [{ key: 'm', label: 'Month' }, { key: 'value', label: 'Gross Written Premium' }], rows: f.chartData };
+        }
+        case 'partner-commission': {
+          const f = getTransactionsFilteredData();
+          return { filename: 'partner-commission', columns: [{ key: 'm', label: 'Month' }, { key: 'value', label: 'Partner Commission' }], rows: f.commissionData };
+        }
+        case 'gross-written-chart': {
+          const f = getTransactionsFilteredData();
+          return { filename: 'gross-written-by-effective-date', columns: [{ key: 'm', label: 'Month' }, { key: 'value', label: 'Gross Written Premium' }], rows: f.chartData };
+        }
+        case 'claims-earned':
+          return { filename: 'earned-premium', columns: [{ key: 'value', label: 'Earned Premium' }], rows: [{ value: CLAIMS_STATS.earnedPremium }] };
+        case 'claims-incurred':
+          return { filename: 'total-incurred', columns: [{ key: 'value', label: 'Total Incurred' }], rows: [{ value: CLAIMS_STATS.totalIncurred }] };
+        case 'claims-ultimate-loss':
+          return { filename: 'est-ultimate-loss', columns: [{ key: 'value', label: 'Est. Ultimate Loss' }], rows: [{ value: CLAIMS_STATS.ultimateLoss }] };
+        case 'claims-ibnr':
+          return { filename: 'ibnr', columns: [{ key: 'value', label: 'IBNR' }], rows: [{ value: CLAIMS_STATS.ibnr }] };
+        case 'claims-combo':
+          return { filename: 'earned-premium-ultimate-lr', columns: [{ key: 'm', label: 'Month' }, { key: 'earned', label: 'Earned Premium' }, { key: 'lr', label: 'Ultimate LR %' }], rows: CLAIMS_COMBO_DATA };
+        case 'claims-by-month':
+          return { filename: 'claims-by-month', columns: [{ key: 'm', label: 'Month' }, { key: 'open', label: 'Open Claims' }, { key: 'closed', label: 'Closed Claims' }], rows: CLAIMS_STACKED_DATA };
+        // Derived reports that only ever appear on the Customized Report dashboard
+        case 'earned-premium':
+          return { filename: 'earned-premium', columns: [{ key: 'value', label: 'Earned Premium' }], rows: [{ value: INSIGHTS_TABLE_ROWS.reduce((s, r) => s + r.earned, 0) }] };
+        case 'claims-open':
+          return { filename: 'total-open-claims', columns: [{ key: 'value', label: 'Open Claims' }], rows: [{ value: CLAIMS_TABLE_ROWS.reduce((s, r) => s + r.open, 0) }] };
+        case 'claims-new':
+          return { filename: 'total-new-claims', columns: [{ key: 'value', label: 'New Claims' }], rows: [{ value: CLAIMS_TABLE_ROWS.reduce((s, r) => s + r.claims, 0) }] };
+        default:
+          return null;
+      }
+    }
+    // Same idea as getInsWidgetExportData, but for the four persistent
+    // tables (and their Customized Report equivalents) — mirrors each
+    // tab body's own build-filter / date-window / column-filter logic
+    // exactly, so the CSV always matches what's on screen.
+    function getInsTableExportData(tab) {
+      const selected = State.insightsBuildFilter;
+      if (tab === 'premium') {
+        const rows = selected.length ? INSIGHTS_TABLE_ROWS.filter((r) => selected.includes(r.build)) : INSIGHTS_TABLE_ROWS;
+        return { filename: 'all-builds-by-earned-premium', columns: INS_TABLE_COLS.premium, rows: applyInsTableFilters('premium', rows, INS_TABLE_COLS.premium) };
+      }
+      if (tab === 'renewal') {
+        const windowed = getRenewalTableRows();
+        const rows = selected.length ? windowed.filter((r) => selected.includes(r.build)) : windowed;
+        return { filename: 'renewal-premium-by-build', columns: INS_TABLE_COLS.renewal, rows: applyInsTableFilters('renewal', rows, INS_TABLE_COLS.renewal) };
+      }
+      if (tab === 'transactions') {
+        const win = getInsightsDateWindow();
+        const dateFiltered = TRANSACTIONS_TABLE_ROWS.filter((r) => {
+          const idx = insMonthIndexFromDate(r.eff);
+          return idx >= win.start && idx <= win.end;
+        });
+        const rows = selected.length ? dateFiltered.filter((r) => selected.includes(r.build)) : dateFiltered;
+        return { filename: 'transactions', columns: INS_TABLE_COLS.transactions, rows: applyInsTableFilters('transactions', rows, INS_TABLE_COLS.transactions) };
+      }
+      if (tab === 'claim') {
+        const rows = selected.length ? CLAIMS_TABLE_ROWS.filter((r) => selected.includes(r.build)) : CLAIMS_TABLE_ROWS;
+        return { filename: 'claims-by-builds', columns: INS_TABLE_COLS.claim, rows: applyInsTableFilters('claim', rows, INS_TABLE_COLS.claim) };
+      }
+      if (tab === 'salesperson') {
+        return { filename: 'all-salesperson-premium-overview', columns: INS_TABLE_COLS.salesperson, rows: applyInsTableFilters('salesperson', insReportSalespersonRows(), INS_TABLE_COLS.salesperson) };
+      }
+      return null;
+    }
+
     // Widgets that get the Figma "Filters" chevron section (per node
     // 150-26661) instead of the plain flat category checklist: a "Premium"
     // row that filters the widget's own monthly bars/points by value range,
@@ -5828,20 +5967,21 @@
       const emptyMsg = (!showWhatToShow && !sortable && !filterCfg) ? `
         <div class="ins-menu-label" style="opacity:.7">No breakdown available for this value</div>
       ` : '';
-      // Figma 151-33236: reports living on a custom "Customized Report"
-      // dashboard get two extra rows at the bottom of every kebab — a plain
-      // "Download" action and a red "Remove from dashboard" action. Widgets
-      // on the four built-in tabs never pass `removable`, so they're
-      // unaffected.
-      const manageSection = removable ? `
+      // "Download" exports this widget's own current data as a CSV — every
+      // widget gets it. "Remove from dashboard" (Figma 151-33236) is still
+      // exclusive to reports living on the custom "Customized Report"
+      // dashboard, since built-in-tab widgets never pass `removable`.
+      const manageSection = `
         <div class="ins-menu-divider"></div>
-        <button class="ins-menu-item" style="width:100%;border:0;background:transparent;cursor:pointer">
-          <i class="ph ph-download-simple"></i><span>Download</span>
+        <button class="ins-menu-item" style="width:100%;border:0;background:transparent;cursor:pointer" data-ins-widget-download="${key}">
+          <i class="ph ph-download-simple"></i><span>Download CSV</span>
         </button>
-        <button class="ins-menu-item" style="width:100%;border:0;background:transparent;cursor:pointer;color:var(--err)" data-ins-report-remove="${key}">
-          <i class="ph ph-trash" style="color:var(--err)"></i><span>Remove from dashboard</span>
-        </button>
-      ` : '';
+        ${removable ? `
+          <button class="ins-menu-item" style="width:100%;border:0;background:transparent;cursor:pointer;color:var(--err)" data-ins-report-remove="${key}">
+            <i class="ph ph-trash" style="color:var(--err)"></i><span>Remove from dashboard</span>
+          </button>
+        ` : ''}
+      `;
       return `
         <div style="position:relative">
           <button class="ins-kebab" data-ins-menu="${key}"><i class="ph ph-dots-three" style="font-size:16px"></i></button>
@@ -6233,7 +6373,7 @@
           <div class="ins-panel-head" style="padding:var(--sp-4) var(--sp-4) var(--sp-3)">
             <div class="ins-panel-title">All Builds by Earned Premium</div>
             <div class="ins-panel-actions">
-              <button class="btn btn-sm"><i class="ph ph-download-simple"></i>Download CSV</button>
+              <button class="btn btn-sm" data-ins-table-download="premium"><i class="ph ph-download-simple"></i>Download CSV</button>
             </div>
           </div>
           ${State.insightsDateRange !== 'ytd' ? `<div class="ins-sub" style="padding:0 var(--sp-4) var(--sp-3)">Written/Earned/Lost Premium and location counts are running totals, not date-windowed — the date range control above only affects the chart and stat panels</div>` : ''}
@@ -6334,7 +6474,7 @@
           <div class="ins-panel-head" style="padding:var(--sp-4) var(--sp-4) var(--sp-3)">
             <div class="ins-panel-title">Renewal Premium by Build</div>
             <div class="ins-panel-actions">
-              <button class="btn btn-sm"><i class="ph ph-download-simple"></i>Download CSV</button>
+              <button class="btn btn-sm" data-ins-table-download="renewal"><i class="ph ph-download-simple"></i>Download CSV</button>
             </div>
           </div>
           ${renderInsTableChips('renewal', INS_TABLE_COLS.renewal)}
@@ -6416,7 +6556,7 @@
           <div class="ins-panel-head" style="padding:var(--sp-4) var(--sp-4) var(--sp-3)">
             <div class="ins-panel-title">Transactions Table</div>
             <div class="ins-panel-actions">
-              <button class="btn btn-sm"><i class="ph ph-download-simple"></i>Download CSV</button>
+              <button class="btn btn-sm" data-ins-table-download="transactions"><i class="ph ph-download-simple"></i>Download CSV</button>
             </div>
           </div>
           ${renderInsTableChips('transactions', INS_TABLE_COLS.transactions)}
@@ -6517,7 +6657,7 @@
           <div class="ins-panel-head" style="padding:var(--sp-4) var(--sp-4) var(--sp-3)">
             <div class="ins-panel-title">Claims by Builds</div>
             <div class="ins-panel-actions">
-              <button class="btn btn-sm"><i class="ph ph-download-simple"></i>Download CSV</button>
+              <button class="btn btn-sm" data-ins-table-download="claim"><i class="ph ph-download-simple"></i>Download CSV</button>
             </div>
           </div>
           ${renderInsTableChips('claim', INS_TABLE_COLS.claim)}
@@ -6614,12 +6754,12 @@
     }
 
     // Shared header actions for a table-shaped report on the custom
-    // dashboard — Download stays decorative (same as every other "Download
-    // CSV" button in this prototype), Remove wires into the same
-    // data-ins-report-remove handler the chart-widget kebabs use.
-    function renderInsReportActions(reportKey) {
+    // dashboard — Download exports the table exactly as filtered/sorted,
+    // Remove wires into the same data-ins-report-remove handler the
+    // chart-widget kebabs use.
+    function renderInsReportActions(tab, reportKey) {
       return `
-        <button class="btn btn-sm"><i class="ph ph-download-simple"></i>Download CSV</button>
+        <button class="btn btn-sm" data-ins-table-download="${tab}"><i class="ph ph-download-simple"></i>Download CSV</button>
         <button class="ins-kebab" data-ins-report-remove="${reportKey}" title="Remove from dashboard" style="color:var(--err)"><i class="ph ph-trash"></i></button>
       `;
     }
@@ -6630,7 +6770,7 @@
         <div class="ins-panel" style="padding:0">
           <div class="ins-panel-head" style="padding:var(--sp-4) var(--sp-4) var(--sp-3)">
             <div class="ins-panel-title">${title}</div>
-            <div class="ins-panel-actions">${renderInsReportActions(reportKey)}</div>
+            <div class="ins-panel-actions">${renderInsReportActions(tab, reportKey)}</div>
           </div>
           ${renderInsTableChips(tab, cols)}
           ${filteredRows.length === 0 ? `
@@ -11348,6 +11488,27 @@
           State.insightsCustomReports = State.insightsCustomReports.filter(k => k !== key);
           State.insightsMenuOpen = null;
           render();
+        };
+      });
+      // Insights — "Download CSV" inside a widget's own kebab menu.
+      $$('[data-ins-widget-download]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const key = btn.dataset.insWidgetDownload;
+          const exp = getInsWidgetExportData(key);
+          if (exp) downloadCSV(exp.filename, exp.rows, exp.columns);
+          State.insightsMenuOpen = null;
+          render();
+        };
+      });
+      // Insights — "Download CSV" on a persistent table's own header (the
+      // four built-in tabs' bottom tables, and their Customized Report
+      // equivalents).
+      $$('[data-ins-table-download]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const exp = getInsTableExportData(btn.dataset.insTableDownload);
+          if (exp) downloadCSV(exp.filename, exp.rows, exp.columns);
         };
       });
       // Report search — filters the drawer's cards in place, no render (so
