@@ -8867,7 +8867,7 @@
           </div>
           <div class="ins-big-value">${fmtUSDk(insWidgetSum(f.writtenData, 'written-month'))}</div>
           <div class="ins-sub">${f.windowLabel}</div>
-          ${renderInsChartDiv('ins-written-premium-chart', 220, 'written-month')}
+          ${renderInsChartDiv('ins-written-premium-chart', 220)}
         </div>
         <div class="ins-row">
           <div class="ins-panel">
@@ -8918,6 +8918,7 @@
             </div>
             <div class="ins-stat-value">${fmtUSDk(f.julWritten)}</div>
             <div class="ins-sub">${f.windowLabel}</div>
+            ${renderInsChartDiv('ins-written-premium-chart', 120)}
           </div>
           <div class="ins-panel">
             <div class="ins-panel-head">
@@ -8926,6 +8927,7 @@
             </div>
             <div class="ins-stat-value">${fmtUSDk(f.julBound)}</div>
             <div class="ins-sub">${f.windowLabel}</div>
+            ${renderInsChartDiv('ins-bound-month-chart', 120)}
           </div>
           <div class="ins-panel">
             <div class="ins-panel-head">
@@ -9064,12 +9066,14 @@
       const tab = INS_MLP_TABS.some((t) => t.key === State.insightsTab) ? State.insightsTab : 'new-business';
       if (tab === 'new-business') {
         const f = getPremiumFilteredData();
-        window.mountWrittenPremiumChart(insApplyValueRange(f.writtenData, 'written-month'), view('written-month'), hidden('written-month'));
+        window.mountWrittenPremiumChart(insApplyValueRange(f.writtenData, 'written-month'), 'bar', hidden('written-month'));
         window.mountLQBLineChart(INSIGHTS_LINE_SERIES, INSIGHTS_MONTHS, 'line', hidden('lqb-trend'));
         window.mountLQBFunnelChart(INSIGHTS_FUNNEL, 'bar', hidden('lqb-funnel'));
       } else if (tab === 'premium') {
         const f = getPremiumFilteredData();
         window.mountBoundPremiumChart(insApplyValueRange(f.barData, 'bound-ytd'), view('bound-ytd'), hidden('bound-ytd'));
+        window.mountWrittenPremiumChart(insApplyValueRange(f.writtenData, 'written-month'), 'bar', hidden('written-month'));
+        window.mountBoundMonthChart(insApplyValueRange(f.barData, 'bound-month'), 'bar', hidden('bound-month'));
         window.mountBarListChart('ins-top-builds-bound-chart', getTopBuildsByBoundPremium(), 'var(--secondary-accent)', 'bar', []);
         window.mountBarListChart('ins-top-states-chart', INSIGHTS_TOP_STATES, 'var(--purple-muted)', view('top-states'), hidden('top-states'));
       } else if (tab === 'renewal') {
