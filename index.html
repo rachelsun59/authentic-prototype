@@ -8836,6 +8836,7 @@
         { key:'bound', label:'Bound Renewal', fmt:'usd' },
         { key:'cancelled', label:'Cancelled Premium', fmt:'usd' },
         { key:'notRenewed', label:'Non Renewed Premium', fmt:'usd' },
+        { key:'rep', label:'Salesperson' },
       ],
     };
     function renderInsTableMLP(title, tab, rows, cols, rowRenderer) {
@@ -9001,6 +9002,7 @@
             <td class="num">${fmtUSD(r.bound)}</td>
             <td class="num">${fmtUSD(r.cancelled)}</td>
             <td class="num">${fmtUSD(r.notRenewed)}</td>
+            <td><span style="display:inline-flex;align-items:center;gap:6px"><span class="avatar sm">${insInitials(r.rep)}</span>${r.rep}</span></td>
           </tr>
         `)}
       `;
