@@ -5521,8 +5521,8 @@
     };
     const RENEWAL_RETENTION_PCT = 47;
     const RENEWAL_RETENTION_SERIES = [
-      { key:'renewed',   label:'Bound Renewed', color:'var(--err-muted)' },
-      { key:'cancelled', label:'Cancelled',      color:'var(--secondary)' },
+      { key:'renewed',   label:'Bound Renewed',              color:'var(--secondary)' },
+      { key:'cancelled', label:'Cancelled and Non-renewed',  color:'var(--secondary-muted)' },
     ];
     // "All Builds" (unfiltered) renewed/cancelled premium by month.
     const RENEWAL_MONTHLY_ALL = [
@@ -6130,7 +6130,7 @@
         }
         case 'renewed-retention': {
           const f = getRenewalFilteredData();
-          return { filename: 'renewed-retention', columns: [{ key: 'm', label: 'Month' }, { key: 'renewed', label: 'Bound Renewed' }, { key: 'cancelled', label: 'Cancelled' }], rows: f.monthly };
+          return { filename: 'renewed-retention', columns: [{ key: 'm', label: 'Month' }, { key: 'renewed', label: 'Bound Renewed' }, { key: 'cancelled', label: 'Cancelled and Non-renewed' }], rows: f.monthly };
         }
         case 'renewal-status': {
           const f = getRenewalFilteredData();
@@ -12834,7 +12834,7 @@
        of separate React-local and app-level hidden states. `stacked`
        renders Bars with a shared stackId (Claims by Month); otherwise bars
        are grouped side by side (Renewed Retention). */
-    function MultiSeriesChart({ data, seriesDefs, labelColor, viewType, hidden, stacked, onToggle, formatter }) {
+    function MultiSeriesChart({ data, seriesDefs, labelColor, viewType, hidden, stacked, onToggle, formatter, showYAxis }) {
       const visibleSeries = seriesDefs.filter((s) => !hidden.includes(s.label));
       if (viewType === 'number') {
         const total = visibleSeries.length ? sumBy(data, (d) => sumBy(visibleSeries, (s) => d[s.dataKey] || 0)) : null;
@@ -12867,7 +12867,9 @@
       return h(ResponsiveContainer, { width: '100%', height: '100%' },
         h(Chart, { data, margin: { top: 8, right: 8, left: 8, bottom: 0 } },
           h(XAxis, { dataKey: 'm', axisLine: false, tickLine: false, interval: 0, tick: { fill: labelColor, fontSize: 12 } }),
-          h(YAxis, { hide: true }),
+          showYAxis
+            ? h(YAxis, { axisLine: false, tickLine: false, width: 34, tick: { fill: labelColor, fontSize: 11 }, tickFormatter: fmtShort })
+            : h(YAxis, { hide: true }),
           h(Tooltip, { cursor: { fill: 'var(--bg-accent)' }, ...TOOLTIP_STYLE }),
           h(Legend, { onClick: (e) => onToggle(e.value), wrapperStyle: { ...LEGEND_WRAPPER_STYLE, cursor: 'pointer' } }),
           ...seriesDefs.map((s) => viewType === 'line'
@@ -12901,6 +12903,7 @@
       const resolved = seriesDefs.map((s) => ({ dataKey: s.key, label: s.label, color: resolveColor(s.color) }));
       mount(containerId, h(MultiSeriesChart, {
         data, seriesDefs: resolved, labelColor: cssVar('--fg-muted'), viewType: viewType || 'bar', hidden,
+        showYAxis: (viewType || 'bar') === 'bar',
         onToggle: (label) => window.toggleInsightsWidgetHidden(widgetKey, label),
       }));
     };
@@ -12990,20 +12993,24 @@
           labelColor, viewType, hidden, tooltipFormatter: fmtShort,
         });
       }
+      const renderSliceLabel = ({ x, y, value }) => h('text', {
+        x, y, textAnchor: 'middle', dominantBaseline: 'central',
+        fontSize: 12, fill: 'var(--fg)',
+      }, fmtShort(value));
       return h(ResponsiveContainer, { width: '100%', height: '100%' },
         h(PieChart, {},
           h(Tooltip, { formatter: fmtShort, ...TOOLTIP_STYLE }),
           h(Legend, {
-            layout: 'vertical', align: 'right', verticalAlign: 'middle',
+            layout: 'horizontal', align: 'center', verticalAlign: 'bottom',
             onClick: (e) => onToggle(e.value),
-            wrapperStyle: { ...LEGEND_WRAPPER_STYLE, fontSize: 13, cursor: 'pointer' },
-            formatter: (value) => {
-              const it = items.find((x) => x.label === value);
-              return value + '  ' + (it ? fmtShort(it.value) : '');
-            },
+            wrapperStyle: { ...LEGEND_WRAPPER_STYLE, cursor: 'pointer' },
           }),
-          h(Pie, { data: visible, dataKey: 'value', nameKey: 'label', innerRadius: '55%', outerRadius: '85%', paddingAngle: 1 },
-            visible.map((it, i) => h(Cell, { key: i, fill: it.fill }))
+          h(Pie, {
+            data: visible, dataKey: 'value', nameKey: 'label', outerRadius: '80%',
+            labelLine: false, isAnimationActive: false,
+          },
+            visible.map((it, i) => h(Cell, { key: i, fill: it.fill })),
+            h(LabelList, { dataKey: 'value', content: renderSliceLabel })
           )
         )
       );
