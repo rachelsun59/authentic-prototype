@@ -8922,15 +8922,6 @@
           </div>
           <div class="ins-panel">
             <div class="ins-panel-head">
-              <div class="ins-panel-title">Bound Premium</div>
-              ${renderInsWidgetDownloadIcon('bound-month')}
-            </div>
-            <div class="ins-stat-value">${fmtUSDk(f.julBound)}</div>
-            <div class="ins-sub">${f.windowLabel}</div>
-            ${renderInsChartDiv('ins-bound-month-chart', 120)}
-          </div>
-          <div class="ins-panel">
-            <div class="ins-panel-head">
               <div class="ins-panel-title">Conversion</div>
               ${renderInsWidgetDownloadIcon('conversion')}
             </div>
@@ -9073,7 +9064,6 @@
         const f = getPremiumFilteredData();
         window.mountBoundPremiumChart(insApplyValueRange(f.barData, 'bound-ytd'), view('bound-ytd'), hidden('bound-ytd'));
         window.mountWrittenPremiumChart(insApplyValueRange(f.writtenData, 'written-month'), 'bar', hidden('written-month'));
-        window.mountBoundMonthChart(insApplyValueRange(f.barData, 'bound-month'), 'bar', hidden('bound-month'));
         window.mountBarListChart('ins-top-builds-bound-chart', getTopBuildsByBoundPremium(), 'var(--secondary-accent)', 'bar', []);
         window.mountBarListChart('ins-top-states-chart', INSIGHTS_TOP_STATES, 'var(--purple-muted)', view('top-states'), hidden('top-states'));
       } else if (tab === 'renewal') {
