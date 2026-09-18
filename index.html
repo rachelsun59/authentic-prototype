@@ -1662,7 +1662,13 @@
       overflow-x: auto;
       overflow-y: hidden;
       background: var(--surface);
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
     }
+    .tbl-wrap::-webkit-scrollbar { height: 8px; }
+    .tbl-wrap::-webkit-scrollbar-track { background: transparent; }
+    .tbl-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .tbl-wrap::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
     .tbl-foot {
       display: flex; align-items: center; justify-content: flex-end;
       gap: var(--sp-3);
