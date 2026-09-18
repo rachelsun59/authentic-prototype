@@ -2650,6 +2650,17 @@
       background: rgba(15, 14, 14, 0.45);
     }
 
+    /* Hidden Full/MLP switcher — a transparent hover zone along the very
+       bottom edge of the viewport; the dot only becomes visible once the
+       pointer is already inside it, so there's nothing to notice unless
+       you go looking along that edge. */
+    .ins-version-edge-trigger {
+      position: fixed; left: 50%; bottom: 0; transform: translateX(-50%);
+      width: 96px; height: 10px; z-index: 300;
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; transition: opacity .15s;
+    }
+
     @media (max-width: 900px) {
       /* Show hamburger, hide the static sidebar slot */
       .mobile-only { display: inline-flex; }
@@ -3081,6 +3092,12 @@
   <!-- Mobile nav backdrop — sits behind the slid-in sidebar on small screens -->
   <div id="mobile-nav-backdrop" class="mobile-nav-backdrop"></div>
 
+  <!-- Hidden Full/MLP switcher — invisible strip along the very bottom edge
+       of the screen; only reveals itself on hover. render() fills this in
+       via renderInsVersionToggle(), same self-managed pattern as the user
+       chip since it lives outside the #main render() replaces. -->
+  <div id="ins-version-toggle-wrap" class="ins-version-edge-trigger"></div>
+
   <!-- New Submission modal mount point — render() fills this in -->
   <div id="ns-root"></div>
 
@@ -3186,6 +3203,8 @@
       insightsTableOpenFilter: null,       // "tab:colKey" of the currently open column-filter popover
       insightsTablePage: {},                // { [tab]: number } — current page (1-based) for each persistent table
       insightsTableRowsPerPage: {},          // { [tab]: number } — rows/page for each persistent table (default 10)
+      insightsVersion: 'full',             // 'full' | 'mlp' — which Insights experience renders (switched via the hidden toggle by the sidebar logo)
+      insightsVersionMenuOpen: false,       // is the Full/MLP dropdown open?
       insightsWidgetFilters: {},           // { [widgetKey]: { min, max } } — per-widget value-range filter (kebab "Filters" section)
       insightsMenuFilterOpen: null,        // 'show' | 'sort' | 'value' | 'date' | null — which Data/Filters sub-row is expanded in the open kebab
       insightsWidgetSort: {},              // { [widgetKey]: 'desc' | 'asc' } — bar-list widgets' Sort option (Data section)
@@ -5811,6 +5830,7 @@
     }
 
     function renderInsTableColHeader(tab, c, rows) {
+      if (State.insightsVersion === 'mlp') return `<th class="${c.fmt && c.fmt !== 'text' ? 'num' : ''}"><div class="th-inner"><span class="th-label">${c.label}</span></div></th>`;
       const filters = insTableFilterState(tab);
       const isOpen = State.insightsTableOpenFilter === `${tab}:${c.key}`;
       const fv = filters[c.key];
@@ -5914,6 +5934,7 @@
 
     function mountInsightsCharts() {
       if (State.page !== 'insights' || !window.mountBoundPremiumChart) return;
+      if (State.insightsVersion === 'mlp') { mountInsightsChartsMLP(); return; }
       const tab = State.insightsTab;
       const view = insWidgetView, hidden = insWidgetHidden;
       if (tab === 'renewal') {
@@ -6141,6 +6162,14 @@
           return { filename: 'total-open-claims', columns: [{ key: 'value', label: 'Open Claims' }], rows: [{ value: CLAIMS_TABLE_ROWS.reduce((s, r) => s + r.open, 0) }] };
         case 'claims-new':
           return { filename: 'total-new-claims', columns: [{ key: 'value', label: 'New Claims' }], rows: [{ value: CLAIMS_TABLE_ROWS.reduce((s, r) => s + r.claims, 0) }] };
+        // MLP-only widgets
+        case 'conversion': {
+          const f = getPremiumFilteredData();
+          const pct = f.julWritten > 0 ? Math.round((f.julBound / f.julWritten) * 100) : 0;
+          return { filename: 'conversion', columns: [{ key: 'value', label: 'Conversion %' }], rows: [{ value: pct }] };
+        }
+        case 'top-builds-bound':
+          return { filename: 'top-builds-by-bound-premium', columns: [{ key: 'name', label: 'Build' }, { key: 'value', label: 'Bound Premium' }], rows: getTopBuildsByBoundPremium().map((b) => ({ name: b.label, value: b.value })) };
         default:
           return null;
       }
@@ -6249,7 +6278,21 @@
     // 215-34996's "Data" > "Sort" row) — monthly/time-series widgets keep
     // their natural chronological order instead.
     const INS_WIDGET_SORTABLE = ['top-builds', 'top-states'];
+    // Single download-icon button — every widget's whole "kebab" in the MLP
+    // experience (Figma 233-65836/65770/65705/65316/71971). Reuses the same
+    // data-ins-widget-download attribute/handler as the Full kebab's
+    // Download row, so no separate wiring is needed.
+    function renderInsWidgetDownloadIcon(key) {
+      return `<button class="ins-kebab" data-ins-widget-download="${key}" title="Download CSV"><i class="ph ph-download-simple" style="font-size:14px"></i></button>`;
+    }
+    // A table's own header download button — icon-only in MLP (matching
+    // every other MLP action), icon+label in Full.
+    function renderInsTableDownloadBtn(tab) {
+      if (State.insightsVersion === 'mlp') return `<button class="ins-kebab" data-ins-table-download="${tab}" title="Download CSV"><i class="ph ph-download-simple" style="font-size:14px"></i></button>`;
+      return `<button class="btn btn-sm" data-ins-table-download="${tab}"><i class="ph ph-download-simple"></i>Download CSV</button>`;
+    }
     function renderInsKebab(key, categories, removable) {
+      if (State.insightsVersion === 'mlp') return renderInsWidgetDownloadIcon(key);
       const open = State.insightsMenuOpen === key;
       const cats = categories || [];
       const current = insWidgetView(key);
@@ -6616,6 +6659,7 @@
     }
 
     function renderInsights() {
+      if (State.insightsVersion === 'mlp') return renderInsightsMLP();
       const filterBuilds = insightsFilterBuildsForTab(State.insightsTab);
       const selected = State.insightsBuildFilter;
       // Hidden entirely until a build filter is actually applied — with
@@ -6758,7 +6802,7 @@
           <div class="ins-panel-head" style="padding:var(--sp-4) var(--sp-4) var(--sp-3)">
             <div class="ins-panel-title">All Builds by Earned Premium</div>
             <div class="ins-panel-actions">
-              <button class="btn btn-sm" data-ins-table-download="premium"><i class="ph ph-download-simple"></i>Download CSV</button>
+              ${renderInsTableDownloadBtn('premium')}
             </div>
           </div>
           ${State.insightsDateRange !== 'ytd' ? `<div class="ins-sub" style="padding:0 var(--sp-4) var(--sp-3)">Written/Earned/Lost Premium and location counts are running totals, not date-windowed — the date range control above only affects the chart and stat panels</div>` : ''}
@@ -6860,7 +6904,7 @@
           <div class="ins-panel-head" style="padding:var(--sp-4) var(--sp-4) var(--sp-3)">
             <div class="ins-panel-title">Renewal Premium by Build</div>
             <div class="ins-panel-actions">
-              <button class="btn btn-sm" data-ins-table-download="renewal"><i class="ph ph-download-simple"></i>Download CSV</button>
+              ${renderInsTableDownloadBtn('renewal')}
             </div>
           </div>
           ${renderInsTableChips('renewal', INS_TABLE_COLS.renewal)}
@@ -6943,7 +6987,7 @@
           <div class="ins-panel-head" style="padding:var(--sp-4) var(--sp-4) var(--sp-3)">
             <div class="ins-panel-title">Transactions Table</div>
             <div class="ins-panel-actions">
-              <button class="btn btn-sm" data-ins-table-download="transactions"><i class="ph ph-download-simple"></i>Download CSV</button>
+              ${renderInsTableDownloadBtn('transactions')}
             </div>
           </div>
           ${renderInsTableChips('transactions', INS_TABLE_COLS.transactions)}
@@ -7045,7 +7089,7 @@
           <div class="ins-panel-head" style="padding:var(--sp-4) var(--sp-4) var(--sp-3)">
             <div class="ins-panel-title">Claims by Builds</div>
             <div class="ins-panel-actions">
-              <button class="btn btn-sm" data-ins-table-download="claim"><i class="ph ph-download-simple"></i>Download CSV</button>
+              ${renderInsTableDownloadBtn('claim')}
             </div>
           </div>
           ${renderInsTableChips('claim', INS_TABLE_COLS.claim)}
@@ -8728,6 +8772,315 @@
       });
     }
 
+
+    /* ---------- Insights — MLP experience ----------
+       A parallel, deliberately lighter Insights (Figma 233-65836/65770/
+       65705/65316/71971), reached via the hidden Full/MLP toggle at the
+       bottom edge of the screen. Every widget/table loses its kebab (down
+       to a single "Download CSV" icon — renderInsKebab/renderInsTableColHeader
+       already branch on State.insightsVersion for this) and there's no
+       custom-dashboard tab, but the underlying data/mount functions are
+       the exact same ones the Full experience uses — this only changes
+       layout and chrome, never numbers. */
+    const INS_MLP_TABS = [
+      { key:'new-business',  label:'New Business' },
+      { key:'premium',       label:'Premium' },
+      { key:'renewal',       label:'Renewal' },
+      { key:'transactions',  label:'Transaction' },
+      { key:'claim',         label:'Claim' },
+    ];
+    // "Bound Premium by Build" needs a real bound-premium ranking across
+    // the full 165-build universe (PREMIUM_BUILD_DATA) — INSIGHTS_TABLE_ROWS
+    // is written-premium-sized, so it's only used here for the location
+    // count/rep columns on builds that happen to have real ones.
+    function getBoundPremiumByBuildRows() {
+      const byBuild = {};
+      INSIGHTS_TABLE_ROWS.forEach((r) => { byBuild[r.build] = r; });
+      return Object.keys(PREMIUM_BUILD_DATA).map((build) => {
+        const bound = PREMIUM_BUILD_DATA[build].bar7.reduce((s, v) => s + v, 0);
+        const r = byBuild[build];
+        return { build, bound, bLoc: r ? r.bLoc : Math.max(1, Math.round(bound / 50000)), rep: r ? r.rep : 'Ryan Ruffo' };
+      }).sort((a, b) => b.bound - a.bound);
+    }
+    function getTopBuildsByBoundPremium() {
+      const rows = getBoundPremiumByBuildRows().slice(0, 6);
+      const max = Math.max(1, ...rows.map((r) => r.bound));
+      return rows.map((r) => ({ label: r.build, value: r.bound, pct: Math.round((r.bound / max) * 100) }));
+    }
+    // Renewal's MLP table adds a real "Non Renewed Premium" column (from
+    // RENEWAL_STATUS_BY_BUILD, already computed but not shown in Full).
+    function getRenewalTableRowsMLP() {
+      return getRenewalTableRows().map((r) => ({
+        ...r, notRenewed: (RENEWAL_STATUS_BY_BUILD[r.build] || {}).notRenewed || 0,
+      }));
+    }
+    const INS_TABLE_COLS_MLP = {
+      newBusiness: [
+        { key:'build', label:'Build' },
+        { key:'written', label:'Written Premium', fmt:'usd' },
+        { key:'wLoc', label:'Written Locations', fmt:'num' },
+      ],
+      premium: [
+        { key:'build', label:'Build' },
+        { key:'bound', label:'Bound Premium', fmt:'usd' },
+        { key:'bLoc', label:'Bound Locations', fmt:'num' },
+      ],
+      renewal: [
+        { key:'build', label:'Build' },
+        { key:'renewal', label:'Renewal Premium', fmt:'usd' },
+        { key:'bound', label:'Bound Renewal', fmt:'usd' },
+        { key:'cancelled', label:'Cancelled Premium', fmt:'usd' },
+        { key:'notRenewed', label:'Non Renewed Premium', fmt:'usd' },
+      ],
+    };
+    function renderInsTableMLP(title, tab, rows, cols, rowRenderer) {
+      const { pageRows } = paginateInsTableRows(tab, rows);
+      return `
+        <div class="ins-panel" style="padding:0">
+          <div class="ins-panel-head" style="padding:var(--sp-4) var(--sp-4) var(--sp-3)">
+            <div class="ins-panel-title">${title}</div>
+            <div class="ins-panel-actions">${renderInsTableDownloadBtn(tab)}</div>
+          </div>
+          <div class="tbl-wrap">
+            <table class="gtable">
+              <thead><tr>${cols.map((c) => renderInsTableColHeader(tab, c, rows)).join('')}</tr></thead>
+              <tbody>${pageRows.map(rowRenderer).join('')}</tbody>
+            </table>
+          </div>
+          ${renderInsTablePagination(tab, rows.length)}
+        </div>
+      `;
+    }
+
+    function renderInsightsMLPNewBusinessBody() {
+      const f = getPremiumFilteredData();
+      return `
+        <div class="ins-panel">
+          <div class="ins-panel-head">
+            <div class="ins-panel-title">Written Premium</div>
+            ${renderInsWidgetDownloadIcon('written-month')}
+          </div>
+          <div class="ins-big-value">${fmtUSDk(insWidgetSum(f.writtenData, 'written-month'))}</div>
+          <div class="ins-sub">${f.windowLabel}</div>
+          ${renderInsChartDiv('ins-written-premium-chart', 220, 'written-month')}
+        </div>
+        <div class="ins-row">
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Unique Leads, Quotes, and Binds</div>
+              ${renderInsWidgetDownloadIcon('lqb-trend')}
+            </div>
+            ${renderInsChartDiv('ins-lqb-line-chart', 220, 'lqb-trend')}
+          </div>
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Unique Leads, Quotes, and Binds this month</div>
+              ${renderInsWidgetDownloadIcon('lqb-funnel')}
+            </div>
+            ${renderInsChartDiv('ins-lqb-funnel-chart', 220, 'lqb-funnel')}
+          </div>
+        </div>
+        ${renderInsTableMLP('Written Premium by Build', 'new-business', INSIGHTS_TABLE_ROWS, INS_TABLE_COLS_MLP.newBusiness, (r) => `
+          <tr>
+            <td>${r.build}</td>
+            <td class="num">${fmtUSD(r.written)}</td>
+            <td class="num">${r.wLoc}</td>
+          </tr>
+        `)}
+      `;
+    }
+
+    function renderInsightsMLPPremiumBody() {
+      const f = getPremiumFilteredData();
+      const topBuilds = getTopBuildsByBoundPremium();
+      const boundRows = getBoundPremiumByBuildRows();
+      const conversion = f.julWritten > 0 ? Math.round((f.julBound / f.julWritten) * 100) : 0;
+      return `
+        <div class="ins-panel">
+          <div class="ins-panel-head">
+            <div class="ins-panel-title">Bound Premium</div>
+            ${renderInsWidgetDownloadIcon('bound-ytd')}
+          </div>
+          <div class="ins-big-value">${fmtUSDk(insWidgetSum(f.barData, 'bound-ytd'))}</div>
+          <div class="ins-sub">${f.windowLabel}</div>
+          ${renderInsChartDiv('ins-bound-premium-chart', 220, 'bound-ytd')}
+        </div>
+        <div class="ins-row">
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Written Premium</div>
+              ${renderInsWidgetDownloadIcon('written-month')}
+            </div>
+            <div class="ins-stat-value">${fmtUSDk(f.julWritten)}</div>
+            <div class="ins-sub">${f.windowLabel}</div>
+          </div>
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Bound Premium</div>
+              ${renderInsWidgetDownloadIcon('bound-month')}
+            </div>
+            <div class="ins-stat-value">${fmtUSDk(f.julBound)}</div>
+            <div class="ins-sub">${f.windowLabel}</div>
+          </div>
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Conversion</div>
+              ${renderInsWidgetDownloadIcon('conversion')}
+            </div>
+            <div class="ins-stat-value">${conversion}%</div>
+            <div class="ins-sub">${f.windowLabel}</div>
+          </div>
+        </div>
+        <div class="ins-row">
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Top Builds by Bound Premium</div>
+              ${renderInsWidgetDownloadIcon('top-builds-bound')}
+            </div>
+            ${renderInsChartDivMLP('ins-top-builds-bound-chart', 200)}
+          </div>
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Top States by Bound Premium</div>
+              ${renderInsWidgetDownloadIcon('top-states')}
+            </div>
+            ${renderInsChartDiv('ins-top-states-chart', 200, 'top-states')}
+          </div>
+        </div>
+        ${renderInsTableMLP('Bound Premium by Build', 'premium', boundRows, INS_TABLE_COLS_MLP.premium, (r) => `
+          <tr>
+            <td>${r.build}</td>
+            <td class="num">${fmtUSD(r.bound)}</td>
+            <td class="num">${r.bLoc}</td>
+          </tr>
+        `)}
+      `;
+    }
+
+    // A handful of MLP-only widgets (Conversion, Top Builds by Bound
+    // Premium) don't exist in the Full experience's key space, so they
+    // skip renderInsChartDiv's view-aware sizing — they're always a plain
+    // fixed-height chart container, no Number/Table view to switch to.
+    function renderInsChartDivMLP(id, heightPx) {
+      return `<div id="${id}" style="height:${heightPx}px;margin-top:var(--sp-4)"></div>`;
+    }
+
+    function renderInsightsMLPRenewalBody() {
+      const f = getRenewalFilteredData();
+      const renewalMonthCats = f.monthly.map((d) => d.m);
+      const renewalSeriesCats = RENEWAL_RETENTION_SERIES.map((s) => s.label);
+      const statusCats = f.statusPie.map((s) => s.label);
+      const rows = getRenewalTableRowsMLP();
+      return `
+        <div class="ins-row">
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Renewed Premium</div>
+              ${renderInsWidgetDownloadIcon('renewed-premium')}
+            </div>
+            <div class="ins-stat-value">${fmtUSDk(insWidgetSum(f.monthly.map((d) => ({ m:d.m, value:d.renewed })), 'renewed-premium'))}</div>
+            <div class="ins-sub">${f.windowLabel}</div>
+          </div>
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Cancelled Premium</div>
+              ${renderInsWidgetDownloadIcon('cancelled-premium')}
+            </div>
+            <div class="ins-stat-value">${fmtUSDk(insWidgetSum(f.monthly.map((d) => ({ m:d.m, value:d.cancelled })), 'cancelled-premium'))}</div>
+            <div class="ins-sub">${f.windowLabel}</div>
+          </div>
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Upcoming Renewal</div>
+              ${renderInsWidgetDownloadIcon('upcoming-renewal')}
+            </div>
+            <div class="ins-stat-value">${fmtUSDk(f.upcomingRenewal)}</div>
+            <div class="ins-sub">${RENEWAL_STATS.upcomingSub}</div>
+          </div>
+        </div>
+        <div class="ins-row">
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Renewed Retention</div>
+              ${renderInsWidgetDownloadIcon('renewed-retention')}
+            </div>
+            <div class="ins-big-value">${f.retentionPct}%</div>
+            <div class="ins-sub">YTD</div>
+            ${renderInsChartDiv('ins-renewal-grouped-chart', 220, 'renewed-retention')}
+          </div>
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Renewal Status</div>
+              ${renderInsWidgetDownloadIcon('renewal-status')}
+            </div>
+            ${renderInsChartDiv('ins-renewal-donut-chart', 220, 'renewal-status')}
+          </div>
+        </div>
+        ${renderInsTableMLP('Renewal Premium by Build', 'renewal', rows, INS_TABLE_COLS_MLP.renewal, (r) => `
+          <tr>
+            <td>${r.build}</td>
+            <td class="num">${fmtUSD(r.renewal)}</td>
+            <td class="num">${fmtUSD(r.bound)}</td>
+            <td class="num">${fmtUSD(r.cancelled)}</td>
+            <td class="num">${fmtUSD(r.notRenewed)}</td>
+          </tr>
+        `)}
+      `;
+    }
+
+    function renderInsightsMLP() {
+      const tab = INS_MLP_TABS.some((t) => t.key === State.insightsTab) ? State.insightsTab : 'new-business';
+      const filterBuilds = insightsFilterBuildsForTab(tab === 'new-business' ? 'premium' : tab);
+      return `
+        <div class="home-action-row">
+          <div>
+            <div class="breadcrumb"><span>Insights</span><i class="ph ph-caret-right" style="font-size:10px"></i></div>
+            <h2 class="h2">Insights</h2>
+          </div>
+        </div>
+        <div class="tabs" style="margin-bottom:var(--sp-4)">
+          ${INS_MLP_TABS.map((t) => `<button class="tab ${tab === t.key ? 'active' : ''}" data-ins-tab="${t.key}">${t.label}</button>`).join('')}
+        </div>
+        <div class="ins-filters">
+          ${renderInsDateRangeControl()}
+          ${renderInsBuildFilterControl(filterBuilds)}
+          <button class="btn"><i class="ph ph-funnel-simple"></i>Filter<span class="ins-shortcut">F</span></button>
+        </div>
+        ${tab === 'new-business'  ? renderInsightsMLPNewBusinessBody()
+        : tab === 'premium'       ? renderInsightsMLPPremiumBody()
+        : tab === 'renewal'       ? renderInsightsMLPRenewalBody()
+        : tab === 'transactions'  ? renderInsightsTransactionsBody()
+        : renderInsightsClaimBody()}
+      `;
+    }
+
+    function mountInsightsChartsMLP() {
+      const view = insWidgetView, hidden = insWidgetHidden;
+      const tab = INS_MLP_TABS.some((t) => t.key === State.insightsTab) ? State.insightsTab : 'new-business';
+      if (tab === 'new-business') {
+        const f = getPremiumFilteredData();
+        window.mountWrittenPremiumChart(insApplyValueRange(f.writtenData, 'written-month'), view('written-month'), hidden('written-month'));
+        window.mountLQBLineChart(INSIGHTS_LINE_SERIES, INSIGHTS_MONTHS, 'line', hidden('lqb-trend'));
+        window.mountLQBFunnelChart(INSIGHTS_FUNNEL, 'bar', hidden('lqb-funnel'));
+      } else if (tab === 'premium') {
+        const f = getPremiumFilteredData();
+        window.mountBoundPremiumChart(insApplyValueRange(f.barData, 'bound-ytd'), view('bound-ytd'), hidden('bound-ytd'));
+        window.mountBarListChart('ins-top-builds-bound-chart', getTopBuildsByBoundPremium(), 'var(--secondary-accent)', 'bar', []);
+        window.mountBarListChart('ins-top-states-chart', INSIGHTS_TOP_STATES, 'var(--purple-muted)', view('top-states'), hidden('top-states'));
+      } else if (tab === 'renewal') {
+        const f = getRenewalFilteredData();
+        window.mountGroupedBarChart('ins-renewal-grouped-chart', f.monthly, RENEWAL_RETENTION_SERIES, view('renewed-retention'), hidden('renewed-retention'), 'renewed-retention');
+        window.mountDonutChart('ins-renewal-donut-chart', f.statusPie, view('renewal-status'), hidden('renewal-status'));
+      } else if (tab === 'transactions') {
+        const f = getTransactionsFilteredData();
+        window.mountTransactionsChart(insApplyValueRange(f.chartData, 'gross-written-chart'), view('gross-written-chart'), hidden('gross-written-chart'));
+        window.mountGrossWrittenStatChart(insApplyValueRange(f.chartData, 'gross-written'), view('gross-written'), hidden('gross-written'));
+        window.mountPartnerCommissionChart(insApplyValueRange(f.commissionData, 'partner-commission'), view('partner-commission'), hidden('partner-commission'));
+      } else if (tab === 'claim') {
+        window.mountComboChart('ins-claims-combo-chart', CLAIMS_COMBO_DATA, CLAIMS_TARGET_LR, view('claims-combo'), hidden('claims-combo'));
+        window.mountStackedBarChart('ins-claims-stacked-chart', CLAIMS_STACKED_DATA, CLAIMS_STACKED_SERIES, view('claims-by-month'), hidden('claims-by-month'), 'claims-by-month');
+      }
+    }
 
     function renderApplications() {
       // Applications page — shows only APP-type rows from GROWTH_ROWS
@@ -10624,6 +10977,54 @@
       });
     }
 
+    // Hidden Full/MLP version switcher — a barely-visible dot tucked next to
+    // the sidebar collapse button. Self-renders into its own container the
+    // same way renderUserChip() does, since the sidebar chrome around it
+    // isn't part of the #main innerHTML render() replaces.
+    function renderInsVersionToggle() {
+      const wrap = document.getElementById('ins-version-toggle-wrap');
+      if (!wrap) return;
+      const menu = State.insightsVersionMenuOpen ? `
+        <div class="user-menu" id="ins-version-menu" style="left:50%;right:auto;bottom:calc(100% + 8px);top:auto;transform:translateX(-50%);min-width:160px">
+          <div class="user-menu-head">Insights experience</div>
+          <button class="user-menu-opt${State.insightsVersion === 'full' ? ' is-active' : ''}" data-ins-version="full">
+            <span>Full</span>
+            ${State.insightsVersion === 'full' ? `<i class="ph ph-check" style="font-size:13px;color:var(--ok);margin-left:auto"></i>` : ''}
+          </button>
+          <button class="user-menu-opt${State.insightsVersion === 'mlp' ? ' is-active' : ''}" data-ins-version="mlp">
+            <span>MLP</span>
+            ${State.insightsVersion === 'mlp' ? `<i class="ph ph-check" style="font-size:13px;color:var(--ok);margin-left:auto"></i>` : ''}
+          </button>
+        </div>
+      ` : '';
+      // Invisible until the pointer is already inside the bottom-edge hover
+      // zone (or the menu is open) — nothing to see unless you go looking.
+      wrap.style.opacity = State.insightsVersionMenuOpen ? '1' : '0';
+      wrap.innerHTML = `
+        <button id="ins-version-dot" title="Insights experience" style="width:100%;height:10px;padding:0;border:0;background:transparent;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;">
+          <span style="width:28px;height:3px;border-radius:999px 999px 0 0;background:${State.insightsVersion === 'mlp' ? 'var(--tertiary)' : 'var(--fg-muted)'}"></span>
+        </button>
+        ${menu}
+      `;
+      wrap.onmouseenter = () => { wrap.style.opacity = '1'; };
+      wrap.onmouseleave = () => { if (!State.insightsVersionMenuOpen) wrap.style.opacity = '0'; };
+      const dot = document.getElementById('ins-version-dot');
+      dot.onclick = (e) => {
+        e.stopPropagation();
+        State.insightsVersionMenuOpen = !State.insightsVersionMenuOpen;
+        renderInsVersionToggle();
+      };
+      $$('[data-ins-version]', wrap).forEach((btn) => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          State.insightsVersion = btn.dataset.insVersion;
+          State.insightsVersionMenuOpen = false;
+          if (State.page === 'insights') render();
+          else renderInsVersionToggle();
+        };
+      });
+    }
+
     function render() {
       const main = $('#main');
       // Preserve scroll position on the detail page so actions don't jump to top
@@ -10657,6 +11058,7 @@
       // it sits above page content but participates in the same render cycle.
       $('#ns-root').innerHTML = renderNewSubmission() + renderUwDecision() + renderBindModal() + renderBrokerBindModal() + renderHiddenFieldModal();
       renderUserChip();
+      renderInsVersionToggle();
 
       // Mobile-nav class toggle on the shell
       document.querySelector('.shell')?.classList.toggle('is-nav-open', !!State.mobileNavOpen);
@@ -11461,6 +11863,15 @@
           renderUserChip();
         };
         setTimeout(() => document.addEventListener('mousedown', closeUserMenu, true), 0);
+      }
+      if (State.insightsVersionMenuOpen) {
+        const closeVersionMenu = (e) => {
+          if (e.target.closest('#ins-version-toggle-wrap')) return;
+          State.insightsVersionMenuOpen = false;
+          document.removeEventListener('mousedown', closeVersionMenu, true);
+          renderInsVersionToggle();
+        };
+        setTimeout(() => document.addEventListener('mousedown', closeVersionMenu, true), 0);
       }
 
       // Tab switches inside detail
