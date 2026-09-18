@@ -1300,6 +1300,7 @@
       color: var(--fg);
       border-bottom: 1px solid var(--border-soft);
       vertical-align: middle;
+      white-space: nowrap;
     }
     .gtable tbody tr { cursor: pointer; transition: background var(--transition-base); }
     .gtable tbody tr:hover { background: var(--bg-accent); }
@@ -2773,7 +2774,7 @@
       .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
 
       /* All data tables: horizontal scroll container */
-      .xtable, .gtable { white-space: normal; }
+      .xtable { white-space: normal; }
       [style*="overflow-x:auto"], div > .xtable, div > table { overflow-x: auto; }
       .xtable th, .xtable td { white-space: nowrap; }
 
