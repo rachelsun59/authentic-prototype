@@ -6044,12 +6044,10 @@
 
     // Default visualization per widget key — the kebab always lets the user
     // switch to bar/line/number, but a widget can open on something else
-    // when that's a materially better fit for its own data: the Renewal
-    // Status breakdown as a donut, and the Claims combo chart showing both
-    // its metrics together, exactly as originally designed. Everything
-    // else defaults to 'bar'.
+    // when that's a materially better fit for its own data: the Claims
+    // combo chart showing both its metrics together, exactly as originally
+    // designed. Everything else (including Renewal Status) defaults to 'bar'.
     const INSIGHTS_WIDGET_DEFAULT_VIEW = {
-      'renewal-status': 'pie',
       'claims-combo': 'combo',
       'lqb-trend': 'line',
       // These are single stat panels first and foremost — they open showing
@@ -13088,9 +13086,10 @@
       }));
     };
 
-    /* ---- Donut chart (Renewal Status) — 'pie' is this widget's own
-       default view (not one of the 3 the kebab offers), preserved as-is
-       unless the user actively switches to bar/line/number. ---- */
+    /* ---- Donut chart (Renewal Status) — defaults to the shared bar view
+       (CategoryChart, via the viewType !== 'pie' branch below); the pie
+       rendering only kicks in if something explicitly passes viewType:'pie'
+       (not currently reachable from the UI, kept for reuse). ---- */
     function DonutChart({ items, labelColor, viewType, hidden, onToggle }) {
       const visible = items.filter((it) => !hidden.includes(it.label));
       if (viewType !== 'pie') {
@@ -13124,7 +13123,7 @@
     window.mountDonutChart = (containerId, items, viewType, hidden) => {
       const data = items.map((it) => ({ ...it, fill: resolveColor(it.color) }));
       mount(containerId, h(DonutChart, {
-        items: data, labelColor: cssVar('--fg-muted'), viewType: viewType || 'pie', hidden: hidden || [],
+        items: data, labelColor: cssVar('--fg-muted'), viewType: viewType || 'bar', hidden: hidden || [],
         onToggle: (label) => window.toggleInsightsWidgetHidden('renewal-status', label),
       }));
     };
