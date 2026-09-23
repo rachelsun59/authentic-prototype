@@ -1088,6 +1088,11 @@
       position: relative;
     }
     .ins-select i { font-size: 11px; color: var(--fg-muted); margin-left: 4px; }
+    .ins-select i:first-child { font-size: 14px; margin-left: 0; margin-right: 2px; color: var(--fg-muted); }
+    .ins-select.is-open { box-shadow: 0 0 0 2px var(--primary); border-color: var(--primary); }
+    .th-popover .pop-divider { height: 1px; background: var(--border-soft); margin: 2px 0; }
+    .th-popover .pop-row:disabled { color: var(--fg-muted); cursor: not-allowed; opacity: .5; }
+    .th-popover .pop-row:disabled:hover { background: transparent; }
     .ins-filters .btn { margin-left: auto; }
     .ins-shortcut {
       display: inline-flex; align-items: center; justify-content: center;
@@ -3198,10 +3203,12 @@
       insightsMenuOpen: null,              // panel key whose "..." view-settings menu is open
       insightsBuildFilter: [],             // selected build names for the current tab; [] = All Builds
       insightsBuildFilterOpen: false,      // "All Builds" dropdown popover open?
-      insightsDateRange: 'ytd',             // 'ytd' | '30d' | '60d' | '90d' | 'custom'
-      insightsDateRangeOpen: false,        // date-range dropdown popover open?
+      insightsDateRange: 'ytd',             // one of INSIGHTS_DATE_PRESETS' keys ('ytd' = "This Year", the default)
+      insightsDateRangeOpen: false,        // Timeframe dropdown popover open?
       insightsCustomFrom: 0,               // custom range start, index into INSIGHTS_ALL_MONTHS
       insightsCustomTo: 6,                 // custom range end, index into INSIGHTS_ALL_MONTHS
+      insightsGroupBy: 'month',            // 'day' | 'week' | 'month' | 'quarter' | 'year' — display only, doesn't re-bucket data yet
+      insightsGroupByOpen: false,          // Group by dropdown popover open?
       insightsWidgetView: {},              // { [widgetKey]: 'bar' | 'line' | 'number' } — per-widget visualization
       insightsWidgetHidden: {},            // { [widgetKey]: string[] } — per-widget hidden categories/series
       insightsTableFilters: {},            // { [tab]: { [colKey]: string[] | 'gte-N'/'lt-N' } } — per-column table filters
@@ -6449,31 +6456,54 @@
       return Object.keys(PREMIUM_BUILD_DATA);
     }
 
-    // ---- Date range control (YTD / Last 30-60-90 days / Custom) ----
+    // ---- Timeframe control (Figma 265-26479 "Menu") ----
     // The underlying data (INSIGHTS_ALL_MONTHS-keyed series) is monthly, not
-    // daily, so "Last 30/60/90 days" resolve to the last 1/2/3 months rather
-    // than an exact day count — the closest honest mapping onto data this
-    // coarse. Only Premium/Renewal/Transactions have a real monthly series
-    // to slice; Claims and the Lead/Quote/Bind panel don't (see the notes
-    // rendered in their tab bodies) so this control doesn't change them.
+    // daily, so sub-month presets (Today/Yesterday/Last week) and same-span
+    // presets (This month/This quarter vs. Last month/Last quarter) resolve
+    // onto the same month-index window rather than a real day count — the
+    // closest honest mapping onto data this coarse. Only Premium/Renewal/
+    // Transactions have a real monthly series to slice; Claims and the
+    // Lead/Quote/Bind panel don't (see the notes rendered in their tab
+    // bodies) so this control doesn't change them.
     const INSIGHTS_DATE_PRESETS = [
-      { key:'ytd',    label:'YTD' },
-      { key:'30d',    label:'Last 30 days' },
-      { key:'60d',    label:'Last 60 days' },
-      { key:'90d',    label:'Last 90 days' },
-      { key:'custom', label:'Custom range' },
+      { key:'today',        label:'Today' },
+      { key:'yesterday',    label:'Yesterday' },
+      { key:'last-week',    label:'Last week' },
+      { key:'last-month',   label:'Last month' },
+      { key:'last-quarter', label:'Last quarter' },
+      { key:'last-year',    label:'Last year' },
+      { key:'first-half',   label:'First half of the year' },
+      { key:'this-month',   label:'This month' },
+      { key:'this-quarter', label:'This quarter' },
+      { key:'ytd',          label:'This Year' },
+      { key:'all-time',     label:'All time' },
+      { key:'custom',       label:'Select custom date range', divider:true },
     ];
     function getInsightsDateWindow() {
       const n = INSIGHTS_ALL_MONTHS.length;
+      const last = n - 1;
       const rangeLabel = (s, e) => s === e ? `${INSIGHTS_ALL_MONTHS[s]} 2026` : `${INSIGHTS_ALL_MONTHS[s]}–${INSIGHTS_ALL_MONTHS[e]} 2026`;
       const key = State.insightsDateRange;
-      if (key === 'ytd') return { start:0,   end:n - 1, label:'YTD' };
-      if (key === '30d') return { start:n-1, end:n - 1, label:rangeLabel(n-1, n-1) };
-      if (key === '60d') return { start:n-2, end:n - 1, label:rangeLabel(n-2, n-1) };
-      if (key === '90d') return { start:n-3, end:n - 1, label:rangeLabel(n-3, n-1) };
-      const s = Math.min(State.insightsCustomFrom, State.insightsCustomTo);
-      const e = Math.max(State.insightsCustomFrom, State.insightsCustomTo);
-      return { start:s, end:e, label:rangeLabel(s, e) };
+      const presetLabel = (INSIGHTS_DATE_PRESETS.find(p => p.key === key) || {}).label;
+      switch (key) {
+        case 'today': case 'yesterday': case 'last-week': case 'this-month':
+          return { start:last, end:last, label:presetLabel };
+        case 'last-month':
+          return { start:Math.max(0, last - 1), end:Math.max(0, last - 1), label:presetLabel };
+        case 'last-quarter': case 'this-quarter':
+          return { start:Math.max(0, last - 2), end:last, label:presetLabel };
+        case 'first-half':
+          return { start:0, end:Math.min(5, last), label:presetLabel };
+        case 'last-year': case 'all-time':
+          return { start:0, end:last, label:presetLabel };
+        case 'custom': {
+          const s = Math.min(State.insightsCustomFrom, State.insightsCustomTo);
+          const e = Math.max(State.insightsCustomFrom, State.insightsCustomTo);
+          return { start:s, end:e, label:rangeLabel(s, e) };
+        }
+        default: // 'ytd'
+          return { start:0, end:last, label:'This Year' };
+      }
     }
     function sumRange(arr, win) {
       let total = 0;
@@ -6481,18 +6511,19 @@
       return total;
     }
 
-    // Renders the top "date range" dropdown and its popover — single-select
-    // presets plus a "Custom range" option that reveals two month pickers.
+    // Renders the "Timeframe" dropdown and its popover — single-select
+    // presets plus a "Select custom date range" option that reveals two
+    // month pickers.
     function renderInsDateRangeControl() {
       const win = getInsightsDateWindow();
       const buttonLabel = State.insightsDateRange === 'custom' ? win.label : INSIGHTS_DATE_PRESETS.find(p => p.key === State.insightsDateRange).label;
       return `
-        <span class="ins-select" data-ins-daterange-toggle>
-          ${buttonLabel}<i class="ph ph-caret-down"></i>
+        <span class="ins-select ${State.insightsDateRangeOpen ? 'is-open' : ''}" data-ins-daterange-toggle>
+          <i class="ph ph-calendar-dots"></i>${buttonLabel}<i class="ph ph-caret-${State.insightsDateRangeOpen ? 'up' : 'down'}"></i>
           ${State.insightsDateRangeOpen ? `
             <div class="th-popover" onclick="event.stopPropagation()">
-              <div class="pop-section">Date Range</div>
               ${INSIGHTS_DATE_PRESETS.map(p => `
+                ${p.divider ? '<div class="pop-divider"></div>' : ''}
                 <button class="pop-row ${State.insightsDateRange === p.key ? 'checked' : ''}" data-ins-daterange-val="${p.key}">
                   <span class="pop-check"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 8l3 3 7-8"/></svg></span>
                   <span class="label">${p.label}</span>
@@ -6509,6 +6540,49 @@
                   </select>
                 </div>
               ` : ''}
+            </div>
+          ` : ''}
+        </span>
+      `;
+    }
+
+    // ---- Group by control (Figma 267-58322 "Select") ----
+    // Display-only for now: it previews which chart granularities make
+    // sense for the selected Timeframe (a day-long "Today" can't sensibly
+    // group by Quarter) but doesn't yet re-bucket the underlying monthly
+    // data — the chart itself is unaffected by this control's value.
+    const INSIGHTS_GROUPBY_OPTIONS = [
+      { key:'day',     label:'Day',     rank:0 },
+      { key:'week',    label:'Week',    rank:1 },
+      { key:'month',   label:'Month',   rank:2 },
+      { key:'quarter', label:'Quarter', rank:3 },
+      { key:'year',    label:'Year',    rank:4 },
+    ];
+    // How wide a span each Timeframe preset covers, in the same rank units
+    // as INSIGHTS_GROUPBY_OPTIONS — a Group by option is offered only when
+    // its rank fits within the selected Timeframe's span.
+    const INSIGHTS_DATE_PRESET_SPAN_RANK = {
+      today:0, yesterday:0, 'last-week':1, 'last-month':2, 'this-month':2,
+      'last-quarter':3, 'this-quarter':3, 'first-half':3,
+      'last-year':4, ytd:4, 'all-time':4, custom:4,
+    };
+    function insGroupByMaxRank() {
+      return INSIGHTS_DATE_PRESET_SPAN_RANK[State.insightsDateRange] ?? 4;
+    }
+    function renderInsGroupByControl() {
+      const maxRank = insGroupByMaxRank();
+      const current = INSIGHTS_GROUPBY_OPTIONS.find(o => o.key === State.insightsGroupBy) || INSIGHTS_GROUPBY_OPTIONS[2];
+      return `
+        <span class="ins-select ${State.insightsGroupByOpen ? 'is-open' : ''}" data-ins-groupby-toggle>
+          <i class="ph ph-chart-bar"></i>${current.label}<i class="ph ph-caret-${State.insightsGroupByOpen ? 'up' : 'down'}"></i>
+          ${State.insightsGroupByOpen ? `
+            <div class="th-popover" onclick="event.stopPropagation()">
+              ${INSIGHTS_GROUPBY_OPTIONS.map(o => `
+                <button class="pop-row ${State.insightsGroupBy === o.key ? 'checked' : ''}" ${o.rank > maxRank ? 'disabled' : ''} data-ins-groupby-val="${o.key}">
+                  <span class="pop-check"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 8l3 3 7-8"/></svg></span>
+                  <span class="label">${o.label}</span>
+                </button>
+              `).join('')}
             </div>
           ` : ''}
         </span>
@@ -6702,6 +6776,7 @@
         ${State.insightsTab === 'custom' ? '' : `
         <div class="ins-filters">
           ${renderInsDateRangeControl()}
+          ${renderInsGroupByControl()}
           ${renderInsBuildFilterControl(filterBuilds)}
           <button class="btn"><i class="ph ph-funnel-simple"></i>Filter<span class="ins-shortcut">F</span></button>
         </div>
@@ -9024,6 +9099,7 @@
         </div>
         <div class="ins-filters">
           ${renderInsDateRangeControl()}
+          ${renderInsGroupByControl()}
           ${renderInsBuildFilterControl(filterBuilds)}
           <button class="btn"><i class="ph ph-funnel-simple"></i>Filter<span class="ins-shortcut">F</span></button>
         </div>
@@ -12429,6 +12505,12 @@
           // Single-select, so close on pick — except "Custom", which needs
           // to stay open long enough to show/use its two month selects.
           State.insightsDateRangeOpen = (val === 'custom');
+          // If the new Timeframe no longer fits the current Group by
+          // granularity (e.g. switching to "Today" while grouped by
+          // Quarter), fall back to the widest granularity that still does.
+          const maxRank = insGroupByMaxRank();
+          const currentRank = (INSIGHTS_GROUPBY_OPTIONS.find(o => o.key === State.insightsGroupBy) || {}).rank || 0;
+          if (currentRank > maxRank) State.insightsGroupBy = INSIGHTS_GROUPBY_OPTIONS[maxRank].key;
           render();
         };
       });
@@ -12436,6 +12518,23 @@
       if (drFrom) drFrom.onchange = () => { State.insightsCustomFrom = Number(drFrom.value); render(); };
       const drTo = $('[data-ins-daterange-to]');
       if (drTo) drTo.onchange = () => { State.insightsCustomTo = Number(drTo.value); render(); };
+      // Insights — Group by: toggle the popover, pick a granularity
+      // (display-only for now — see the comment above renderInsGroupByControl).
+      $$('[data-ins-groupby-toggle]').forEach(el => {
+        el.onclick = (e) => {
+          e.stopPropagation();
+          State.insightsGroupByOpen = !State.insightsGroupByOpen;
+          render();
+        };
+      });
+      $$('[data-ins-groupby-val]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          State.insightsGroupBy = btn.dataset.insGroupbyVal;
+          State.insightsGroupByOpen = false;
+          render();
+        };
+      });
       // Insights — per-widget "view as" (bar/line/number) and per-widget
       // category/series filter checklist, from each panel's "..." menu.
       $$('[data-ins-widget-view]').forEach(btn => {
@@ -12530,7 +12629,7 @@
       // in the bubble phase (not capture) means this only fires *after* the
       // click's own target handler already ran, so it can never race it —
       // whatever this closes, the real click's effect has already landed.
-      if (State.insightsMenuOpen || State.insightsBuildFilterOpen || State.insightsDateRangeOpen || State.insightsTableOpenFilter) {
+      if (State.insightsMenuOpen || State.insightsBuildFilterOpen || State.insightsDateRangeOpen || State.insightsGroupByOpen || State.insightsTableOpenFilter) {
         const closeInsPopovers = (e) => {
           let changed = false;
           if (State.insightsMenuOpen && !e.target.closest('.ins-menu') && !e.target.closest('[data-ins-menu]')) {
@@ -12544,6 +12643,10 @@
           }
           if (State.insightsDateRangeOpen && !e.target.closest('[data-ins-daterange-toggle]')) {
             State.insightsDateRangeOpen = false;
+            changed = true;
+          }
+          if (State.insightsGroupByOpen && !e.target.closest('[data-ins-groupby-toggle]')) {
+            State.insightsGroupByOpen = false;
             changed = true;
           }
           if (State.insightsTableOpenFilter && !e.target.closest('.th-popover') && !e.target.closest('[data-ins-tcol-filter]')) {
