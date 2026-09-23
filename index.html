@@ -5548,6 +5548,15 @@
       { label:'Error',       value:454455,  color:'var(--warn-muted)' },
       { label:'Not Renewed', value:3702923, color:'var(--bg-muted)' },
     ];
+    // No per-policy count exists in the renewal dataset (only premium
+    // totals per status) — the Renewal Status chart's tooltip estimates a
+    // policy count from each status's premium total at this average, a
+    // round figure in line with the per-policy premiums seen in
+    // TRANSACTIONS_TABLE_ROWS. Illustrative, not derived from real counts.
+    const RENEWAL_AVG_PREMIUM_PER_POLICY = 12000;
+    function renewalEstPolicyCount(value) {
+      return Math.max(1, Math.round(value / RENEWAL_AVG_PREMIUM_PER_POLICY));
+    }
     // Per-build breakdown for the "All Builds" filter — same source files
     // as RENEWAL_MONTHLY_ALL/RENEWAL_STATUS_PIE, split by Tenant.
     const RENEWAL_BUILD_MONTHLY = {
@@ -12797,6 +12806,19 @@
       labelStyle: { color: 'var(--fg-muted)' },
     };
     const LEGEND_WRAPPER_STYLE = { fontSize: 12, color: 'var(--fg-muted)' };
+    // Custom tooltip content (in place of Tooltip's plain `formatter`) for
+    // category charts whose datum carries a `count` field — adds a second
+    // "Count" line below the value, matching TOOLTIP_STYLE's box chrome
+    // since a custom `content` fn replaces Recharts' own tooltip styling.
+    function CategoryCountTooltip({ active, payload, formatter }) {
+      if (!active || !payload || !payload.length) return null;
+      const d = payload[0].payload;
+      return h('div', { style: { ...TOOLTIP_STYLE.contentStyle, padding: '8px 12px' } },
+        h('div', { style: { fontWeight: 500, marginBottom: 4 } }, d.name),
+        h('div', {}, formatter(d.value)),
+        d.count != null ? h('div', { style: TOOLTIP_STYLE.labelStyle }, `Count: ${d.count.toLocaleString('en-US')}`) : null
+      );
+    }
     // Shared slice/segment colors for the new Pie/Funnel views — cycled by
     // index for whichever widget's categories/series don't already carry
     // their own color (most single-series widgets don't, since they only
@@ -13059,11 +13081,14 @@
           )
         );
       }
+      const hasCount = visible.some((d) => d.count != null);
       return h(ResponsiveContainer, { width: '100%', height: '100%' },
         h(BarChart, { data: visible, layout: 'vertical', margin: { top: 4, right: 24, left: 8, bottom: 0 } },
           h(XAxis, { type: 'number', hide: true }),
           h(YAxis, { type: 'category', dataKey: 'name', width: 88, axisLine: false, tickLine: false, interval: 0, tick: { fill: labelColor, fontSize: 12 } }),
-          h(Tooltip, { cursor: { fill: 'var(--bg-accent)' }, formatter: tooltipFormatter, ...TOOLTIP_STYLE }),
+          hasCount
+            ? h(Tooltip, { cursor: { fill: 'var(--bg-accent)' }, content: (p) => h(CategoryCountTooltip, { ...p, formatter: tooltipFormatter }) })
+            : h(Tooltip, { cursor: { fill: 'var(--bg-accent)' }, formatter: tooltipFormatter, ...TOOLTIP_STYLE }),
           h(Bar, { dataKey: 'value', radius: [0, 4, 4, 0], maxBarSize: 18 },
             visible.map((d, i) => h(Cell, { key: i, fill: d.fill || color }))
           )
@@ -13094,7 +13119,7 @@
       const visible = items.filter((it) => !hidden.includes(it.label));
       if (viewType !== 'pie') {
         return h(CategoryChart, {
-          data: items.map((it) => ({ name: it.label, value: it.value, fill: it.fill })),
+          data: items.map((it) => ({ name: it.label, value: it.value, fill: it.fill, count: renewalEstPolicyCount(it.value) })),
           labelColor, viewType, hidden, tooltipFormatter: fmtShort,
         });
       }
