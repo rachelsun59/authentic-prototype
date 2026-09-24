@@ -5721,14 +5721,13 @@
       ],
       transactions: [
         { key:'build',      label:'Build',              filter:'multi' },
-        { key:'insured',    label:'Insured',            filter:null },
+        { key:'insured',    label:'Business name',      filter:null },
         { key:'policyNo',   label:'Policy Number',      filter:null },
         { key:'written',    label:'Written Premium',    filter:'range', fmt:'usd' },
         { key:'earned',     label:'Earned Premium',     filter:'range', fmt:'usd' },
         { key:'commission', label:'Partner Commission', filter:'range', fmt:'usd' },
         { key:'eff',        label:'Effective Date',     filter:null },
         { key:'type',       label:'Transaction Type',   filter:'multi' },
-        { key:'rep',        label:'Salesperson',        filter:'multi' },
       ],
       claim: [
         { key:'build',      label:'Build',                filter:'multi' },
@@ -6172,6 +6171,14 @@
         case 'gross-written-chart': {
           const f = getTransactionsFilteredData();
           return { filename: 'gross-written-by-effective-date', columns: [{ key: 'm', label: 'Month' }, { key: 'value', label: 'Gross Written Premium' }], rows: f.chartData };
+        }
+        case 'tx-earned-premium': {
+          const f = getTransactionsFilteredData();
+          return { filename: 'earned-premium', columns: [{ key: 'value', label: 'Earned Premium' }], rows: [{ value: f.earnedPremium }] };
+        }
+        case 'past-due-receivables': {
+          const f = getTransactionsFilteredData();
+          return { filename: 'past-due-receivables', columns: [{ key: 'value', label: 'Past Due Receivables' }], rows: [{ value: f.pastDueReceivables }] };
         }
         case 'claims-earned':
           return { filename: 'earned-premium', columns: [{ key: 'value', label: 'Earned Premium' }], rows: [{ value: CLAIMS_STATS.earnedPremium }] };
@@ -6718,7 +6725,14 @@
         return { m, value, label: fmtUSDk(value) };
       });
       const partnerCommission = commissionData.reduce((s, d) => s + d.value, 0);
-      return { chartData, commissionData, grossWritten, partnerCommission, windowLabel: win.label };
+      // TRANSACTIONS_TABLE_ROWS' real sample rows all have earned === written
+      // (no separate earning schedule modeled for transactions) — Earned
+      // Premium reuses the same written total. Past due receivables has no
+      // backing dataset at all (no AR/aging data exists anywhere in the
+      // app); illustrative, a small fixed share of gross written premium.
+      const earnedPremium = grossWritten;
+      const pastDueReceivables = Math.round(grossWritten * 0.02);
+      return { chartData, commissionData, grossWritten, partnerCommission, earnedPremium, pastDueReceivables, windowLabel: win.label };
     }
 
     // 'YYYY-MM-DD' (2026 only, matching INSIGHTS_ALL_MONTHS) -> month index,
@@ -7070,6 +7084,22 @@
             <div class="ins-sub">${f.windowLabel}</div>
             ${renderInsChartDiv('ins-partner-commission-chart', 120, 'partner-commission')}
           </div>
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Earned Premium</div>
+              ${renderInsKebab('tx-earned-premium')}
+            </div>
+            <div class="ins-stat-value">${fmtUSDk(f.earnedPremium)}</div>
+            <div class="ins-sub">${f.windowLabel}</div>
+          </div>
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Past due receivables</div>
+              ${renderInsKebab('past-due-receivables')}
+            </div>
+            <div class="ins-stat-value">${fmtUSDk(f.pastDueReceivables)}</div>
+            <div class="ins-sub">${f.windowLabel}</div>
+          </div>
         </div>
 
         <div class="ins-panel">
@@ -7110,7 +7140,6 @@
                     <td class="num" style="white-space:nowrap">${fmtUSD(r.commission)}</td>
                     <td style="white-space:nowrap">${r.eff}</td>
                     <td style="white-space:nowrap">${r.type}</td>
-                    <td style="white-space:nowrap"><span style="display:inline-flex;align-items:center;gap:6px"><span class="avatar sm">${insInitials(r.rep)}</span>${r.rep}</span></td>
                   </tr>
                 `).join('')}
               </tbody>
