@@ -5548,14 +5548,16 @@
       { label:'Error',       value:454455,  color:'var(--warn-muted)' },
       { label:'Not Renewed', value:3702923, color:'var(--bg-muted)' },
     ];
-    // No per-policy count exists in the renewal dataset (only premium
-    // totals per status) — the Renewal Status chart's tooltip estimates a
-    // policy count from each status's premium total at this average, a
+    // No per-policy count exists for most Insights breakdowns (renewal
+    // status, top states, monthly premium totals) — their chart tooltips
+    // estimate a policy count from the premium value at this average, a
     // round figure in line with the per-policy premiums seen in
     // TRANSACTIONS_TABLE_ROWS. Illustrative, not derived from real counts.
-    const RENEWAL_AVG_PREMIUM_PER_POLICY = 12000;
-    function renewalEstPolicyCount(value) {
-      return Math.max(1, Math.round(value / RENEWAL_AVG_PREMIUM_PER_POLICY));
+    // Used only where a real count (e.g. a build's actual bound locations)
+    // isn't already available.
+    const INSIGHTS_AVG_PREMIUM_PER_POLICY = 12000;
+    function insEstPolicyCount(value) {
+      return Math.max(1, Math.round(value / INSIGHTS_AVG_PREMIUM_PER_POLICY));
     }
     // Per-build breakdown for the "All Builds" filter — same source files
     // as RENEWAL_MONTHLY_ALL/RENEWAL_STATUS_PIE, split by Tenant.
@@ -6615,7 +6617,7 @@
         const value = isFiltered
           ? selected.reduce((s, b) => s + (PREMIUM_BUILD_DATA[b] ? PREMIUM_BUILD_DATA[b].bar7[i] : 0), 0)
           : INSIGHTS_BAR_DATA_ALL[i];
-        return { m, value, label: fmtUSDk(value) };
+        return { m, value, label: fmtUSDk(value), count: insEstPolicyCount(value) };
       });
       const ytd = barData.reduce((s, d) => s + d.value, 0);
       const julBound = ytd;
@@ -8871,7 +8873,7 @@
        the exact same ones the Full experience uses — this only changes
        layout and chrome, never numbers. */
     const INS_MLP_TABS = [
-      { key:'new-business',  label:'New Business' },
+      { key:'new-business',  label:'Pipeline' },
       { key:'premium',       label:'Premium' },
       { key:'renewal',       label:'Renewal' },
       { key:'transactions',  label:'Transaction' },
@@ -8887,13 +8889,16 @@
       return Object.keys(PREMIUM_BUILD_DATA).map((build) => {
         const bound = PREMIUM_BUILD_DATA[build].bar7.reduce((s, v) => s + v, 0);
         const r = byBuild[build];
-        return { build, bound, bLoc: r ? r.bLoc : Math.max(1, Math.round(bound / 50000)), rep: r ? r.rep : 'Ryan Ruffo' };
+        const written = r ? r.written : bound;
+        const bLoc = r ? r.bLoc : Math.max(1, Math.round(bound / 50000));
+        const conversion = written > 0 ? Math.round((bound / written) * 100) : 0;
+        return { build, written, bound, conversion, bLoc, rep: r ? r.rep : 'Ryan Ruffo' };
       }).sort((a, b) => b.bound - a.bound);
     }
     function getTopBuildsByBoundPremium() {
       const rows = getBoundPremiumByBuildRows().slice(0, 6);
       const max = Math.max(1, ...rows.map((r) => r.bound));
-      return rows.map((r) => ({ label: r.build, value: r.bound, pct: Math.round((r.bound / max) * 100) }));
+      return rows.map((r) => ({ label: r.build, value: r.bound, pct: Math.round((r.bound / max) * 100), count: r.bLoc }));
     }
     // Renewal's MLP table adds a real "Non Renewed Premium" column (from
     // RENEWAL_STATUS_BY_BUILD, already computed but not shown in Full).
@@ -8910,8 +8915,11 @@
       ],
       premium: [
         { key:'build', label:'Build' },
+        { key:'written', label:'Gross Premium', fmt:'usd' },
         { key:'bound', label:'Bound Premium', fmt:'usd' },
-        { key:'bLoc', label:'Bound Locations', fmt:'num' },
+        { key:'conversion', label:'Conversion', fmt:'pct' },
+        { key:'bLoc', label:'Bound Location', fmt:'num' },
+        { key:'rep', label:'Salesperson' },
       ],
       renewal: [
         { key:'build', label:'Build' },
@@ -9009,11 +9017,14 @@
             ${renderInsChartDiv('ins-top-states-chart', 200, 'top-states')}
           </div>
         </div>
-        ${renderInsTableMLP('Bound Premium by Build', 'premium', boundRows, INS_TABLE_COLS_MLP.premium, (r) => `
+        ${renderInsTableMLP('Bound Premium', 'premium', boundRows, INS_TABLE_COLS_MLP.premium, (r) => `
           <tr>
             <td>${r.build}</td>
+            <td class="num">${fmtUSD(r.written)}</td>
             <td class="num">${fmtUSD(r.bound)}</td>
+            <td class="num">${r.conversion}%</td>
             <td class="num">${r.bLoc}</td>
+            <td><span style="display:inline-flex;align-items:center;gap:6px"><span class="avatar sm">${insInitials(r.rep)}</span>${r.rep}</span></td>
           </tr>
         `)}
       `;
@@ -9098,7 +9109,7 @@
         <div class="home-action-row">
           <div>
             <div class="breadcrumb"><span>Insights</span><i class="ph ph-caret-right" style="font-size:10px"></i></div>
-            <h2 class="h2">Insights</h2>
+            <h2 class="h2">${INS_MLP_TABS.find((t) => t.key === tab).label}</h2>
           </div>
         </div>
         <div class="tabs" style="margin-bottom:var(--sp-4)">
@@ -9130,7 +9141,8 @@
         const f = getPremiumFilteredData();
         window.mountBoundPremiumChart(insApplyValueRange(f.barData, 'bound-ytd'), view('bound-ytd'), hidden('bound-ytd'));
         window.mountBarListChart('ins-top-builds-bound-chart', getTopBuildsByBoundPremium(), 'var(--secondary-accent)', 'bar', []);
-        window.mountBarListChart('ins-top-states-chart', INSIGHTS_TOP_STATES, 'var(--purple-muted)', view('top-states'), hidden('top-states'));
+        const topStatesWithCount = INSIGHTS_TOP_STATES.map((s) => ({ ...s, count: insEstPolicyCount(s.value) }));
+        window.mountBarListChart('ins-top-states-chart', topStatesWithCount, 'var(--purple-muted)', view('top-states'), hidden('top-states'));
       } else if (tab === 'renewal') {
         const f = getRenewalFilteredData();
         window.mountGroupedBarChart('ins-renewal-grouped-chart', f.monthly, RENEWAL_RETENTION_SERIES, view('renewed-retention'), hidden('renewed-retention'), 'renewed-retention');
@@ -12807,14 +12819,16 @@
     };
     const LEGEND_WRAPPER_STYLE = { fontSize: 12, color: 'var(--fg-muted)' };
     // Custom tooltip content (in place of Tooltip's plain `formatter`) for
-    // category charts whose datum carries a `count` field — adds a second
-    // "Count" line below the value, matching TOOLTIP_STYLE's box chrome
-    // since a custom `content` fn replaces Recharts' own tooltip styling.
-    function CategoryCountTooltip({ active, payload, formatter }) {
+    // charts whose datum carries a `count` field — adds a second "Count"
+    // line below the value, matching TOOLTIP_STYLE's box chrome since a
+    // custom `content` fn replaces Recharts' own tooltip styling. `nameKey`
+    // is 'name' for category charts (Renewal Status, Top Builds/States) or
+    // 'm' for month series charts (Bound Premium).
+    function CategoryCountTooltip({ active, payload, formatter, nameKey }) {
       if (!active || !payload || !payload.length) return null;
       const d = payload[0].payload;
       return h('div', { style: { ...TOOLTIP_STYLE.contentStyle, padding: '8px 12px' } },
-        h('div', { style: { fontWeight: 500, marginBottom: 4 } }, d.name),
+        h('div', { style: { fontWeight: 500, marginBottom: 4 } }, d[nameKey || 'name']),
         h('div', {}, formatter(d.value)),
         d.count != null ? h('div', { style: TOOLTIP_STYLE.labelStyle }, `Count: ${d.count.toLocaleString('en-US')}`) : null
       );
@@ -12928,11 +12942,14 @@
         );
       }
       const Chart = viewType === 'line' ? LineChart : BarChart;
+      const hasCount = visible.some((d) => d.count != null);
       return h(ResponsiveContainer, { width: '100%', height: '100%' },
         h(Chart, { data: visible, margin: { top: 24, right: 8, left: 8, bottom: 0 } },
           h(XAxis, { dataKey: 'm', axisLine: false, tickLine: false, interval: 0, tick: { fill: labelColor, fontSize: 12 } }),
           h(YAxis, { hide: true }),
-          h(Tooltip, { cursor: { fill: 'var(--bg-accent)' }, formatter: fmtUSD0, ...TOOLTIP_STYLE }),
+          hasCount
+            ? h(Tooltip, { cursor: { fill: 'var(--bg-accent)' }, content: (p) => h(CategoryCountTooltip, { ...p, formatter: formatter || fmtUSD0, nameKey: 'm' }) })
+            : h(Tooltip, { cursor: { fill: 'var(--bg-accent)' }, formatter: formatter || fmtUSD0, ...TOOLTIP_STYLE }),
           viewType === 'line'
             ? h(Line, { type: 'monotone', dataKey: 'value', stroke: color, strokeWidth: 2, dot: { r: 3 }, activeDot: { r: 4 } })
             : h(Bar, { dataKey: 'value', fill: color, radius: [6, 6, 0, 0], maxBarSize: 96 },
@@ -13096,7 +13113,7 @@
       );
     }
     window.mountBarListChart = (containerId, items, colorVar, viewType, hidden, sortDir) => {
-      const data = items.map((it) => ({ name: it.label, value: it.value }));
+      const data = items.map((it) => ({ name: it.label, value: it.value, count: it.count }));
       mount(containerId, h(CategoryChart, {
         data, color: resolveColor(colorVar), labelColor: cssVar('--fg-muted'),
         viewType: viewType || 'bar', hidden: hidden || [], tooltipFormatter: fmtUSD0, numberFormatter: fmtShort, sortDir,
@@ -13119,7 +13136,7 @@
       const visible = items.filter((it) => !hidden.includes(it.label));
       if (viewType !== 'pie') {
         return h(CategoryChart, {
-          data: items.map((it) => ({ name: it.label, value: it.value, fill: it.fill, count: renewalEstPolicyCount(it.value) })),
+          data: items.map((it) => ({ name: it.label, value: it.value, fill: it.fill, count: insEstPolicyCount(it.value) })),
           labelColor, viewType, hidden, tooltipFormatter: fmtShort,
         });
       }
