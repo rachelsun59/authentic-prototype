@@ -5694,6 +5694,16 @@
       { build:'Alliant SMB',     written:3687297,  earned:1439492, claims:9,   open:6,  incurred:39112,  paid:12480,  ultLoss:745018,  ultLossPct:51.8 },
       { build:'Unleashed',       written:3336265,  earned:2818213, claims:681, open:604,incurred:1463640,paid:1198021,ultLoss:1458692, ultLossPct:51.8 },
     ];
+    // Total open/closed claim counts across all builds — derived from the
+    // table above (closed = each build's total claims minus its open
+    // claims) rather than summing CLAIMS_STACKED_DATA's monthly open/closed
+    // series, since a claim stays open across multiple months there and
+    // summing would double-count it.
+    function getClaimsOpenCloseCounts() {
+      const totalClaims = CLAIMS_TABLE_ROWS.reduce((s, r) => s + r.claims, 0);
+      const totalOpen = CLAIMS_TABLE_ROWS.reduce((s, r) => s + r.open, 0);
+      return { open: totalOpen, closed: totalClaims - totalOpen };
+    }
 
     /* ---------- Insights — per-table column filter/sort ----------
        Each tab's bottom data table gets real per-column filtering (multi-
@@ -6182,6 +6192,10 @@
         }
         case 'claims-earned':
           return { filename: 'earned-premium', columns: [{ key: 'value', label: 'Earned Premium' }], rows: [{ value: CLAIMS_STATS.earnedPremium }] };
+        case 'claims-open-count':
+          return { filename: 'total-open-claims', columns: [{ key: 'value', label: 'Total Open Claims' }], rows: [{ value: getClaimsOpenCloseCounts().open }] };
+        case 'claims-closed-count':
+          return { filename: 'total-close-claims', columns: [{ key: 'value', label: 'Total Close Claims' }], rows: [{ value: getClaimsOpenCloseCounts().closed }] };
         case 'claims-incurred':
           return { filename: 'total-incurred', columns: [{ key: 'value', label: 'Total Incurred' }], rows: [{ value: CLAIMS_STATS.totalIncurred }] };
         case 'claims-ultimate-loss':
@@ -7153,6 +7167,7 @@
 
     function renderInsightsClaimBody() {
       const s = CLAIMS_STATS;
+      const openClose = getClaimsOpenCloseCounts();
       const selected = State.insightsBuildFilter;
       const isBuildFiltered = selected.length > 0;
       const isDateFiltered = State.insightsDateRange !== 'ytd';
@@ -7162,10 +7177,18 @@
         <div class="ins-row">
           <div class="ins-panel">
             <div class="ins-panel-head">
-              <div class="ins-panel-title">Earned Premium</div>
-              ${renderInsKebab('claims-earned')}
+              <div class="ins-panel-title">Total Open Claims</div>
+              ${renderInsKebab('claims-open-count')}
             </div>
-            <div class="ins-stat-value">${fmtUSDk(s.earnedPremium)}</div>
+            <div class="ins-stat-value">${openClose.open.toLocaleString('en-US')}</div>
+            <div class="ins-sub">YTD</div>
+          </div>
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Total Close Claims</div>
+              ${renderInsKebab('claims-closed-count')}
+            </div>
+            <div class="ins-stat-value">${openClose.closed.toLocaleString('en-US')}</div>
             <div class="ins-sub">YTD</div>
           </div>
           <div class="ins-panel">
@@ -7184,31 +7207,23 @@
             <div class="ins-stat-value">${fmtUSDk(s.ultimateLoss)}</div>
             <div class="ins-sub">YTD</div>
           </div>
-          <div class="ins-panel">
-            <div class="ins-panel-head">
-              <div class="ins-panel-title">IBNR</div>
-              ${renderInsKebab('claims-ibnr')}
-            </div>
-            <div class="ins-stat-value">${fmtUSDk(s.ibnr)}</div>
-            <div class="ins-sub">YTD</div>
-          </div>
         </div>
 
         ${isFiltered ? `<div class="ins-sub" style="margin:0 0 var(--sp-2)">Claims data isn't broken out by build or date range — charts and stats above show the full period, all builds</div>` : ''}
         <div class="ins-row">
           <div class="ins-panel">
             <div class="ins-panel-head">
-              <div class="ins-panel-title">Earned Premium &amp; Ultimate Loss Ratio by Month — All Coverage</div>
-              ${renderInsKebab('claims-combo', ['Earned Premium', 'Ultimate LR %'])}
-            </div>
-            ${renderInsChartDiv('ins-claims-combo-chart', 220, 'claims-combo')}
-          </div>
-          <div class="ins-panel">
-            <div class="ins-panel-head">
-              <div class="ins-panel-title">Claims by Month</div>
+              <div class="ins-panel-title">Open / Close Claims</div>
               ${renderInsKebab('claims-by-month', CLAIMS_STACKED_SERIES.map(s => s.label))}
             </div>
             ${renderInsChartDiv('ins-claims-stacked-chart', 220, 'claims-by-month')}
+          </div>
+          <div class="ins-panel">
+            <div class="ins-panel-head">
+              <div class="ins-panel-title">Earned Premium &amp; Ultimate Loss Ratio by Month</div>
+              ${renderInsKebab('claims-combo', ['Earned Premium', 'Ultimate LR %'])}
+            </div>
+            ${renderInsChartDiv('ins-claims-combo-chart', 220, 'claims-combo')}
           </div>
         </div>
 
